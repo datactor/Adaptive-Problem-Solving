@@ -14,3 +14,7 @@ path = "boj_24060_merge_sort"
 [[example]]
 name = "boj_11729"
 path = "boj_11729"
+
+[[example]]
+name = "boj_2447"
+path = "boj_2447"
