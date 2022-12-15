@@ -7,7 +7,6 @@ fn main() {
     io::stdin().read_to_string(&mut buffer).unwrap();
     let mut lines = buffer.lines();
     let n = lines.next().unwrap().split_ascii_whitespace().next().unwrap().parse::<usize>().unwrap();
-    println!("{}", n);
     let mut hashset = HashSet::with_capacity(n);
     for line in lines.by_ref().take(n) {
         hashset.insert(line);
