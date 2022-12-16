@@ -20,6 +20,7 @@ fn main() {
         hashmap.insert(pokemon, idx+1);
     }
 
+    // hashmap get은, vec[idx]처럼 key값을 인덱스처럼 변환하여 빠른접근 가능. O(1)인 상수 시간복잡도
     for _ in 0..m {
         let a = lines.next().unwrap();
         if let Ok(idx) = a.parse::<usize>() {
