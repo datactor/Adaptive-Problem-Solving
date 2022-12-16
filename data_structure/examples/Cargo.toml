@@ -14,3 +14,7 @@ path = "boj_10815_map_binsearch"
 [[example]]
 name = "boj_14425_string"
 path = "boj_14425_string"
+
+[[example]]
+name = "boj_1620_string_hashmap"
+path = "boj_1620_string_hashmap"
