@@ -30,3 +30,7 @@ path = "boj_3053"
 [[example]]
 name = "boj_1002"
 path = "boj_1002"
+
+[[example]]
+name = "boj_1004"
+path = "boj_1004"
