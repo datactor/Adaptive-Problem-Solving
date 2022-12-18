@@ -22,9 +22,14 @@ fn main() {
     }
     v.clear();
 
+    // println!("{}", gcd);
     let mut set = Vec::new();
     for i in 2..(gcd as f32).powf(0.5) as usize + 1 {
+        // for문을 다 돌아도 되지만 제곱근으로 축약할 수 있음.
         if gcd % i == 0 {
+            // 약수의 집합이라면
+            // 1부터 제곱근까지와 최대공약수부터 제곱근까지 zip해서 서로 곱하면 최대공약수가 되는 pair이기 때문에
+            // 최대공약수를 나눈 수만큼(gcd / i)을 약수와 다시 곱해주면 됨.
             set.push(i);
             set.push(gcd / i);
         }
