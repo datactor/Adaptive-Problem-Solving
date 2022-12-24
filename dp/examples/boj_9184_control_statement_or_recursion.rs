@@ -1,3 +1,5 @@
+// https://www.acmicpc.net/problem/9184
+
 use std::io::{self, prelude::*, BufWriter};
 
 fn main() {
