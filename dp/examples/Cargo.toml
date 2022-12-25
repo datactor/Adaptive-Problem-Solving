@@ -18,3 +18,7 @@ path = "boj_9184_control_statement_or_recursion"
 [[example]]
 name = "boj_1904_recurrence_relation"
 path = "boj_1904_recurrence_relation"
+
+[[example]]
+name = "boj_9461"
+path = "boj_9461"
