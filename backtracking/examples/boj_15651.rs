@@ -17,10 +17,6 @@ fn main() {
 }
 
 fn solve(n: usize, m: usize, arr: &mut Vec<usize>, output: &mut BufWriter<StdoutLock>) {
-    let x = 42;
-    let y = &mut 42;
-    let &mut z = y;
-    assert!(x == z);
     if arr.len() == m {
         for i in arr {
             write!(output, "{} ", i).unwrap();
