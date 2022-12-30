@@ -34,5 +34,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     writeln!(output, "{}", arr.iter().max().unwrap())?;
+
     Ok(())
 }
