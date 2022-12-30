@@ -2,9 +2,8 @@ use std::io::{self, prelude::*, BufWriter, StdoutLock};
 
 fn main() {
     let mut output = BufWriter::new(io::stdout().lock());
-    // let mut buffer = String::new();
-    let mut buffer = String::from("4 2");
-    // io::stdin().read_line(&mut buffer).unwrap();
+    let mut buffer = String::new();
+    io::stdin().read_line(&mut buffer).unwrap();
 
     let mut v = buffer.split_ascii_whitespace().map(
         |s| s.parse::<usize>()).flatten();
