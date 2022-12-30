@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         arr = tmp;
     }
-
+::
     writeln!(output, "{}", arr.iter().max().unwrap())?;
     Ok(())
 }
