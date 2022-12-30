@@ -22,3 +22,7 @@ path = "boj_1904_recurrence_relation"
 [[example]]
 name = "boj_9461"
 path = "boj_9461"
+
+[[example]]
+name = "boj_1932"
+path = "boj_1932"
