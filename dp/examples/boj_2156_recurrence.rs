@@ -1,45 +1,43 @@
-// https://www.acmicpc.net/problem/2156
+// // https://www.acmicpc.net/problem/2156
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error
+    cmp::max,
+    error::Error,
+    io::{self, Read},
+    str::FromStr,
 };
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let mut output = BufWriter::new(io::stdout().lock());
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input)?;
-
-    let mut v = input
-        .split_ascii_whitespace()
-        .skip(1)
-        .map(
-        |s| s.parse::<usize>().unwrap())
-        .collect::<Vec<usize>>();
-
-    let max = match v.len() {
+fn max_total_value(v: &[usize]) -> usize {
+    let mut arr = [0; 10_000];
+    match v.len() {
+        0 => 0,
         1 => v[0],
         2 => v[0] + v[1],
         _ => {
-            let mut arr = vec![0; v.len()];
             arr[0] = v[0];
             arr[1] = v[0] + v[1];
-            arr[2] = [
-                arr[1],
-                v[0] + v[2],
-                v[1] + v[2]
-            ].into_iter().max().unwrap();
+            arr[2] = max(arr[1],
+                         max(v[0] + v[2], v[1] + v[2]));
             for i in 3..v.len() {
-                arr[i] = [
+                arr[i] = max(
                     arr[i - 1],
-                    arr[i - 2] + v[i],
-                    arr[i - 3] + v[i - 1] + v[i],
-                ].into_iter().max().unwrap();
+                    max(arr[i - 2] + v[i], arr[i - 3] + v[i - 1] + v[i]));
             }
-            arr[v.len()-1]
+            arr[v.len() - 1]
         }
-    };
+    }
+}
 
-    writeln!(output, "{}", max)?;
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut input = String::new();
+    io::stdin().read_to_string(&mut input)?;
+
+    let v: Vec<usize> = input
+        .split_whitespace()
+        .skip(1)
+        .map(|s| usize::from_str(s).unwrap())
+        .collect();
+
+    println!("{}", max_total_value(&v));
     Ok(())
 }
