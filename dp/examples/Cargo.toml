@@ -34,3 +34,7 @@ path = "boj_2579_recurrence"
 [[example]]
 name = "boj_2156_recurrence"
 path = "boj_2156_recurrence"
+
+[[example]]
+name = "boj_2565_lis"
+path = "boj_2565_lis"
