@@ -36,5 +36,17 @@ name = "boj_2156_recurrence"
 path = "boj_2156_recurrence"
 
 [[example]]
+name = "boj_11053"
+path = "boj_11053"
+
+[[example]]
+name = "boj_11054"
+path = "boj_11054"
+
+[[example]]
 name = "boj_2565_lis"
 path = "boj_2565_lis"
+
+[[example]]
+name = "boj_9251_longest_common_subsequence"
+path = "boj_9251_longest_common_subsequence"

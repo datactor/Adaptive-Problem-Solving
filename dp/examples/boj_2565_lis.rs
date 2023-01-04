@@ -23,12 +23,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for i in 0..v.len() {
         for j in 0..i {
-            if v[i].1 > v[j].1 && arr[i] < arr[j] {
-                arr[i] = arr[j]
-            }
+            if v[i].1 > v[j].1 && arr[i] < arr[j] { // v[i]가 더 크면 +1을 할 근거(IS)
+                arr[i] = arr[j]                     // 그 배열의 수가 최대일 경우(arr[i] < arr[j]; LIS)
+            }                                       // arr에 그 값을 넣고 +1을 해서 저장함
         } arr[i] += 1;
     }
-
-    println!("{}", v.len() - arr.iter().max().unwrap_or(&0));
     Ok(())
 }
