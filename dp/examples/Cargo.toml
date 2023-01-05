@@ -50,3 +50,7 @@ path = "boj_2565_lis"
 [[example]]
 name = "boj_9251_longest_common_subsequence"
 path = "boj_9251_longest_common_subsequence"
+
+[[example]]
+name = "boj_12865_knapsack"
+path = "boj_12865_knapsack"
