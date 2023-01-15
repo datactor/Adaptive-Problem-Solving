@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("{:?}", v);
     println!("{:?}", blank);
 
-    // black에 있는 튜플을 idx 순서대로 탐색
+    // blank에 있는 튜플을 idx 순서대로 탐색
     dfs(0, &blank, &mut v, &mut output);
 
     Ok(())
@@ -70,13 +70,16 @@ fn dfs(idx: usize, blank: &Vec<(usize, usize)>, v: &mut Vec<Vec<usize>>, output:
         output.flush().unwrap();
         std::process::exit(0); // 스도쿠를 하나라도 완료되면 프로세스 종료.
     }
+    let (x, y) = (blank[idx].0, blank[idx].1);
 
     for i in 1..10 {
-        let (x, y) = (blank[idx].0, blank[idx].1);
-
-        // row, col, sqr 모두를 계산해봐서 v[x][y] 자리에 i가 들어 갈 수 있으면, v[x][y]를 i로 놓고
-        // blank의 다음 자리에 있는 0에 대해 dfs를 실행함.
-        // dfs가 끝나면, 제자리에 다시 0을 반환하고 다음 숫자(i)에 대해 dfs 실행
+        // row, col, sqr 모두를 계산해봐서 v[x][y] 자리에 들어갈 수 있는 i를 찾는다(for i in 1..10).
+        // i를 찾으면, v[x][y]의 값을 i로 바꾸고, 다음 dfs를 실행한다.
+        // -- 반복 --
+        //
+        // dfs가 끝나면(모두 true를 반환하는 i가 없으면),
+        // 후입 선출 순서로 마지막 dfs의 제자리에 0을 반환하고 이전 idx로 돌아가서 for문을 마저 돈다.
+        // -- 반복 --
         if check_row(x, i, v) && check_col(y, i, v) && check_sqr(x, y, i, v) {
             v[x][y] = i;
             dfs(idx + 1, blank, v, output);
