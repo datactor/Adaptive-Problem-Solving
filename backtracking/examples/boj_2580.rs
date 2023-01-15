@@ -75,11 +75,11 @@ fn dfs(idx: usize, blank: &Vec<(usize, usize)>, v: &mut Vec<Vec<usize>>, output:
 
     for i in 1..10 {
         // 1. row, col, sqr 모두를 탐색해보고 v[x][y]자리에 들어갈 수 있는 i를 찾는다(for i in 1..10).
-        //    i를 찾으면, v[x][y]의 값을 i로 바꾸고, 다음 dfs를 실행한다.
+        //    i를 찾으면, v[x][y]의 값을 i로 바꾸고, 다음 dfs(blank의 다음 자리: idx+1)를 실행한다.
         // -- 반복 --
         //
         // 2. dfs가 끝나면(모두 true를 반환하는 i가 없으면),
-        //    후입 선출 순서로 마지막 dfs의 제자리에 0을 반환하고 이전 idx로 돌아가서 for문을 마저 돈다. -> 1
+        //    후입 선출 순서로 마지막 dfs의 제자리에 0을 반환하고 이전 idx로 돌아가서 for문을 마저 돈다( -> 1).
         if check_row(x, i, v) && check_col(y, i, v) && check_sqr(x, y, i, v) {
             v[x][y] = i;
             dfs(idx + 1, blank, v, output);
