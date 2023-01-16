@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 
 [[example]]
-name = "boj_example"
-path = "boj_example"
+name = "boj_1541"
+path = "boj_1541"

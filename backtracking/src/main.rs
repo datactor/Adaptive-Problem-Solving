@@ -1,3 +1,3 @@
 fn main() {
-    println!("Hello, world!");
+    println!("백트래킹은 재귀식에 대한 기본 이해가 필수적이다. 추가로 DP까지 익혀 백트래킹을 정복해보자.");
 }
