@@ -16,10 +16,9 @@ fn main() {
 
     for _ in 0..k {
         let i = v.next().unwrap();
-        if i != 0 {
-            s.push(i)
-        } else {
-            s.pop();
+        match i {
+            0 => {s.pop();},
+            _ => {s.push(i);},
         }
     }
     writeln!(output, "{}", s.iter().sum::<usize>()).unwrap();
