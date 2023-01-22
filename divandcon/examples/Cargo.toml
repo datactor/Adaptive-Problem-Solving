@@ -1,0 +1,16 @@
+[package]
+name = "examples"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[[example]]
+name = "boj_2630"
+path = "boj_2630"
+
+[[example]]
+name = "boj_1992"
+path = "boj_1992"
