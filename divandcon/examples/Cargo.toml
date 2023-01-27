@@ -26,3 +26,11 @@ path = "boj_11401_Fermat_s_little_theorem"
 [[exmaple]]
 name = "boj_2740"
 path = "boj_2740"
+
+[[example]]
+name = "boj_10830"
+path = "boj_10830"
+
+[[example]]
+name = "boj_11444"
+path = "boj_11444"

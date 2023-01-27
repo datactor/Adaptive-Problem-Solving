@@ -10,8 +10,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="436a5b47-ef21-4f10-a6f7-121dc76c9838" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../divandcon/examples/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../divandcon/examples/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/examples/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/boj_1007.rs" beforeDir="false" afterPath="$PROJECT_DIR$/examples/boj_1007.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,7 +58,7 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="cf.first.check.clang-format" value="false" />
     <property name="cidr.known.project.marker" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../divandcon" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../wasm/wasm-test" />
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
   </component>
@@ -79,6 +79,7 @@
       <workItem from="1674467658700" duration="43000" />
       <workItem from="1674468558988" duration="38000" />
       <workItem from="1674630248456" duration="40000" />
+      <workItem from="1674630401190" duration="7950000" />
     </task>
     <servers />
   </component>
