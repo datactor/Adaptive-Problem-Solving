@@ -12,8 +12,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut output = BufWriter::new(io::stdout().lock());
     io::stdin().read_to_string(&mut input)?;
 
-    let mut input = input.split_ascii_whitespace();
-    input.next();
+    let input = input.split_ascii_whitespace().skip(1);
 
     let mut q = BinaryHeap::new();
 
