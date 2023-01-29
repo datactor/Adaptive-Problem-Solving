@@ -1,5 +1,6 @@
 // https://www.acmicpc.net/problem/6549
 // O(N)에 가깝다
+// https://hooongs.tistory.com/330 레퍼런스 참조
 
 
 use std::{
