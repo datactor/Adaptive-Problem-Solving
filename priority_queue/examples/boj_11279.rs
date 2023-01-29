@@ -1,4 +1,5 @@
 // https://www.acmicpc.net/problem/11279
+// O (N * lnN)
 
 use std::{
     io::{self, prelude::*, BufWriter},
