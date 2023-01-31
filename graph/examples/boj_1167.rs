@@ -1,4 +1,12 @@
 // https://www.acmicpc.net/problem/1167
+// 트리의 지름? 임의의 두 점 사이의 거리 중 가장 긴 것.
+//
+// 트리의 지름 구하는 방법(https://jioneprogstdy.tistory.com/77, https://bedamino.tistory.com/15)
+// 임의의 점(A)에서 가장 먼 지점 B를 찾는다
+// B에서 가장 먼 지점(C)를 찾는다
+// B~C의 거리가 트리의 지름
+//
+// dfs를 돌려도 트리 지름 공식을 알지 못하면 풀기 어렵다.
 
 use std::{
     io::{self, prelude::*},
