@@ -10,3 +10,7 @@ edition = "2021"
 [[example]]
 name = "boj_1043"
 path = "boj_1043"
+
+[[example]]
+name = "boj_1167"
+path = "boj_1167"
