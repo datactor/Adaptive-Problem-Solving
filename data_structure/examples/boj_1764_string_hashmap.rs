@@ -1,4 +1,4 @@
-// O(N logN)
+// O(N lgN)
 
 use std::io::{self, prelude::*, BufWriter};
 use std::collections::HashSet;

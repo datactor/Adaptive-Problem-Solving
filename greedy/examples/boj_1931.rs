@@ -1,5 +1,5 @@
 // https://www.acmicpc.net/problem/1931
-// O(N lnN)
+// O(N lgN)
 
 use std::{
     io::{self, prelude::*},

@@ -1,5 +1,5 @@
 // https://www.acmicpc.net/problem/11401
-// O(N + lnN)
+// O(N + lgN)
 
 // Fermat's little Theorem
 // p가 소수이면, 모든 정수 a에 대해 a^p ≡ a (mod p)이다.

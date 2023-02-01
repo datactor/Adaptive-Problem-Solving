@@ -12,9 +12,13 @@ name = "boj_1043"
 path = "boj_1043"
 
 [[example]]
-name = "boj_1167"
-path = "boj_1167"
+name = "boj_1167_tree_s_dia"
+path = "boj_1167_tree_s_dia"
 
 [[example]]
-name = "boj_1238"
-path = "boj_1238"
+name = "boj_1238_dijkstra"
+path = "boj_1238_dijkstra"
+
+[[example]]
+name = "boj_1197_spanning_tree"
+path = "boj_1197_spanning_tree"
