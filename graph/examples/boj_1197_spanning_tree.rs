@@ -9,6 +9,9 @@
 // 프림 알고리즘 시간 복잡도 :: O(E * lg V)
 // 간선의 개수가 많으면 프림, 적으면 크루스칼을 사용하는 것이 유리할 듯 함.
 
+// 프림 알고리즘의 전제
+// 사이클을 돌지 않는 모든 간선의 수가 node수 - 1이라면 모든 노드에 접근할 수 있다.
+
 use std::{
     io::{self, prelude::*},
     error::Error,
@@ -37,6 +40,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// 임의의 점부터 시작해서 점에서부터 이어지는 모든 간선을 힙에 추가한 후, 작은 순으로 뽑아 가중치를 더한다.
+// 간선에 이어지는 도착노드가 방문한 곳이면 continue로 skip(사이클 방지),
+// 간선 개수가 node수 - 1이면 중단하여 가중치 합을 print.
 fn prim(start: usize, weight: i32, graph: Vec<Vec<(i32, i32)>>, n: usize) -> i32 {
     let mut visited = vec![0; n+1]; // node 방문 여부
     let mut q = BinaryHeap::from([(weight, start)]); // 가중치를 앞에 둬서 힙 사용
