@@ -29,11 +29,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (v, e) = (read(), read());
 
     let mut graph = vec![vec![]; (v + 1) as usize];
-    for _ in (0..e) {
+    (0..e).for_each(|_| {
         let (u, v, w) = (read(), read(), read());
         graph[u as usize].push((v, w));
         graph[v as usize].push((u, w));
-    };
+    });
 
     println!("{}", prim(1, 0, graph, v as usize));
 
@@ -57,8 +57,8 @@ fn prim(start: usize, weight: i32, graph: Vec<Vec<(i32, i32)>>, n: usize) -> i32
         visited[v] = 1; // 방문 처리.
         sum -= k;  // 해당 정점까지의 가중치를 더해준다
         cnt += 1; // 간선의 개수를 더해줌(최종 간선의 개수는 n-1 고정)
-        for (u, w) in &graph[v] { // 해당 node의 간선정보를 모두 불러와서
-            q.push((w*-1, *u as usize)) // 힙에 넣는다.
-        }
+
+        // 해당 node의 간선정보를 모두 불러와서 힙에 넣는다.
+        graph[v].iter().for_each(|&(u, w)| q.push((-w, u as usize)));
     } sum
 }
