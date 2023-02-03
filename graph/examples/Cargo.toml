@@ -22,3 +22,7 @@ path = "boj_1238_dijkstra"
 [[example]]
 name = "boj_1197_spanning_tree"
 path = "boj_1197_spanning_tree"
+
+[[example]]
+name = "boj_1766"
+path = "boj_1766"
