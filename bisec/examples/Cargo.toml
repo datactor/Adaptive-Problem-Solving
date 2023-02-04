@@ -30,3 +30,7 @@ path = "boj_14003"
 [[example]]
 name = "boj_2110"
 path = "boj_2110"
+
+[[example]]
+name = "boj_1208_collections_hashmap"
+path = "boj_1208_collections_hashmap"
