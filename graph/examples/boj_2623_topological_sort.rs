@@ -22,7 +22,10 @@ struct Scanner<'a> {
 //
 // 요약하면 메서드는 구현 및 데이터와 밀접하게 연결된 특정 type에 대한 동작을 정의하는 방법을 제공하는 반면
 // 함수는 특정 유형에 연결되지 않은 동작을 정의하는 보다 일반적인 방법을 제공함.
-// impl과 trait을 결합하면 객체 지향 디자인 패턴(다형성)을 적용할 수 있음. 그렇지만 우리에겐 enum이 있다.
+// impl(객체 지향 디자인 패턴)과 trait을 결합하면 동적 dispatch(다형성)를 적용할 수 있음(오버헤드가 큼).
+// (특정 trait을 각각의 type에 binding시켜서 다른 type도 같은 메소드를 사용할 수 있게함.
+// e.g. clone(), copy(), drop()등 기본적인 메서드들을 다른 타입들에 binding시켜 사용할 수 있게 하기.
+// 여기서 특정 type을 custom해 override도 가능하다)
 
 impl<'a> Scanner<'a> {
     fn new(s: &'a str) -> Scanner {
@@ -36,7 +39,7 @@ impl<'a> Scanner<'a> {
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn Error>> { // error type이 뭐든 반환 가능
     let mut input = String::new();
     let mut output = BufWriter::new(io::stdout().lock());
     io::stdin().read_to_string(&mut input)?;
