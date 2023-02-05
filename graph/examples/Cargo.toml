@@ -26,3 +26,7 @@ path = "boj_1197_spanning_tree"
 [[example]]
 name = "boj_1766"
 path = "boj_1766"
+
+[[example]]
+name = "boj_2623_topological_sort"
+path = "boj_2623_topological_sort"
