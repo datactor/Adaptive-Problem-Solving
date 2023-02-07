@@ -34,3 +34,7 @@ path = "boj_2623_topological_sort"
 [[example]]
 name = "boj_2252_topological_sort"
 path = "boj_2252_topological_sort"
+
+[[example]]
+name = "boj_10775_union_find"
+path = "boj_10775_union_find"
