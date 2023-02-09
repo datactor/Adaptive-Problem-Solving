@@ -1,5 +1,5 @@
 // https://www.acmicpc.net/problem/1647
-// spanning tree를 이룰 때, 아무 길이나 하나 빼면 스패닝 트리를 이루는 두개의 집합으로 나뉜다.
+// spanning tree를 이룰 때, 임의의 길 하나를 빼면 스패닝 트리를 이루는 두개의 집합으로 나뉜다.
 // 프림 알고리즘 시간 복잡도 :: O(E * lg V)
 
 use std::{
