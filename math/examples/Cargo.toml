@@ -15,6 +15,10 @@ path = "boj_1011"
 name = "boj_1007"
 path = "boj_1007"
 
+#[[example]]
+#name = "boj_12855"
+#path = "boj_12855"
+
 [[example]]
-name = "boj_12855"
-path = "boj_12855"
+name = "boj_1644_get_primes_and_bisec"
+path = "boj_1644_get_primes_and_bisec"
