@@ -58,3 +58,7 @@ path = "boj_12865_knapsack"
 [[example]]
 name = "boj_1005"
 path = "boj_1005"
+
+[[example]]
+name = "boj_9252_LCS"
+path = "boj_9252_LCS"
