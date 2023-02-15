@@ -14,3 +14,7 @@ path = "boj_1022"
 [[example]]
 name = "boj_23730_TBD"
 path = "boj_23730_TBD"
+
+[[example]]
+name = "boj_1009"
+path = "boj_1009.rs"
