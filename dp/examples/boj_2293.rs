@@ -1,3 +1,5 @@
+// https://www.acmicpc.net/problem/2293
+
 use std::{
     io::{self, prelude::*},
     error::Error,
