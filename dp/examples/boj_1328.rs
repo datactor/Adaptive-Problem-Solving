@@ -34,24 +34,43 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (n, l, r) = (sc.read::<usize>(), sc.read::<usize>(), sc.read::<usize>());
 
-    let mut dp = vec![vec![vec![0; r + 1]; l + 1]; n + 1];
-    dp[1][1][1] = 1;
+    // let mut dp = vec![vec![vec![0; r + 1]; l + 1]; n + 1];
+    // dp[1][1][1] = 1;
+    //
+    // for i in 2..=n {
+    //     for j in 1..=l {
+    //         for k in 1..=r {
+    //             dp[i][j][k] =
+    //                 (
+    //                     (dp[i-1][j][k] * (i-2)) % MOD
+    //                         + dp[i-1][j][k-1]
+    //                         + dp[i-1][j-1][k]
+    //                 ) % MOD;
+    //         }
+    //     }
+    // }
 
-    // dp[n][l][r] = dp[n-1][l-1][r] + dp[n-1][l][r-1] + dp[n-1][l][r]*(n-2)
+    let mut dp = vec![vec![0; r + 1]; l + 1];
+    dp[1][1] = 1;
+
+    let mut prev_dp = dp.clone();
+
+    // 점화식: dp[n][l][r] = dp[n-1][l-1][r] + dp[n-1][l][r-1] + dp[n-1][l][r]*(n-2)
     for i in 2..=n {
         for j in 1..=l {
             for k in 1..=r {
-                dp[i][j][k] =
+                dp[j][k] =
                     (
-                        (dp[i-1][j][k] * (i-2)) % MOD
-                            + dp[i-1][j][k-1]
-                            + dp[i-1][j-1][k]
+                        (prev_dp[j][k] * (i-2)) % MOD
+                            + prev_dp[j][k-1]
+                            + prev_dp[j-1][k]
                     ) % MOD;
             }
         }
+        prev_dp = dp.clone();
     }
 
-    writeln!(output, "{}", dp[n][l][r])?;
+    writeln!(output, "{}", dp[l][r])?;
 
     Ok(())
 }
