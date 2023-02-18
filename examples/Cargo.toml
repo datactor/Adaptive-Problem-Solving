@@ -1,0 +1,480 @@
+[package]
+name = "examples"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[[example]]
+name = "boj_15649"
+path = "backtracking/boj_15649.rs"
+
+[[example]]
+name = "boj_15650"
+path = "backtracking/boj_15650.rs"
+
+[[example]]
+name = "boj_15651_bruteforce"
+path = "backtracking/boj_15651_bruteforce.rs"
+
+[[exmaple]]
+name = "boj_15652"
+path = "backtracking/boj_15652.rs"
+
+[[example]]
+name = "boj_9663"
+path = "backtracking/boj_9663.rs"
+
+[[example]]
+name = "boj_14888_bruteforce"
+path = "backtracking/boj_14888_bruteforce.rs"
+
+[[example]]
+name = "boj_2580"
+path = "backtracking/boj_2580.rs"
+
+[[example]]
+name = "boj_1920"
+path = "bisec/boj_1920.rs"
+
+[[example]]
+name = "boj_10816"
+path = "bisec/boj_10816.rs"
+
+[[example]]
+name = "boj_1654"
+path = "bisec/boj_1654.rs"
+
+[[example]]
+name = "boj_2805"
+path = "bisec/boj_2805.rs"
+
+[[example]]
+name = "boj_14003"
+path = "bisec/boj_14003.rs"
+
+[[example]]
+name = "boj_2110"
+path = "bisec/boj_2110.rs"
+
+[[example]]
+name = "boj_1208_collections_hashmap"
+path = "bisec/boj_1208_collections_hashmap.rs"
+
+[[example]]
+name = "boj_2798"
+path = "bruteforce/boj_2798.rs"
+
+[[example]]
+name = "boj_2231"
+path = "bruteforce/boj_2231.rs"
+
+[[example]]
+name = "boj_7568"
+path = "bruteforce/boj_7568.rs"
+
+[[example]]
+name = "boj_1018"
+path = "bruteforce/boj_1018.rs"
+
+[[example]]
+name = "boj_1436"
+path = "bruteforce/boj_1436.rs"
+
+[[example]]
+name = "boj_11659"
+path = "prefix_sum/boj_11659.rs"
+
+[[example]]
+name = "boj_2559"
+path = "prefix_sum/boj_2559.rs"
+
+[[example]]
+name = "boj_16139"
+path = "prefix_sum/boj_16139.rs"
+
+[[example]]
+name = "boj_9527"
+path = "prefix_sum/boj_9527.rs"
+
+[[example]]
+name = "boj_10986"
+path = "prefix_sum/boj_10986.rs"
+
+[[example]]
+name = "boj_11660"
+path = "prefix_sum/boj_11660.rs"
+
+[[example]]
+name = "boj_25682"
+path = "prefix_sum/boj_25682.rs"
+
+[[example]]
+name = "boj_10815_map_binsearch"
+path = "data_structure/boj_10815_map_binsearch.rs"
+
+[[example]]
+name = "boj_14425_string"
+path = "data_structure/boj_14425_string.rs"
+
+[[example]]
+name = "boj_1620_string_hashmap"
+path = "data_structure/boj_1620_string_hashmap.rs"
+
+[[example]]
+name = "boj_1764_string_hashmap"
+path = "data_structure/boj_1764_string_hashmap.rs"
+
+[[example]]
+name = "boj_1269_hash"
+path = "data_structure/boj_1269_hash.rs"
+
+[[example]]
+name = "boj_11478_string_hashmap"
+path = "data_structure/boj_11478_string_hashmap.rs"
+
+[[example]]
+name = "boj_1517"
+path = "data_structure/boj_1517.rs"
+
+[[example]]
+name = "boj_2630"
+path = "divandcon/boj_2630.rs"
+
+[[example]]
+name = "boj_1992"
+path = "divandcon/boj_1992.rs"
+
+[[example]]
+name = "boj_1780"
+path = "divandcon/boj_1780.rs"
+
+[[example]]
+name = "boj_11401_Fermat_s_little_theorem"
+path = "divandcon/boj_11401_Fermat_s_little_theorem.rs"
+
+[[exmaple]]
+name = "boj_2740"
+path = "divandcon/boj_2740.rs"
+
+[[example]]
+name = "boj_10830"
+path = "divandcon/boj_10830.rs"
+
+[[example]]
+name = "boj_11444"
+path = "divandcon/boj_11444.rs"
+
+[[example]]
+name = "boj_6549"
+path = "divandcon/boj_6549.rs"
+
+[[example]]
+name = "boj_24416_fibonacci"
+path = "dp/boj_24416_fibonacci.rs"
+
+[[example]]
+name = "boj_9184_control_statement_or_recursion"
+path = "dp/boj_9184_control_statement_or_recursion.rs"
+
+[[example]]
+name = "boj_1904_recurrence_relation"
+path = "dp/boj_1904_recurrence_relation.rs"
+
+[[example]]
+name = "boj_9461"
+path = "dp/boj_9461.rs"
+
+[[example]]
+name = "boj_1932"
+path = "dp/boj_1932.rs"
+
+[[example]]
+name = "boj_2579_recurrence"
+path = "dp/boj_2579_recurrence.rs"
+
+[[example]]
+name = "boj_2156_recurrence"
+path = "dp/boj_2156_recurrence.rs"
+
+[[example]]
+name = "boj_11053"
+path = "dp/boj_11053.rs"
+
+[[example]]
+name = "boj_11054"
+path = "dp/boj_11054.rs"
+
+[[example]]
+name = "boj_2565_lis"
+path = "dp/boj_2565_lis.rs"
+
+[[example]]
+name = "boj_9251_longest_common_subsequence"
+path = "dp/boj_9251_longest_common_subsequence.rs"
+
+[[example]]
+name = "boj_12865_knapsack"
+path = "dp/boj_12865_knapsack.rs"
+
+[[example]]
+name = "boj_1005"
+path = "dp/boj_1005.rs"
+
+[[example]]
+name = "boj_9252_LCS"
+path = "dp/boj_9252_LCS.rs"
+
+[[example]]
+name = "boj_2293"
+path = "dp/boj_2293.rs"
+
+[[example]]
+name = "boj_11066"
+path = "dp/boj_11066.rs"
+
+[[example]]
+name = "boj_1328"
+path = "dp/boj_1328.rs"
+
+[[example]]
+name = "boj_12852"
+path = "dp/boj_12852.rs"
+
+[[example]]
+name = "boj_1085"
+path = "geometry/boj_1085.rs"
+
+[[example]]
+name = "boj_3009"
+path = "geometry/boj_3009.rs"
+
+[[example]]
+name = "boj_4153"
+path = "geometry/boj_4153.rs"
+
+[[example]]
+name = "boj_2477"
+path = "geometry/boj_2477.rs"
+
+[[example]]
+name = "boj_3053"
+path = "geometry/boj_3053.rs"
+
+[[example]]
+name = "boj_1002"
+path = "geometry/boj_1002.rs"
+
+[[example]]
+name = "boj_1004"
+path = "geometry/boj_1004.rs"
+
+[[example]]
+name = "boj_17387"
+path = "geometry/boj_17387.rs"
+
+[[example]]
+name = "boj_1043"
+path = "graph/boj_1043.rs"
+
+[[example]]
+name = "boj_1167_tree_s_dia"
+path = "graph/boj_1167_tree_s_dia.rs"
+
+[[example]]
+name = "boj_1238_dijkstra"
+path = "graph/boj_1238_dijkstra.rs"
+
+[[example]]
+name = "boj_1197_spanning_tree"
+path = "graph/boj_1197_spanning_tree.rs"
+
+[[example]]
+name = "boj_1766_dag"
+path = "graph/boj_1766_dag.rs"
+
+[[example]]
+name = "boj_1647"
+path = "graph/boj_1647.rs"
+
+[[example]]
+name = "boj_2623_topological_sort"
+path = "graph/boj_2623_topological_sort.rs"
+
+[[example]]
+name = "boj_2252_topological_sort"
+path = "graph/boj_2252_topological_sort.rs"
+
+[[example]]
+name = "boj_10775_union_find"
+path = "graph/boj_10775_union_find.rs"
+
+[[example]]
+name = "boj_1541"
+path = "greedy/boj_1541.rs"
+
+[[example]]
+name = "boj_13305"
+path = "greedy/boj_13305.rs"
+
+[[example]]
+name = "boj_11047"
+path = "greedy/boj_11047.rs"
+
+[[example]]
+name = "boj_1931"
+path = "greedy/boj_1931.rs"
+
+[[example]]
+name = "boj_11399"
+path = "greedy/boj_11399.rs"
+
+[[example]]
+name = "boj_1022"
+path = "imple/boj_1022.rs"
+
+[[example]]
+name = "boj_23730_TBD"
+path = "imple/boj_23730_TBD.rs"
+
+[[example]]
+name = "boj_1009"
+path = "imple/boj_1009.rs"
+
+[[example]]
+name = "boj_1011"
+path = "math/boj_1011.rs"
+
+[[example]]
+name = "boj_1007"
+path = "math/boj_1007.rs"
+
+#[[example]]
+#name = "boj_12855"
+#path = "math/boj_12855.rs"
+
+[[example]]
+name = "boj_1644_get_primes_and_bisec"
+path = "math/boj_1644_get_primes_and_bisec.rs"
+
+[[example]]
+name = "boj_5086"
+path = "numbcomb/boj_5086.rs"
+
+[[example]]
+name = "boj_1037"
+path = "numbcomb/boj_1037.rs"
+
+[[example]]
+name = "boj_2609"
+path = "numbcomb/boj_2609.rs"
+
+[[example]]
+name = "boj_1934"
+path = "numbcomb/boj_1934.rs"
+
+[[example]]
+name = "boj_2981_euclidean"
+path = "numbcomb/boj_2981_euclidean.rs"
+
+[[example]]
+name = "boj_3036"
+path = "numbcomb/boj_3036.rs"
+
+[[example]]
+name = "boj_11050"
+path = "numbcomb/boj_11050.rs"
+
+[[example]]
+name = "boj_11051_dp_binomial_coefficient"
+path = "numbcomb/boj_11051_dp_binomial_coefficient.rs"
+
+[[example]]
+name = "boj_1010"
+path = "numbcomb/boj_1010.rs"
+
+[[example]]
+name = "boj_9375"
+path = "numbcomb/boj_9375.rs"
+
+[[example]]
+name = "boj_1676"
+path = "numbcomb/boj_1676.rs"
+
+[[example]]
+name = "boj_2004_binomial_coefficient"
+path = "numbcomb/boj_2004_binomial_coefficient.rs"
+
+[[example]]
+name = "boj_11279"
+path = "priority_queue/boj_11279.rs"
+
+[[example]]
+name = "boj_1927"
+path = "priority_queue/boj_1927.rs"
+
+[[example]]
+name = "boj_11286"
+path = "priority_queue/boj_11286.rs"
+
+[[example]]
+name = "boj_18258"
+path = "qdeck/boj_18258.rs"
+
+[[exmaple]]
+name = "boj_2164"
+path = "qdeck/boj_2164.rs"
+
+[[example]]
+name = "boj_11866"
+path = "qdeck/boj_11866.rs"
+
+[[example]]
+name = "boj_1966"
+path = "qdeck/boj_1966.rs"
+
+[[example]]
+name = "boj_10866"
+path = "qdeck/boj_10866.rs"
+
+[[example]]
+name = "boj_1021"
+path = "qdeck/boj_1021.rs"
+
+[[example]]
+name = "boj_5430"
+path = "qdeck/boj_5430.rs"
+
+[[example]]
+name = "boj_24060_merge_sort"
+path = "recursion/boj_24060_merge_sort.rs"
+
+[[example]]
+name = "boj_11729"
+path = "recursion/boj_11729.rs"
+
+[[example]]
+name = "boj_2447"
+path = "recursion/boj_2447.rs"
+
+[[example]]
+name = "boj_10773"
+path = "stack/boj_10773.rs"
+
+[[example]]
+name = "boj_4949_string"
+path = "stack/boj_4949_string.rs"
+
+[[example]]
+name = "boj_10828"
+path = "stack/boj_10828.rs"
+
+[[example]]
+name = "boj_9012"
+path = "stack/boj_9012.rs"
+
+[[example]]
+name = "boj_1874"
+path = "stack/boj_1874.rs"

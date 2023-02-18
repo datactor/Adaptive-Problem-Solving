@@ -8,6 +8,7 @@
       <sourceFolder url="file://$MODULE_DIR$/bruteforce/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bruteforce/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bisec/examples/Cargo/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/examples" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/recursion/target" />
       <excludeFolder url="file://$MODULE_DIR$/bruteforce/target" />
