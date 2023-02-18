@@ -30,3 +30,7 @@ path = "boj_1269_hash"
 [[example]]
 name = "boj_11478_string_hashmap"
 path = "boj_11478_string_hashmap"
+
+[[example]]
+name = "boj_1517"
+path = "boj_1517"
