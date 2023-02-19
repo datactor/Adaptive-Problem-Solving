@@ -1,4 +1,6 @@
 // https://www.acmicpc.net/problem/11758
+// ccw? https://johoonday.tistory.com/102
+
 use std::{
     error::Error,
     io::{self, prelude::*, BufWriter},
@@ -35,11 +37,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut sc = Scanner::new(&input);
     let result = sc.ccw();
-    writeln!(output, "{}", match result {
-        0 => 0,
-        result if 0 > result => -1,
-        _ => 1,
-    })?;
+    writeln!(
+        output,
+        "{}",
+        match result {
+            0 => 0,
+            result if 0 > result => -1,
+            _ => 1,
+        }
+    )?;
 
     Ok(())
 }
