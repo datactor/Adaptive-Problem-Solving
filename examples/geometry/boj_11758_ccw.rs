@@ -37,6 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut sc = Scanner::new(&input);
     let result = sc.ccw();
+
     writeln!(
         output,
         "{}",
