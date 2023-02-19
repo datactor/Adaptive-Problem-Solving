@@ -1,7 +1,7 @@
 // O(n^2)
 
-use std::io::{self, prelude::*, BufWriter};
 use std::collections::HashSet;
+use std::io::{self, prelude::*, BufWriter};
 
 fn main() {
     let mut output = BufWriter::new(io::stdout().lock());

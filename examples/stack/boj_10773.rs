@@ -8,8 +8,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<usize>()).flatten();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>())
+        .flatten();
 
     let k = v.next().unwrap();
     let mut s = Vec::new();
@@ -17,8 +19,12 @@ fn main() {
     for _ in 0..k {
         let i = v.next().unwrap();
         match i {
-            0 => {s.pop();},
-            _ => {s.push(i);},
+            0 => {
+                s.pop();
+            }
+            _ => {
+                s.push(i);
+            }
         }
     }
     writeln!(output, "{}", s.iter().sum::<usize>()).unwrap();

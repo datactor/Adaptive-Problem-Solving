@@ -1,7 +1,7 @@
 use std::{
-    io::{self, prelude::*},
-    error::Error,
     collections::HashMap,
+    error::Error,
+    io::{self, prelude::*},
 };
 
 struct Scanner<'a> {
@@ -21,7 +21,13 @@ impl<'a> Scanner<'a> {
 }
 
 fn combinations<T>(data: &[T], r: usize) -> Vec<Vec<&T>> {
-    fn combinations_helper<'a, T>(start: usize, data: &'a [T], r: usize, comb: &mut Vec<&'a T>, result: &mut Vec<Vec<&'a T>>) {
+    fn combinations_helper<'a, T>(
+        start: usize,
+        data: &'a [T],
+        r: usize,
+        comb: &mut Vec<&'a T>,
+        result: &mut Vec<Vec<&'a T>>,
+    ) {
         if r == 0 {
             result.push(comb.clone());
         } else if start < data.len() {
@@ -46,32 +52,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (n, s) = (scanner.read::<usize>(), scanner.read::<i32>());
 
     // hashmap과 부분집합, collections를 만들어서 풀기
-    let left: Vec<i32> = (0..n/2).map(|_| scanner.read::<i32>()).collect();
-    let mut last = n/2;
+    let left: Vec<i32> = (0..n / 2).map(|_| scanner.read::<i32>()).collect();
+    let mut last = n / 2;
     if n % 2 == 1 {
         last += 1;
     }
     let right: Vec<i32> = (0..last).map(|_| scanner.read::<i32>()).collect();
 
-    let mut left_subset = HashMap::with_capacity(n/2);
-    let mut right_subset = HashMap::with_capacity(n-n/2);
+    let mut left_subset = HashMap::with_capacity(n / 2);
+    let mut right_subset = HashMap::with_capacity(n - n / 2);
 
-    for r in 1..left.len()+1 {
+    for r in 1..left.len() + 1 {
         for subset in combinations(&left, r) {
             let tmp_sum = subset.iter().cloned().sum::<i32>();
             *left_subset.entry(tmp_sum).or_insert(0) += 1;
         }
     }
 
-    for r in 1..right.len()+1 {
+    for r in 1..right.len() + 1 {
         for subset in combinations(&right, r) {
             let tmp_sum = subset.iter().cloned().sum::<i32>();
             *right_subset.entry(tmp_sum).or_insert(0) += 1;
         }
     }
 
-
-    let mut count = *left_subset.get(&s).unwrap_or(&0) as usize + *right_subset.get(&s).unwrap_or(&0) as usize;
+    let mut count =
+        *left_subset.get(&s).unwrap_or(&0) as usize + *right_subset.get(&s).unwrap_or(&0) as usize;
 
     for (k, _v) in &left_subset {
         if right_subset.contains_key(&(s - k)) {
@@ -144,7 +150,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     count -= 1;
     // }
     //
-
 
     println!("{}", count);
     Ok(())

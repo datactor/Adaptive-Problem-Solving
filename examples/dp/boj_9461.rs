@@ -7,8 +7,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<usize>()).flatten();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>())
+        .flatten();
 
     let n = v.next().unwrap();
 
@@ -17,7 +19,7 @@ fn main() {
     (arr[4], arr[5]) = (2, 2);
 
     for i in 6..101 {
-        arr[i] = arr[i-5] + arr[i-1];
+        arr[i] = arr[i - 5] + arr[i - 1];
     }
 
     for _ in 0..n {

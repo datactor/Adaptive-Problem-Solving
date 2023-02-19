@@ -2,8 +2,8 @@
 // O(N * M)
 
 use std::{
-    io::{self, prelude::*, BufWriter},
     error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 // // 풀리긴 하지만 memoization을 효율적으로 사용했다고 할 수는 없다.
@@ -39,7 +39,6 @@ use std::{
 //     Ok(())
 // }
 
-
 // 고려해야 할 것.
 // 1. Vec<u8> 대신 str을 사용하여 LCS를 저장하기.
 //   필요한 데이터 복사의 양을 줄일 수 있음. -> u8을 사용하면 pointer크기만큼만 쓰니 괜찮긴 함.
@@ -52,7 +51,6 @@ use std::{
 //
 // 4. Suffix Tree 알고리즘과 같은 다른 접근 방식을 사용하여 LCS를 찾아보기.
 //    Suffix Tree 알고리즘이란?
-
 
 struct Scanner<'a> {
     sample_a: &'a [u8],
@@ -69,19 +67,18 @@ impl<'a> Scanner<'a> {
     }
 
     fn find_lcs(&self) -> (i32, Vec<u8>) {
-        let mut table = vec![vec![0; self.sample_a.len()+1]; self.sample_b.len()+1];
+        let mut table = vec![vec![0; self.sample_a.len() + 1]; self.sample_b.len() + 1];
         let mut max = 0;
 
         for (i, val) in self.sample_b.iter().enumerate() {
             for j in 0..self.sample_a.len() {
-                table[i+1][j+1] =
-                    if val == &self.sample_a[j] {
-                        table[i][j]+1
-                    } else {
-                        table[i][j+1].max(table[i+1][j])
-                    };
+                table[i + 1][j + 1] = if val == &self.sample_a[j] {
+                    table[i][j] + 1
+                } else {
+                    table[i][j + 1].max(table[i + 1][j])
+                };
 
-                max = table[i+1][j+1].max(max);
+                max = table[i + 1][j + 1].max(max);
             }
         }
 
@@ -89,20 +86,20 @@ impl<'a> Scanner<'a> {
         let (mut i, mut j) = (self.sample_b.len(), self.sample_a.len());
 
         while table[i][j] > 0 {
-            if table[i][j] == table[i-1][j] {
+            if table[i][j] == table[i - 1][j] {
                 i -= 1;
                 continue;
             }
-            if table[i][j] == table[i][j-1] {
+            if table[i][j] == table[i][j - 1] {
                 j -= 1;
                 continue;
             }
 
-            lcs.push(self.sample_a[j-1]);
+            lcs.push(self.sample_a[j - 1]);
             i -= 1;
             j -= 1;
         }
-        return (max, lcs)
+        return (max, lcs);
     }
 }
 

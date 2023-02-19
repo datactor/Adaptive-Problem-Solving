@@ -1,13 +1,15 @@
-use std::io::{self, prelude::*, BufWriter};
 use std::collections::HashMap;
+use std::io::{self, prelude::*, BufWriter};
 
 fn main() {
     let mut output = BufWriter::new(io::stdout().lock());
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<String>()).flatten();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<String>())
+        .flatten();
 
     let t = v.next().unwrap().parse::<usize>().unwrap();
 

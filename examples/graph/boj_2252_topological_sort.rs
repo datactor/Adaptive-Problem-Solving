@@ -3,9 +3,9 @@
 // DAG
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error,
     collections::VecDeque,
+    error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 struct Scanner<'a> {
@@ -32,8 +32,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut input = Scanner::new(&input);
     let (n, m) = (input.read::<usize>(), input.read::<usize>());
 
-    let mut graph = vec![vec![]; n+1];
-    let mut indegree = vec![0; n+1];
+    let mut graph = vec![vec![]; n + 1];
+    let mut indegree = vec![0; n + 1];
 
     (0..m).for_each(|_| {
         let (a, b) = (input.read::<usize>(), input.read::<usize>());
@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         indegree[b] += 1;
     });
 
-    let mut dq: VecDeque<usize> = (1..n+1)
+    let mut dq: VecDeque<usize> = (1..n + 1)
         .into_iter()
         .filter_map(|i| (indegree[i] == 0).then(|| i))
         .collect();

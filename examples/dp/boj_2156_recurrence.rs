@@ -16,12 +16,12 @@ fn max_total_value(v: &[usize]) -> usize {
         _ => {
             arr[0] = v[0];
             arr[1] = v[0] + v[1];
-            arr[2] = max(arr[1],
-                         max(v[0] + v[2], v[1] + v[2]));
+            arr[2] = max(arr[1], max(v[0] + v[2], v[1] + v[2]));
             for i in 3..v.len() {
                 arr[i] = max(
                     arr[i - 1],
-                    max(arr[i - 2] + v[i], arr[i - 3] + v[i - 1] + v[i]));
+                    max(arr[i - 2] + v[i], arr[i - 3] + v[i - 1] + v[i]),
+                );
             }
             arr[v.len() - 1]
         }

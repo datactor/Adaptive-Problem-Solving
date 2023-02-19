@@ -1,6 +1,6 @@
 use std::{
-    io::{self},
     error::Error,
+    io::{self},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -20,21 +20,26 @@ fn mul(x: &[[usize; 2]; 2], mat: &[[usize; 2]; 2]) -> [[usize; 2]; 2] {
     let mut result = [[0; 2]; 2];
     for r in 0..2 {
         for i in 0..2 {
-            result[r][i] = (x[r].iter().enumerate()
-                .map(|(j, num)| num * mat[j][i]).sum::<usize>()) % 1000000007;
+            result[r][i] = (x[r]
+                .iter()
+                .enumerate()
+                .map(|(j, num)| num * mat[j][i])
+                .sum::<usize>())
+                % 1000000007;
         }
-    } result
+    }
+    result
 }
 
 fn solve(x: [[usize; 2]; 2], n: u128) -> [[usize; 2]; 2] {
     if n == 1 {
-        return x
+        return x;
     } else {
-        let tmp = solve(x, n/2);
+        let tmp = solve(x, n / 2);
         if n % 2 == 0 {
-            return mul(&tmp, &tmp)
+            return mul(&tmp, &tmp);
         } else {
-            return mul(&mul(&tmp, &tmp), &x)
+            return mul(&mul(&tmp, &tmp), &x);
         }
     }
 }

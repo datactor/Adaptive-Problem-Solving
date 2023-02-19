@@ -2,9 +2,9 @@
 // O(N lgN)
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error,
     collections::VecDeque,
+    error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 struct Scanner<'a> {
@@ -29,7 +29,8 @@ struct Lis {
 
 impl Lis {
     fn new() -> Self {
-        Lis { // 최소값을 0번째 idx에 넣고 시작
+        Lis {
+            // 최소값을 0번째 idx에 넣고 시작
             arr: vec![-1_000_000_001],
             len_and_val: vec![(0, -1_000_000_001)],
         }
@@ -46,7 +47,8 @@ impl Lis {
             if &num > self.arr.last().unwrap() {
                 self.len_and_val.push((self.arr.len(), num));
                 self.arr.push(num);
-            } else { // v.pop이 arr.last보다 크지 않으면 binary search 실행.
+            } else {
+                // v.pop이 arr.last보다 크지 않으면 binary search 실행.
                 // bisec을 실행해서 num이 들어가기 적절한 위치를 찾음(lis.arr에서 num보다 작은 수 중 최대값 바로 뒤)
                 let idx = {
                     let mut low = -1;
@@ -59,7 +61,8 @@ impl Lis {
                         } else {
                             high = mid
                         }
-                    } high as usize
+                    }
+                    high as usize
                 };
 
                 // 위치를 찾으면 arr[idx]의 값을 바꾸고 val_and_len에 push(중간 값이 바뀌었는데 바뀐 집합이 lis가 아니더라도
@@ -78,7 +81,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut scanner = Scanner::new(&input);
     let n = scanner.read::<usize>();
-    let v: VecDeque<i32> =(0..n).map(|_| scanner.read()).collect();
+    let v: VecDeque<i32> = (0..n).map(|_| scanner.read()).collect();
 
     let mut lis = Lis::new();
 

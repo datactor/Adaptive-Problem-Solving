@@ -2,8 +2,8 @@
 // O(n)
 
 use std::{
-    io::{self, prelude::*, BufWriter},
     error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 struct Scanner<'a> {

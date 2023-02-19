@@ -1,6 +1,6 @@
 use std::{
-    io::{self, prelude::*},
     error::Error,
+    io::{self, prelude::*},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -15,16 +15,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (n, k) = (read(), read());
     let mut sum = 0;
-    let v: Vec<usize> = (0..n).map(|_| {
-        let x = read();
-        sum += x;
-        x
-    }).collect();
+    let v: Vec<usize> = (0..n)
+        .map(|_| {
+            let x = read();
+            sum += x;
+            x
+        })
+        .collect();
 
     let mut mid = sum / k;
 
     let (mut left, mut right) = (1, mid);
-    while left <= right  {
+    while left <= right {
         let mut cnt = 0;
         for i in &v {
             cnt += i / mid;

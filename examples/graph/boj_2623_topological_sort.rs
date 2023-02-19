@@ -3,9 +3,9 @@
 // O(n + m)
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error,
     collections::VecDeque,
+    error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 struct Scanner<'a> {
@@ -39,28 +39,28 @@ impl<'a> Scanner<'a> {
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> { // error type이 뭐든 반환 가능
+fn main() -> Result<(), Box<dyn Error>> {
+    // error type이 뭐든 반환 가능
     let mut input = String::new();
     let mut output = BufWriter::new(io::stdout().lock());
     io::stdin().read_to_string(&mut input)?;
 
     let mut scanner = Scanner::new(&input);
     let (n, m) = (scanner.read::<usize>(), scanner.read::<usize>());
-    let mut graph = vec![vec![]; n+1]; // 노드 seq 정렬. atomic은 아님
-    let mut indegree = vec![0; n+1]; // 위상 정렬
+    let mut graph = vec![vec![]; n + 1]; // 노드 seq 정렬. atomic은 아님
+    let mut indegree = vec![0; n + 1]; // 위상 정렬
 
     for _ in 0..m {
         let num = scanner.read::<usize>();
         let sub: Vec<usize> = (0..num).map(|_| scanner.read::<usize>()).collect();
-        for j in 0..num-1 {
-            graph[sub[j]].push(sub[j+1]); // 선행 노드별로 후행 노드를 push
-            indegree[sub[j+1]] += 1; // 차수 기입
+        for j in 0..num - 1 {
+            graph[sub[j]].push(sub[j + 1]); // 선행 노드별로 후행 노드를 push
+            indegree[sub[j + 1]] += 1; // 차수 기입
         }
     }
 
-
     let mut dq = VecDeque::new();
-    for i in 1..n+1 {
+    for i in 1..n + 1 {
         if indegree[i] == 0 {
             dq.push_back(i) // dq에 차수가 0인 노드를 우선 기입한다.
         }
@@ -70,9 +70,11 @@ fn main() -> Result<(), Box<dyn Error>> { // error type이 뭐든 반환 가능
     while !dq.is_empty() {
         let num = dq.pop_front().unwrap(); // 선입 선출
         result.push(num);
-        for i in &graph[num] { // 선출된 노드를 그래프서 찾고 후행 노드를 모두 불러옴
+        for i in &graph[num] {
+            // 선출된 노드를 그래프서 찾고 후행 노드를 모두 불러옴
             indegree[*i] -= 1; // 불러온 후행 노드의 차수를 줄인다
-            if indegree[*i] == 0 { // 차수를 줄였을 때 0일 경우 dq에 넣는다.
+            if indegree[*i] == 0 {
+                // 차수를 줄였을 때 0일 경우 dq에 넣는다.
                 dq.push_back(*i)
             }
         }

@@ -6,8 +6,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<i32>()).flatten();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<i32>())
+        .flatten();
 
     let n = v.next().unwrap();
     let mut nums = Vec::new();
@@ -15,7 +17,10 @@ fn main() {
         nums.push(v.next().unwrap());
     }
 
-    let mut result = Result { max: -1000_000_000, min: 1000_000_000 };
+    let mut result = Result {
+        max: -1000_000_000,
+        min: 1000_000_000,
+    };
 
     let mut operators = Vec::new();
     for _ in 0..4 {
@@ -35,7 +40,7 @@ fn solve(nums: &Vec<i32>, operators: &mut Vec<i32>, left: i32, idx: usize, resul
     if idx == nums.len() {
         result.max = left.max(result.max);
         result.min = left.min(result.min);
-        return
+        return;
     }
     let right = nums[idx];
     for i in 0..4 {

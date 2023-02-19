@@ -10,7 +10,7 @@ fn main() {
     let mut two = 0;
     let mut five = 0;
 
-    for mut i in (1..n+1).rev() {
+    for mut i in (1..n + 1).rev() {
         while true {
             if i % 2 == 0 {
                 i /= 2;
@@ -21,7 +21,7 @@ fn main() {
                 five += 1;
             }
             if i % 2 != 0 && i % 5 != 0 {
-                break
+                break;
             }
         }
     }

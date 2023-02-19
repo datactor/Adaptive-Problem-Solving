@@ -2,9 +2,9 @@
 // O (N * lgN)
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error,
     collections::BinaryHeap,
+    error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -15,7 +15,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input = input.split_ascii_whitespace().skip(1);
 
     let mut q = BinaryHeap::new();
-
 
     for i in input {
         let x = i.parse::<usize>().unwrap();

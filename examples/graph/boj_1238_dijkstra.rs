@@ -11,9 +11,9 @@
 // i to x, x to i 각각의 최소 길이의 합의 최대값을 구함
 
 use std::{
-    io::{self, prelude::*},
-    error::Error,
     collections::BinaryHeap,
+    error::Error,
+    io::{self, prelude::*},
 };
 
 struct Graph {

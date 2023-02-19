@@ -1,7 +1,7 @@
 // O(N lgN)
 
-use std::io::{self, prelude::*, BufWriter};
 use std::collections::HashSet;
+use std::io::{self, prelude::*, BufWriter};
 
 fn main() {
     let mut output = BufWriter::new(io::stdout().lock());
@@ -24,7 +24,7 @@ fn main() {
     for _ in 0..m {
         let a = lines.next().unwrap().trim();
         match hashset.get(a) {
-            None => {},
+            None => {}
             _ => result.push(a),
         }
     }

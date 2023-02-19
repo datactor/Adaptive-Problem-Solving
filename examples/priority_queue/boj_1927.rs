@@ -1,9 +1,9 @@
 // https://www.acmicpc.net/problem/1927
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error,
     collections::BinaryHeap,
+    error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let x = i.parse::<i32>().unwrap();
         match x {
             0 => writeln!(output, "{}", heapq.pop().unwrap_or(0) * -1)?,
-            _ => heapq.push(x*-1),
+            _ => heapq.push(x * -1),
         }
     }
 

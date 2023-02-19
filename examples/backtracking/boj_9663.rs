@@ -20,7 +20,7 @@ fn nqueen(n: usize, x: &mut Vec<usize>) -> usize {
     let mut cnt = 0;
     for i in 0..x.len() {
         if x[i] != 0 {
-            continue
+            continue;
         }
 
         let is_promise = x
@@ -31,7 +31,7 @@ fn nqueen(n: usize, x: &mut Vec<usize>) -> usize {
             .any(|(a, b)| a == i as i32 - n as i32 || b == i + n);
         if !is_promise {
             x[i] = n;
-            cnt += nqueen(n-1, x);
+            cnt += nqueen(n - 1, x);
             x[i] = 0;
         }
     }

@@ -1,9 +1,9 @@
 // https://www.acmicpc.net/problem/1966
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error,
     collections::VecDeque,
+    error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -16,13 +16,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let n = lines.next().unwrap().parse::<usize>().unwrap();
 
     for _ in 0..n {
-        let mut f_line = lines.next().unwrap().split_ascii_whitespace()
+        let mut f_line = lines
+            .next()
+            .unwrap()
+            .split_ascii_whitespace()
             .map(|s| s.parse::<usize>().unwrap());
         f_line.next().unwrap();
         let m = f_line.next().unwrap();
 
-        let mut v: Vec<(usize, usize)> = lines.next().unwrap().split_ascii_whitespace().enumerate()
-            .map(|(idx, s) | (s.parse::<usize>().unwrap(), idx)).collect();
+        let mut v: Vec<(usize, usize)> = lines
+            .next()
+            .unwrap()
+            .split_ascii_whitespace()
+            .enumerate()
+            .map(|(idx, s)| (s.parse::<usize>().unwrap(), idx))
+            .collect();
 
         let mut x = VecDeque::from(v.clone());
         v.sort();
@@ -35,7 +43,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 cnt += 1;
                 v.remove(0);
                 if a.1 == m {
-                    break
+                    break;
                 }
             } else {
                 x.push_back(a);

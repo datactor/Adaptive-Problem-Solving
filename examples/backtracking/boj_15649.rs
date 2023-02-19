@@ -5,8 +5,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<usize>()).flatten();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>())
+        .flatten();
 
     let n = v.next().unwrap();
     let m = v.next().unwrap();
@@ -22,12 +24,12 @@ fn solve(n: usize, m: usize, v: &mut Vec<usize>, output: &mut BufWriter<StdoutLo
             write!(output, "{} ", i).unwrap();
         }
         write!(output, "\n").unwrap();
-        return
+        return;
     }
 
-    for i in 1..n+1 {
+    for i in 1..n + 1 {
         if v.contains(&i) {
-            continue
+            continue;
         }
 
         v.push(i);

@@ -23,7 +23,7 @@ fn main() {
     let mut scanner = Scanner::new(&buffer);
     let mut n = scanner.read::<usize>();
 
-    writeln!(output, "{}", i32::pow(2, n as u32)-1);
+    writeln!(output, "{}", i32::pow(2, n as u32) - 1);
     solve(n, &mut output, 1, 3);
     output.flush().unwrap();
 }
@@ -31,9 +31,9 @@ fn main() {
 fn solve<W: Write>(n: usize, output: &mut BufWriter<W>, l: usize, r: usize) {
     if n == 1 {
         writeln!(output, "{} {}", l, r);
-        return
+        return;
     }
-    solve(n-1, output, l, 6-l-r);
+    solve(n - 1, output, l, 6 - l - r);
     writeln!(output, "{} {}", l, r);
-    solve(n-1, output, 6-l-r, r);
+    solve(n - 1, output, 6 - l - r, r);
 }

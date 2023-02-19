@@ -1,4 +1,4 @@
-use std::io::{self, BufWriter, prelude::*};
+use std::io::{self, prelude::*, BufWriter};
 
 fn main() {
     let mut output = BufWriter::new(io::stdout().lock());
@@ -8,8 +8,10 @@ fn main() {
     buffer.clear();
 
     io::stdin().read_line(&mut buffer).unwrap();
-    let mut sangun = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<i32>().unwrap()).collect::<Vec<_>>();
+    let mut sangun = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<i32>().unwrap())
+        .collect::<Vec<_>>();
     buffer.clear();
 
     io::stdin().read_line(&mut buffer).unwrap();
@@ -17,8 +19,11 @@ fn main() {
     buffer.clear();
 
     io::stdin().read_line(&mut buffer).unwrap();
-    let mut cards = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<i32>().unwrap()).enumerate().collect::<Vec<_>>();
+    let mut cards = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<i32>().unwrap())
+        .enumerate()
+        .collect::<Vec<_>>();
     buffer.clear();
     sangun.sort();
     cards.sort_by_key(|&(_, a)| a);
@@ -30,11 +35,11 @@ fn main() {
         while tmp < n {
             if cards[i].1 < sangun[tmp] {
                 out = 0;
-                break
+                break;
             } else if cards[i].1 == sangun[tmp] {
                 out = 1;
                 tmp += 1;
-                break
+                break;
             }
             tmp += 1
         }

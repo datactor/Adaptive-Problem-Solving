@@ -28,8 +28,7 @@ fn main() {
 fn solve<W: Write>(scanner: &mut Scanner, output: &mut BufWriter<W>) {
     let n = scanner.read::<usize>();
     let mut k = scanner.read::<usize>() - 1;
-    let mut array: Vec<i32> = (0..n).map(
-        |_| scanner.read()).collect();
+    let mut array: Vec<i32> = (0..n).map(|_| scanner.read()).collect();
     let mut v = vec![];
 
     rec(0, n, &mut v);

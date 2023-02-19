@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use std::{
-    io::{self, prelude::*, BufWriter},
     error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 macro_rules! parse_line { ($($t: ty),+) => ({
@@ -14,7 +14,7 @@ macro_rules! parse_line { ($($t: ty),+) => ({
 fn main() -> Result<(), Box<dyn Error>> {
     let mut output = BufWriter::new(io::stdout().lock());
     let t = parse_line!(usize);
-    'case: for _ in 0 .. t {
+    'case: for _ in 0..t {
         let cmd = parse_line!(String);
         let n = parse_line!(usize);
         let arr = parse_line!(String);
@@ -25,11 +25,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         for c in cmd.chars() {
             if c == 'R' {
                 rev = !rev;
-                continue
+                continue;
             }
             if e == s {
                 writeln!(output, "error")?;
-                continue 'case
+                continue 'case;
             }
             if rev {
                 e -= 1
@@ -38,7 +38,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        let mut arr :Vec<_> = arr[1..arr.len()-1].split(",").skip(s).take(e-s).collect();
+        let mut arr: Vec<_> = arr[1..arr.len() - 1]
+            .split(",")
+            .skip(s)
+            .take(e - s)
+            .collect();
         if rev {
             arr.reverse()
         }

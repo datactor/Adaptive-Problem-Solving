@@ -1,8 +1,8 @@
 // https://www.acmicpc.net/problem/2110
 
 use std::{
-    io::{self, prelude::*},
     error::Error,
+    io::{self, prelude::*},
 };
 
 struct Scanner<'a> {
@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut nodes: Vec<i32> = (0..n).map(|_| scanner.read::<i32>()).collect();
     nodes.sort();
 
-    let mut max = (nodes[n-1] - nodes[0]) / (c-1); // 가장 인접한 공유기 사이의 거리가 평균치보다 클 수 없다.
+    let mut max = (nodes[n - 1] - nodes[0]) / (c - 1); // 가장 인접한 공유기 사이의 거리가 평균치보다 클 수 없다.
     let (mut left, mut right) = (1, max);
 
     // // distance를 가중 +O(N)
@@ -59,7 +59,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut cnt = 1;
         let mut dist = nodes[0]; // 0번째 포지션(가장 작은 포지션)을 초기 dist로 설정
         for i in nodes[1..n].iter() {
-            if *i >= mid + dist { // node거리가 mid + dist보다 크거나 같을 경우에만 연산
+            if *i >= mid + dist {
+                // node거리가 mid + dist보다 크거나 같을 경우에만 연산
                 dist = *i; // dist를 갱신
                 cnt += 1
             }

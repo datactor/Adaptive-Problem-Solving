@@ -2,8 +2,8 @@
 // O(N * lgN)
 
 use std::{
-    io::{self, prelude::*},
     error::Error,
+    io::{self, prelude::*},
 };
 
 struct Scanner<'a> {

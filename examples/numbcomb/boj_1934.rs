@@ -9,8 +9,12 @@ fn main() {
     let n = lines.next().unwrap().parse::<usize>().unwrap();
 
     for _ in 0..n {
-        let mut v = lines.next().unwrap().split_ascii_whitespace().map(
-            |s| s.parse::<usize>().unwrap()).collect::<Vec<_>>();
+        let mut v = lines
+            .next()
+            .unwrap()
+            .split_ascii_whitespace()
+            .map(|s| s.parse::<usize>().unwrap())
+            .collect::<Vec<_>>();
         v.sort();
 
         let m = v[0] * v[1];

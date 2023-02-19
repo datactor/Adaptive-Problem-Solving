@@ -7,11 +7,15 @@ fn main() {
     let mut lines = buffer.lines();
 
     while true {
-        let mut v = lines.next().unwrap().split_ascii_whitespace().map(
-            |s| s.parse::<usize>().unwrap()).collect::<Vec<_>>();
+        let mut v = lines
+            .next()
+            .unwrap()
+            .split_ascii_whitespace()
+            .map(|s| s.parse::<usize>().unwrap())
+            .collect::<Vec<_>>();
 
         if v[0] == 0 && v[1] == 0 && v[2] == 0 {
-            break
+            break;
         }
         v.sort();
         if v[0] * v[0] + v[1] * v[1] == v[2] * v[2] {

@@ -5,9 +5,9 @@
 // 우선순위를 확증하기 어려웠다.
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error,
     collections::BinaryHeap,
+    error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 struct Scanner<'a> {
@@ -33,8 +33,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut scanner = Scanner::new(&input);
     let (n, m) = (scanner.read::<usize>(), scanner.read::<usize>());
-    let mut graph = vec![Vec::new(); n+1];
-    let mut indegree = vec![0; n+1];
+    let mut graph = vec![Vec::new(); n + 1];
+    let mut indegree = vec![0; n + 1];
     let mut hq = BinaryHeap::new();
 
     // Topological sort
@@ -44,8 +44,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         indegree[b as usize] += 1; // 차수 vec 작성
     });
 
-    for i in 1..n+1 {
-        if indegree[i] == 0 { // indgree(진입 차수)가 0인 node를 hq에 삽입
+    for i in 1..n + 1 {
+        if indegree[i] == 0 {
+            // indgree(진입 차수)가 0인 node를 hq에 삽입
             hq.push(-(i as i32));
         }
     }
@@ -55,9 +56,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     while !hq.is_empty() {
         let tmp = -hq.pop().unwrap(); // q에서 가장 작은(우선순위 1순위) 원소를 꺼내
         result.push(tmp); // 먼저 풀고,
-        for i in &graph[tmp as usize] { // graph[tmp]에 있는 모든 원소의 차수를 하나씩 낮춤
+        for i in &graph[tmp as usize] {
+            // graph[tmp]에 있는 모든 원소의 차수를 하나씩 낮춤
             indegree[*i as usize] -= 1;
-            if indegree[*i as usize] == 0 { // 차수를 낮췄다면 다시 우선순위 1순위(차수가 0)인 node를 hq에 push
+            if indegree[*i as usize] == 0 {
+                // 차수를 낮췄다면 다시 우선순위 1순위(차수가 0)인 node를 hq에 push
                 hq.push(i * -1);
             }
         }

@@ -19,7 +19,7 @@ path = "backtracking/boj_15650.rs"
 name = "boj_15651_bruteforce"
 path = "backtracking/boj_15651_bruteforce.rs"
 
-[[exmaple]]
+[[example]]
 name = "boj_15652"
 path = "backtracking/boj_15652.rs"
 
@@ -155,7 +155,7 @@ path = "divandcon/boj_1780.rs"
 name = "boj_11401_Fermat_s_little_theorem"
 path = "divandcon/boj_11401_Fermat_s_little_theorem.rs"
 
-[[exmaple]]
+[[example]]
 name = "boj_2740"
 path = "divandcon/boj_2740.rs"
 
@@ -272,8 +272,8 @@ name = "boj_1004"
 path = "geometry/boj_1004.rs"
 
 [[example]]
-name = "boj_17387"
-path = "geometry/boj_17387.rs"
+name = "boj_17387_ccw"
+path = "geometry/boj_17387_ccw.rs"
 
 [[example]]
 name = "boj_1043"
@@ -423,7 +423,7 @@ path = "priority_queue/boj_11286.rs"
 name = "boj_18258"
 path = "qdeck/boj_18258.rs"
 
-[[exmaple]]
+[[example]]
 name = "boj_2164"
 path = "qdeck/boj_2164.rs"
 
@@ -478,3 +478,7 @@ path = "stack/boj_9012.rs"
 [[example]]
 name = "boj_1874"
 path = "stack/boj_1874.rs"
+
+[[example]]
+name = "boj_11758_ccw"
+path = "geometry/boj_11758_ccw.rs"

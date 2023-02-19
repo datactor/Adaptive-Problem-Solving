@@ -1,5 +1,5 @@
-use std::io::{self, prelude::*, BufWriter};
 use std::collections::HashSet;
+use std::io::{self, prelude::*, BufWriter};
 
 fn main() {
     let mut output = BufWriter::new(io::stdout().lock());
@@ -11,8 +11,12 @@ fn main() {
     let mut x: HashSet<usize> = HashSet::new();
     let mut y = HashSet::new();
     for _ in 0..3 {
-        let mut tmp = lines.next().unwrap().split_ascii_whitespace().map(
-            |s| s.parse::<usize>()).flatten();
+        let mut tmp = lines
+            .next()
+            .unwrap()
+            .split_ascii_whitespace()
+            .map(|s| s.parse::<usize>())
+            .flatten();
         let a = tmp.next().unwrap();
         let b = tmp.next().unwrap();
 
@@ -29,5 +33,11 @@ fn main() {
         };
     }
 
-    writeln!(output, "{} {}", x.iter().next().unwrap(), y.iter().next().unwrap()).unwrap();
+    writeln!(
+        output,
+        "{} {}",
+        x.iter().next().unwrap(),
+        y.iter().next().unwrap()
+    )
+    .unwrap();
 }

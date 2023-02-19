@@ -1,6 +1,6 @@
 use std::{
-    io::{self, prelude::*, BufWriter},
     error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 fn array(x: isize, y: isize) -> isize {
@@ -13,7 +13,7 @@ fn array(x: isize, y: isize) -> isize {
         x if y == -layer => cells + quarter + (layer - x),
         x if x == -layer => cells + 3 * quarter + (y - layer),
         x if y == layer => cells + 4 * quarter + (x - layer),
-        _ => {layer},
+        _ => layer,
     }
 }
 fn main() -> Result<(), Box<dyn Error>> {
@@ -21,10 +21,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut output = BufWriter::new(io::stdout().lock());
     io::stdin().read_to_string(&mut input).unwrap();
 
-    let mut v = input.split_ascii_whitespace().map(
-        |s| s.parse::<isize>()).flatten();
-    let (r1, c1, r2, c2) =
-    (v.next().unwrap(), v.next().unwrap(), v.next().unwrap(), v.next().unwrap());
+    let mut v = input
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<isize>())
+        .flatten();
+    let (r1, c1, r2, c2) = (
+        v.next().unwrap(),
+        v.next().unwrap(),
+        v.next().unwrap(),
+        v.next().unwrap(),
+    );
     let max = std::cmp::max(
         array(c1, r1).max(array(c1, r2)),
         array(c2, r1).max(array(c2, r2)),
@@ -42,7 +48,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
-
 
 // use std::{
 //     io::{self, prelude::*, BufWriter},

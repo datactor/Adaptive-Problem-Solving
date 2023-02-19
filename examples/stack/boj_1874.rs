@@ -1,17 +1,20 @@
 // https://www.acmicpc.net/problem/1874
 
 use std::{
-    io::{stdin, Read},
     error::Error,
-    fmt::Write
+    fmt::Write,
+    io::{stdin, Read},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
     stdin().read_to_string(&mut input)?;
 
-    let v: Vec<usize> = input.split_ascii_whitespace().skip(1).map(
-        |s| s.parse::<usize>().unwrap()).collect();
+    let v: Vec<usize> = input
+        .split_ascii_whitespace()
+        .skip(1)
+        .map(|s| s.parse::<usize>().unwrap())
+        .collect();
 
     let mut a = Vec::new();
 
@@ -28,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         } else {
             input.clear();
             writeln!(input, "NO").unwrap();
-            break
+            break;
         }
     }
     print!("{}", input);

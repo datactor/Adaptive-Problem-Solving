@@ -5,8 +5,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer);
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<usize>()).flatten();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>())
+        .flatten();
 
     let n = v.next().unwrap();
     let k = v.next().unwrap();
@@ -29,11 +31,11 @@ fn main() {
 
     // for문으로 풀기
     let mut numer = 1;
-    for i in k+1..=n {
+    for i in k + 1..=n {
         numer *= i;
         numer %= 10007;
     }
-    for i in 2..=n-k {
+    for i in 2..=n - k {
         let mut denom = 10008;
         while denom % i != 0 {
             denom += 10007;

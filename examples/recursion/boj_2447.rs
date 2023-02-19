@@ -16,11 +16,18 @@ fn main() {
 }
 
 fn solve(array: &mut Vec<u8>, row: usize, col: usize, size: usize, len: usize) {
-    println!("x: {}, y: {}, z: {}, len: {}, point: {}, {}", row, col, size, len, (row * (len + 1) + col)/(len+1), (row * (len + 1) + col)%(len+1));
+    println!(
+        "x: {}, y: {}, z: {}, len: {}, point: {}, {}",
+        row,
+        col,
+        size,
+        len,
+        (row * (len + 1) + col) / (len + 1),
+        (row * (len + 1) + col) % (len + 1)
+    );
     if size == 1 {
         array[row * (len + 1) + col] = b'*';
-    }
-    else {
+    } else {
         for i in 0..3 {
             for j in 0..3 {
                 if i != 1 || j != 1 {

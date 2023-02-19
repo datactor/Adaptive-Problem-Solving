@@ -2,8 +2,8 @@
 // O(N)
 
 use std::{
-    io::{self, prelude::*, BufWriter},
     error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -21,9 +21,21 @@ fn main() -> Result<(), Box<dyn Error>> {
             "push" => v.push(line.next().unwrap().parse::<i32>().unwrap()),
             "pop" => writeln!(output, "{}", v.pop().unwrap_or(-1)).unwrap(),
             "size" => writeln!(output, "{}", v.len()).unwrap(),
-            "empty" => if v.is_empty() { writeln!(output, "1").unwrap() } else { writeln!(output, "0").unwrap() },
-            "top" => if v.is_empty() { writeln!(output, "-1").unwrap() } else { writeln!(output, "{}", v[v.len()-1]).unwrap() }
-            _ => {},
+            "empty" => {
+                if v.is_empty() {
+                    writeln!(output, "1").unwrap()
+                } else {
+                    writeln!(output, "0").unwrap()
+                }
+            }
+            "top" => {
+                if v.is_empty() {
+                    writeln!(output, "-1").unwrap()
+                } else {
+                    writeln!(output, "{}", v[v.len() - 1]).unwrap()
+                }
+            }
+            _ => {}
         }
     }
 

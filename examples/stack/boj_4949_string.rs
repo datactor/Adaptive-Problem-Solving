@@ -1,8 +1,8 @@
 // https://www.acmicpc.net/problem/4949
 
 use std::{
-    io::{self, prelude::*, BufWriter},
     error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for line in lines {
         if line == ".".to_string() {
-            break
+            break;
         }
 
         let mut stack = Vec::new();
@@ -21,27 +21,33 @@ fn main() -> Result<(), Box<dyn Error>> {
             match c {
                 '[' => stack.push(c),
                 '(' => stack.push(c),
-                ']' =>
-                    if stack.len() != 0 && stack[stack.len()-1] == '[' {
+                ']' => {
+                    if stack.len() != 0 && stack[stack.len() - 1] == '[' {
                         stack.pop();
                     } else {
                         stack.push(']');
                         break; // stack에 넣었던 left괄호를 지울 수 없으면 stack을 채워두고 yes 리턴
-                    },
-                ')' =>
-                    if stack.len() != 0 && stack[stack.len()-1] == '(' {
+                    }
+                }
+                ')' => {
+                    if stack.len() != 0 && stack[stack.len() - 1] == '(' {
                         stack.pop();
                     } else {
                         stack.push(')');
                         break; // stack에 넣었던 left괄호를 지울 수 없으면 stack을 채워두고 yes 리턴
-                    },
-                    _ => {},
+                    }
+                }
+                _ => {}
             }
         }
-        writeln!(output, "{}", match stack.is_empty() {
-            true => "yes",
-            false => "no",
-        })?;
+        writeln!(
+            output,
+            "{}",
+            match stack.is_empty() {
+                true => "yes",
+                false => "no",
+            }
+        )?;
     }
     Ok(())
 }

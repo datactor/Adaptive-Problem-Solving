@@ -2,15 +2,18 @@
 // O(N)
 
 use std::{
-    io::{self, prelude::*},
     error::Error,
+    io::{self, prelude::*},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
-    let mut v = input.split_ascii_whitespace().map(|s| s.parse::<usize>()).flatten();
+    let mut v = input
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>())
+        .flatten();
 
     v.next();
     let mut k = v.next().unwrap();
@@ -20,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         if k >= coin {
             cnt += k / coin;
             if k % coin == 0 {
-                break
+                break;
             } else {
                 k %= coin;
             }

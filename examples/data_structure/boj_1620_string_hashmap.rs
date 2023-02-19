@@ -1,5 +1,5 @@
-use std::io::{self, prelude::*, BufWriter};
 use std::collections::HashMap;
+use std::io::{self, prelude::*, BufWriter};
 
 fn main() {
     let mut output = BufWriter::new(io::stdout().lock());
@@ -17,14 +17,14 @@ fn main() {
     // O(n)
     for (idx, pokemon) in lines.by_ref().take(n).enumerate() {
         ordered.insert(idx, pokemon);
-        hashmap.insert(pokemon, idx+1);
+        hashmap.insert(pokemon, idx + 1);
     }
 
     // hashmap get은, vec[idx]처럼 key값을 인덱스처럼 변환하여 빠른접근 가능. O(1)인 상수 시간복잡도
     for _ in 0..m {
         let a = lines.next().unwrap();
         if let Ok(idx) = a.parse::<usize>() {
-            writeln!(output, "{}", ordered[idx-1]).unwrap();
+            writeln!(output, "{}", ordered[idx - 1]).unwrap();
         } else {
             writeln!(output, "{}", hashmap[a]).unwrap()
         };

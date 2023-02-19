@@ -2,9 +2,9 @@
 // O(N)
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error,
     collections::VecDeque,
+    error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -24,10 +24,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             "push" => q.push_back(line.next().unwrap().parse::<i32>().unwrap()),
             "pop" => writeln!(output, "{}", q.pop_front().unwrap_or(-1)).unwrap(),
             "size" => writeln!(output, "{}", q.len()).unwrap(),
-            "empty" => if q.is_empty() { writeln!(output, "1").unwrap() } else { writeln!(output, "0").unwrap() },
+            "empty" => {
+                if q.is_empty() {
+                    writeln!(output, "1").unwrap()
+                } else {
+                    writeln!(output, "0").unwrap()
+                }
+            }
             "front" => writeln!(output, "{}", q.front().unwrap_or(&-1)).unwrap(),
             "back" => writeln!(output, "{}", q.back().unwrap_or(&-1)).unwrap(),
-            _ => {},
+            _ => {}
         }
     }
 

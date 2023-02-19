@@ -1,17 +1,23 @@
 // https://www.acmicpc.net/problem/1043
 
 use std::{
-    io::{self, prelude::*},
     error::Error,
+    io::{self, prelude::*},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
-    let mut map = input.split_whitespace().map(|s| s.parse::<usize>().unwrap());
+    let mut map = input
+        .split_whitespace()
+        .map(|s| s.parse::<usize>().unwrap());
 
-    let (n, m, k) = (map.next().unwrap(), map.next().unwrap(), map.next().unwrap());
+    let (n, m, k) = (
+        map.next().unwrap(),
+        map.next().unwrap(),
+        map.next().unwrap(),
+    );
     let mut t: usize = 0;
     for _ in 0..k {
         t += 1 << map.next().unwrap();
@@ -55,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut cnt = 0;
     for i in &v {
-        if t &*i == 0 {
+        if t & *i == 0 {
             cnt += 1;
         }
     }

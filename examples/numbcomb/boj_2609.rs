@@ -5,8 +5,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<usize>().unwrap()).collect::<Vec<_>>();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>().unwrap())
+        .collect::<Vec<_>>();
     v.sort();
 
     let x = v[0] * v[1];

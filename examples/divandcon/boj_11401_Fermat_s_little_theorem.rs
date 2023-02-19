@@ -17,8 +17,8 @@
 //                 = (n!/k!)%p * (n-k)!^(p-2) % p
 
 use std::{
-    io::{self},
     error::Error,
+    io::{self},
 };
 
 static P: u128 = 1_000_000_007;
@@ -27,28 +27,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
 
-    let mut v = input.split_ascii_whitespace().map(|s| s.parse::<u128>()).flatten();
+    let mut v = input
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<u128>())
+        .flatten();
     let (n, k) = (v.next().unwrap(), v.next().unwrap());
 
-    let a = fac(k+1, n);
-    let b = fac(2, n-k) % P;
+    let a = fac(k + 1, n);
+    let b = fac(2, n - k) % P;
 
     let x = ((1 / b) as f64) as u128;
-    println!("{}", (a%P) * sqr(b, P-2) % P);
+    println!("{}", (a % P) * sqr(b, P - 2) % P);
     Ok(())
 }
 
-fn fac(mut s: u128, mut n: u128) -> u128{
+fn fac(mut s: u128, mut n: u128) -> u128 {
     let mut tmp = 1;
-    for i in s..n+1 {
+    for i in s..n + 1 {
         tmp = (tmp * i) % P;
-    } tmp
+    }
+    tmp
 }
 
 fn sqr(a: u128, b: u128) -> u128 {
     match b {
         0 => 1,
-        b if b % 2 == 1 => (sqr(a, b-1) * a) % P,
-        _ => (sqr(a, b/2).pow(2)) % P,
+        b if b % 2 == 1 => (sqr(a, b - 1) * a) % P,
+        _ => (sqr(a, b / 2).pow(2)) % P,
     }
 }

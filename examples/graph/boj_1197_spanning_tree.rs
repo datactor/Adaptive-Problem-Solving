@@ -13,16 +13,17 @@
 // 사이클을 돌지 않는 모든 간선의 수가 node수 - 1이라면 모든 노드에 접근할 수 있다.
 
 use std::{
-    io::{self, prelude::*},
-    error::Error,
     collections::BinaryHeap,
+    error::Error,
+    io::{self, prelude::*},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
-    let mut input = input.split_ascii_whitespace()
+    let mut input = input
+        .split_ascii_whitespace()
         .map(|s| s.parse::<i32>().unwrap());
     let mut read = || input.next().unwrap();
 
@@ -44,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 // 간선에 이어지는 도착노드가 방문한 곳이면 continue로 skip(사이클 방지),
 // 간선 개수가 node수 - 1이면 중단하여 가중치 합을 print.
 fn prim(start: usize, weight: i32, graph: Vec<Vec<(i32, i32)>>, n: usize) -> i32 {
-    let mut visited = vec![0; n+1]; // node 방문 여부
+    let mut visited = vec![0; n + 1]; // node 방문 여부
     let mut q = BinaryHeap::from([(weight, start)]); // 가중치를 앞에 둬서 힙 사용
     let mut sum = 0; // 가중치의 합
     let mut cnt = 0; // 간선의 개수
@@ -52,13 +53,14 @@ fn prim(start: usize, weight: i32, graph: Vec<Vec<(i32, i32)>>, n: usize) -> i32
     while cnt < n {
         let (k, v) = q.pop().unwrap(); // 가장 작은 수부터 pop(러스트의 heap pop은 큰수부터 빼지만 부호를 바꿔 넣었음)
         if visited[v] == 1 {
-            continue // 방문한 지점은 continue
+            continue; // 방문한 지점은 continue
         }
         visited[v] = 1; // 방문 처리.
-        sum -= k;  // 해당 정점까지의 가중치를 더해준다
+        sum -= k; // 해당 정점까지의 가중치를 더해준다
         cnt += 1; // 간선의 개수를 더해줌(최종 간선의 개수는 n-1 고정)
 
         // 해당 node의 간선정보를 모두 불러와서 힙에 넣는다.
         graph[v].iter().for_each(|&(u, w)| q.push((-w, u as usize)));
-    } sum
+    }
+    sum
 }

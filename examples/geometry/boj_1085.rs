@@ -5,8 +5,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<usize>().unwrap()).collect::<Vec<_>>();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>().unwrap())
+        .collect::<Vec<_>>();
     v[2] -= v[0];
     v[3] -= v[1];
 

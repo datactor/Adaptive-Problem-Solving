@@ -1,8 +1,8 @@
 // https://www.acmicpc.net/problem/2293
 
 use std::{
-    io::{self, prelude::*},
     error::Error,
+    io::{self, prelude::*},
 };
 
 struct Scanner<'a> {
@@ -28,18 +28,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut sc = Scanner::new(&input);
     let (n, k) = (sc.read::<usize>(), sc.read::<usize>());
 
-    let mut dp = vec![0; k+1];
+    let mut dp = vec![0; k + 1];
     dp[0] = 1;
 
     (0..n).for_each(|_| {
-            let coin = sc.read::<usize>();
-            for value in 1..k+1 {
-                if value >= coin {
-                    dp[value] += dp[value - coin];
-                }
+        let coin = sc.read::<usize>();
+        for value in 1..k + 1 {
+            if value >= coin {
+                dp[value] += dp[value - coin];
             }
         }
-    );
+    });
 
     println!("{}", dp[k]);
 

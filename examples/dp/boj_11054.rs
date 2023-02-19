@@ -2,16 +2,19 @@
 // O(N.pow(2))
 
 use std::{
-    io::{self, prelude::*},
     error::Error,
+    io::{self, prelude::*},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
-    let v: Vec<usize> = input.split_ascii_whitespace().skip(1).map(
-        |s| s.parse::<usize>().unwrap()).collect();
+    let v: Vec<usize> = input
+        .split_ascii_whitespace()
+        .skip(1)
+        .map(|s| s.parse::<usize>().unwrap())
+        .collect();
 
     let mut reversed_v = v.clone();
     reversed_v.reverse();

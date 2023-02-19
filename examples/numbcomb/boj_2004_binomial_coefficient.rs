@@ -5,8 +5,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<usize>()).flatten();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>())
+        .flatten();
 
     let n = v.next().unwrap();
     let m = v.next().unwrap();

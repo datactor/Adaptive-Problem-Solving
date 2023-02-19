@@ -1,6 +1,6 @@
 use std::{
-    io::{self, prelude::*, BufWriter, StdoutLock},
     error::Error,
+    io::{self, prelude::*, BufWriter, StdoutLock},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -20,8 +20,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn div_conq(x: usize, y: usize, n: usize, v: &Vec<&[u8]>, output: &mut BufWriter<StdoutLock>) {
     let mut tmp = 0;
-    for i in x..x+n {
-        for j in y..y+n {
+    for i in x..x + n {
+        for j in y..y + n {
             if v[i][j] == 49 {
                 tmp += 1
             }
@@ -30,17 +30,17 @@ fn div_conq(x: usize, y: usize, n: usize, v: &Vec<&[u8]>, output: &mut BufWriter
 
     if tmp == 0 {
         write!(output, "0");
-        return
+        return;
     } else if tmp == n.pow(2) {
         write!(output, "1");
-        return
+        return;
     } else {
         write!(output, "(");
-        div_conq(x, y, n/2, v, output);
-        div_conq(x, y+n/2, n/2, v, output);
-        div_conq(x+n/2, y, n/2, v, output);
-        div_conq(x+n/2, y+n/2, n/2, v, output);
+        div_conq(x, y, n / 2, v, output);
+        div_conq(x, y + n / 2, n / 2, v, output);
+        div_conq(x + n / 2, y, n / 2, v, output);
+        div_conq(x + n / 2, y + n / 2, n / 2, v, output);
         write!(output, ")");
-        return
+        return;
     }
 }

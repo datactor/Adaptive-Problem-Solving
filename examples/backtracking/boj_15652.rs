@@ -7,8 +7,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<usize>()).flatten();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>())
+        .flatten();
 
     let n = v.next().unwrap();
     let m = v.next().unwrap();
@@ -21,13 +23,14 @@ fn solve(n: usize, m: usize, arr: &mut Vec<usize>, output: &mut BufWriter<Stdout
     if arr.len() == m {
         for i in arr {
             write!(output, "{} ", i).unwrap();
-        } write!(output, "\n").unwrap();
-        return
+        }
+        write!(output, "\n").unwrap();
+        return;
     }
 
-    for i in 1..n+1 {
+    for i in 1..n + 1 {
         if arr.len() != 0 && arr[arr.len() - 1] > i {
-            continue
+            continue;
         }
         arr.push(i);
         solve(n, m, arr, output);

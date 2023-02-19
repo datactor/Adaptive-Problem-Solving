@@ -1,4 +1,4 @@
-use std::io::{prelude::*, self, BufWriter};
+use std::io::{self, prelude::*, BufWriter};
 
 fn main() {
     let mut buffer = String::new();
@@ -22,7 +22,7 @@ fn main() {
                 }
             }
         } else {
-            break
+            break;
         }
     }
     println!("{}", result);

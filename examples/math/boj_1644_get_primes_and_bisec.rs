@@ -2,8 +2,8 @@
 // O(N * log(log(N)))
 
 use std::{
-    io::{self, prelude::*},
     error::Error,
+    io::{self, prelude::*},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -32,15 +32,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn prime_list(n: usize) -> Vec<usize> { // Sieve of Eratosthenes
-    let mut sieve = vec![true; n+1];
+fn prime_list(n: usize) -> Vec<usize> {
+    // Sieve of Eratosthenes
+    let mut sieve = vec![true; n + 1];
     let m = (n as f32).sqrt();
     for i in 2..=m as usize {
         if sieve[i] {
-            for j in (2*i..=n).step_by(i) {
+            for j in (2 * i..=n).step_by(i) {
                 sieve[j] = false
             }
         }
     }
-    return (2..=n).filter_map(|i| (sieve[i] == true).then(|| i)).collect::<Vec<_>>();
+    return (2..=n)
+        .filter_map(|i| (sieve[i] == true).then(|| i))
+        .collect::<Vec<_>>();
 }

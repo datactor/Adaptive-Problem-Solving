@@ -5,8 +5,10 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().map(
-        |s| s.parse::<usize>()).flatten();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>())
+        .flatten();
 
     let mut arr = [[0; 31]; 31];
     for i in 1..31 {
@@ -16,7 +18,7 @@ fn main() {
             } else if i == j {
                 arr[i][j] = 1;
             } else {
-                arr[i][j] = arr[i-1][j-1] + arr[i][j-1]
+                arr[i][j] = arr[i - 1][j - 1] + arr[i][j - 1]
             }
         }
     }

@@ -5,19 +5,22 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer).unwrap();
 
-    let mut v = buffer.split_ascii_whitespace().skip(1).map(
-        |s| s.parse::<usize>().unwrap()).collect::<Vec<_>>();
+    let mut v = buffer
+        .split_ascii_whitespace()
+        .skip(1)
+        .map(|s| s.parse::<usize>().unwrap())
+        .collect::<Vec<_>>();
     v.sort();
 
     let n = v.len();
 
-    let mut subset = Vec::with_capacity(n-1);
-    for i in 0..n-1 {
-        subset.insert(i, v[i+1] - v[i]);
+    let mut subset = Vec::with_capacity(n - 1);
+    for i in 0..n - 1 {
+        subset.insert(i, v[i + 1] - v[i]);
     }
 
     let mut gcd = subset[0];
-    for i in 1..n-1 {
+    for i in 1..n - 1 {
         gcd = find_gcd(gcd, subset[i]);
     }
     v.clear();

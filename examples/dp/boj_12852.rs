@@ -1,9 +1,9 @@
 // https://www.acmicpc.net/problem/12852
 
 use std::{
-    io::{self, prelude::*, BufWriter},
-    error::Error,
     collections::HashMap,
+    error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 struct MinSteps {
@@ -17,7 +17,7 @@ impl MinSteps {
                 (1, (0, vec![1])),
                 (2, (1, vec![1, 2])),
                 (3, (1, vec![1, 3])),
-            ])
+            ]),
         }
     }
 
@@ -50,7 +50,8 @@ impl MinSteps {
         let (step_count, mut steps_sequence) = possible_steps.iter().min().unwrap().to_owned();
 
         steps_sequence.push(num);
-        self.previous_steps.insert(num, (step_count, steps_sequence.to_owned()));
+        self.previous_steps
+            .insert(num, (step_count, steps_sequence.to_owned()));
 
         (step_count, steps_sequence)
     }

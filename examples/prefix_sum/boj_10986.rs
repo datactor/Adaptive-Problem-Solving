@@ -4,16 +4,18 @@
 
 // 어떤 수로 나눈 나머지가 같은 두 값 의 차는 어떤 수로 나누어 떨어짐
 use std::{
-    io::{self, prelude::*},
     error::Error,
+    io::{self, prelude::*},
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
-    let mut v = input.split_ascii_whitespace().map(
-        |s| s.parse::<usize>()).flatten();
+    let mut v = input
+        .split_ascii_whitespace()
+        .map(|s| s.parse::<usize>())
+        .flatten();
 
     let n = v.next().unwrap();
     let m = v.next().unwrap();
@@ -33,7 +35,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         res[total % m] += 1; // 해당 누적합을 m으로 나눴을 때, 나머지에 해당하는 idx의 값에 카운트 +1
     }
 
-    println!("{}", res[0] + (0..m).map(|i| res[i] * (res[i] - 1) / 2).sum::<i64>());
+    println!(
+        "{}",
+        res[0] + (0..m).map(|i| res[i] * (res[i] - 1) / 2).sum::<i64>()
+    );
     // res[0]: 연속된 구간의 합의 나머지가 0인 구간의 개수
     // 나머지가 같은 숫자의 조합의 개수를 구함(즉 나머지가 같은 수를 빼면 무조건 나누어 떨어지기 때문)
     Ok(())

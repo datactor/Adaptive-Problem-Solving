@@ -1,8 +1,8 @@
 // https://www.acmicpc.net/problem/11066
 
 use std::{
-    io::{self, prelude::*, BufWriter},
     error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 struct Scanner<'a> {
@@ -76,25 +76,25 @@ fn main() -> Result<(), Box<dyn Error>> {
         let v: Vec<usize> = (0..k).map(|_| sc.read::<usize>()).collect();
         let mut dp = vec![0; k * k];
 
-        for i in 0..k-1 {
-            dp[get_index(i, i+1, k)] = v[i] + v[i+1];
-            for j in i+2..k {
-                dp[get_index(i, j, k)] = dp[get_index(i, j-1, k)] + v[j];
+        for i in 0..k - 1 {
+            dp[get_index(i, i + 1, k)] = v[i] + v[i + 1];
+            for j in i + 2..k {
+                dp[get_index(i, j, k)] = dp[get_index(i, j - 1, k)] + v[j];
             }
         }
 
         for i in 2..k {
-            for j in 0..k-i {
+            for j in 0..k - i {
                 let mut min_sum = std::usize::MAX;
-                for s in j..j+i {
+                for s in j..j + i {
                     let left_sum = dp[get_index(j, s, k)];
-                    let right_sum = dp[get_index(s+1, j+i, k)];
+                    let right_sum = dp[get_index(s + 1, j + i, k)];
                     min_sum = std::cmp::min(min_sum, left_sum + right_sum);
                 }
-                dp[get_index(j, j+i, k)] += min_sum;
+                dp[get_index(j, j + i, k)] += min_sum;
             }
         }
-        writeln!(output, "{}", dp[get_index(0, k-1, k)])?;
+        writeln!(output, "{}", dp[get_index(0, k - 1, k)])?;
     }
 
     Ok(())

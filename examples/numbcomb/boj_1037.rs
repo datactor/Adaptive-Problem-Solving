@@ -5,10 +5,13 @@ fn main() {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer).unwrap();
 
-    let mut factors = buffer.split_ascii_whitespace().skip(1).map(
-        |s| s.parse::<usize>().unwrap()).collect::<Vec<usize>>();
+    let mut factors = buffer
+        .split_ascii_whitespace()
+        .skip(1)
+        .map(|s| s.parse::<usize>().unwrap())
+        .collect::<Vec<usize>>();
 
     factors.sort();
 
-    writeln!(output, "{}", factors[0] * factors[factors.len()-1]).unwrap();
+    writeln!(output, "{}", factors[0] * factors[factors.len() - 1]).unwrap();
 }

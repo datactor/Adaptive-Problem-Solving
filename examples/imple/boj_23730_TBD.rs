@@ -1,6 +1,6 @@
 use std::{
-    io::{self, prelude::*, BufWriter},
     error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 struct Scanner<'a> {
@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let answers: Vec<usize> = (0..n).map(|_| scanner.read::<usize>()).collect();
 
     for _ in 0..m {
-        let tmp = scanner.read::<usize>()-1;
+        let tmp = scanner.read::<usize>() - 1;
         result[tmp] = answers[tmp]
     }
 
@@ -40,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             for i in 1..=5 {
                 if result[1] != i && answers[0] != i {
                     result[0] = i;
-                    break
+                    break;
                 }
             }
         }
@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             for i in 1..=5 {
                 if result[0] != i && answers[1] != i {
                     result[1] = i;
-                    break
+                    break;
                 }
             }
         }
@@ -59,27 +59,27 @@ fn main() -> Result<(), Box<dyn Error>> {
             for i in 1..=5 {
                 if result[1] != i && answers[0] != i {
                     result[0] = i;
-                    break
+                    break;
                 }
             }
         }
 
-        for i in 1..n-1 {
+        for i in 1..n - 1 {
             if result[i] == 0 {
                 for j in 1..=5 {
-                    if result[i-1] != j && result[i+1] != j && answers[i] != j {
+                    if result[i - 1] != j && result[i + 1] != j && answers[i] != j {
                         result[i] = j;
-                        break
+                        break;
                     }
                 }
             }
         }
 
-        if result[n-1] == 0 {
+        if result[n - 1] == 0 {
             for i in 1..=5 {
-                if result[n-2] != i {
-                    result[n-1] = i;
-                    break
+                if result[n - 2] != i {
+                    result[n - 1] = i;
+                    break;
                 }
             }
         }

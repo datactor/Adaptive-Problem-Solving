@@ -3,8 +3,8 @@
 // O(N * L * R)
 
 use std::{
-    io::{self, prelude::*, BufWriter},
     error::Error,
+    io::{self, prelude::*, BufWriter},
 };
 
 struct Scanner<'a> {
@@ -60,11 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         for j in 1..=l {
             for k in 1..=r {
                 dp[j][k] =
-                    (
-                        (prev_dp[j][k] * (i-2)) % MOD
-                            + prev_dp[j][k-1]
-                            + prev_dp[j-1][k]
-                    ) % MOD;
+                    ((prev_dp[j][k] * (i - 2)) % MOD + prev_dp[j][k - 1] + prev_dp[j - 1][k]) % MOD;
             }
         }
         prev_dp = dp.clone();

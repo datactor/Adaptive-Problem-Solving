@@ -1,7 +1,6 @@
 // https://www.acmicpc.net/problem/7568
 
-use std::io::{prelude::*, BufWriter, self};
-
+use std::io::{self, prelude::*, BufWriter};
 
 struct Scanner<'a> {
     inner: std::str::SplitAsciiWhitespace<'a>,
@@ -32,11 +31,14 @@ fn main() {
 
 fn solve<W: Write>(scanner: &mut Scanner, output: &mut BufWriter<W>) {
     let n = scanner.read::<usize>();
-    let mut array = (0..n).map(
-        |_| (scanner.read(), scanner.read())).collect::<Vec<(usize, usize)>>();
+    let mut array = (0..n)
+        .map(|_| (scanner.read(), scanner.read()))
+        .collect::<Vec<(usize, usize)>>();
     for i in &array {
-        let cnt = (&array).into_iter().filter(
-            |s| s.0>i.0&&s.1>i.1).count();
-        write!(output, "{} ", cnt+1);
+        let cnt = (&array)
+            .into_iter()
+            .filter(|s| s.0 > i.0 && s.1 > i.1)
+            .count();
+        write!(output, "{} ", cnt + 1);
     }
 }
