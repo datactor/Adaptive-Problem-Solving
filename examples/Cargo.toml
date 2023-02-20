@@ -16,7 +16,7 @@ name = "boj_15650"
 path = "backtracking/boj_15650.rs"
 
 [[example]]
-name = "boj_15651_bruteforce"
+name = "boj_15651"
 path = "backtracking/boj_15651_bruteforce.rs"
 
 [[example]]
@@ -28,7 +28,7 @@ name = "boj_9663"
 path = "backtracking/boj_9663.rs"
 
 [[example]]
-name = "boj_14888_bruteforce"
+name = "boj_14888"
 path = "backtracking/boj_14888_bruteforce.rs"
 
 [[example]]
@@ -60,7 +60,7 @@ name = "boj_2110"
 path = "bisec/boj_2110.rs"
 
 [[example]]
-name = "boj_1208_collections_hashmap"
+name = "boj_1208"
 path = "bisec/boj_1208_collections_hashmap.rs"
 
 [[example]]
@@ -112,27 +112,27 @@ name = "boj_25682"
 path = "prefix_sum/boj_25682.rs"
 
 [[example]]
-name = "boj_10815_map_binsearch"
+name = "boj_10815"
 path = "data_structure/boj_10815_map_binsearch.rs"
 
 [[example]]
-name = "boj_14425_string"
+name = "boj_14425"
 path = "data_structure/boj_14425_string.rs"
 
 [[example]]
-name = "boj_1620_string_hashmap"
+name = "boj_1620"
 path = "data_structure/boj_1620_string_hashmap.rs"
 
 [[example]]
-name = "boj_1764_string_hashmap"
+name = "boj_1764"
 path = "data_structure/boj_1764_string_hashmap.rs"
 
 [[example]]
-name = "boj_1269_hash"
+name = "boj_1269"
 path = "data_structure/boj_1269_hash.rs"
 
 [[example]]
-name = "boj_11478_string_hashmap"
+name = "boj_11478"
 path = "data_structure/boj_11478_string_hashmap.rs"
 
 [[example]]
@@ -152,7 +152,7 @@ name = "boj_1780"
 path = "divandcon/boj_1780.rs"
 
 [[example]]
-name = "boj_11401_Fermat_s_little_theorem"
+name = "boj_11401"
 path = "divandcon/boj_11401_Fermat_s_little_theorem.rs"
 
 [[example]]
@@ -172,15 +172,15 @@ name = "boj_6549"
 path = "divandcon/boj_6549.rs"
 
 [[example]]
-name = "boj_24416_fibonacci"
+name = "boj_24416"
 path = "dp/boj_24416_fibonacci.rs"
 
 [[example]]
-name = "boj_9184_control_statement_or_recursion"
+name = "boj_9184"
 path = "dp/boj_9184_control_statement_or_recursion.rs"
 
 [[example]]
-name = "boj_1904_recurrence_relation"
+name = "boj_1904"
 path = "dp/boj_1904_recurrence_relation.rs"
 
 [[example]]
@@ -192,11 +192,11 @@ name = "boj_1932"
 path = "dp/boj_1932.rs"
 
 [[example]]
-name = "boj_2579_recurrence"
+name = "boj_2579"
 path = "dp/boj_2579_recurrence.rs"
 
 [[example]]
-name = "boj_2156_recurrence"
+name = "boj_2156"
 path = "dp/boj_2156_recurrence.rs"
 
 [[example]]
@@ -208,15 +208,15 @@ name = "boj_11054"
 path = "dp/boj_11054.rs"
 
 [[example]]
-name = "boj_2565_lis"
+name = "boj_2565"
 path = "dp/boj_2565_lis.rs"
 
 [[example]]
-name = "boj_9251_longest_common_subsequence"
+name = "boj_9251"
 path = "dp/boj_9251_longest_common_subsequence.rs"
 
 [[example]]
-name = "boj_12865_knapsack"
+name = "boj_12865"
 path = "dp/boj_12865_knapsack.rs"
 
 [[example]]
@@ -224,7 +224,7 @@ name = "boj_1005"
 path = "dp/boj_1005.rs"
 
 [[example]]
-name = "boj_9252_LCS"
+name = "boj_9252"
 path = "dp/boj_9252_LCS.rs"
 
 [[example]]
@@ -272,7 +272,7 @@ name = "boj_1004"
 path = "geometry/boj_1004.rs"
 
 [[example]]
-name = "boj_17387_ccw"
+name = "boj_17387"
 path = "geometry/boj_17387_ccw.rs"
 
 [[example]]
@@ -280,19 +280,19 @@ name = "boj_1043"
 path = "graph/boj_1043.rs"
 
 [[example]]
-name = "boj_1167_tree_s_dia"
+name = "boj_1167"
 path = "graph/boj_1167_tree_s_dia.rs"
 
 [[example]]
-name = "boj_1238_dijkstra"
+name = "boj_1238"
 path = "graph/boj_1238_dijkstra.rs"
 
 [[example]]
-name = "boj_1197_spanning_tree"
+name = "boj_1197"
 path = "graph/boj_1197_spanning_tree.rs"
 
 [[example]]
-name = "boj_1766_dag"
+name = "boj_1766"
 path = "graph/boj_1766_dag.rs"
 
 [[example]]
@@ -300,15 +300,15 @@ name = "boj_1647"
 path = "graph/boj_1647.rs"
 
 [[example]]
-name = "boj_2623_topological_sort"
+name = "boj_2623"
 path = "graph/boj_2623_topological_sort.rs"
 
 [[example]]
-name = "boj_2252_topological_sort"
+name = "boj_2252"
 path = "graph/boj_2252_topological_sort.rs"
 
 [[example]]
-name = "boj_10775_union_find"
+name = "boj_10775"
 path = "graph/boj_10775_union_find.rs"
 
 [[example]]
@@ -336,7 +336,7 @@ name = "boj_1022"
 path = "imple/boj_1022.rs"
 
 [[example]]
-name = "boj_23730_TBD"
+name = "boj_23730"
 path = "imple/boj_23730_TBD.rs"
 
 [[example]]
@@ -356,7 +356,7 @@ path = "math/boj_1007.rs"
 #path = "math/boj_12855.rs"
 
 [[example]]
-name = "boj_1644_get_primes_and_bisec"
+name = "boj_1644"
 path = "math/boj_1644_get_primes_and_bisec.rs"
 
 [[example]]
@@ -376,7 +376,7 @@ name = "boj_1934"
 path = "numbcomb/boj_1934.rs"
 
 [[example]]
-name = "boj_2981_euclidean"
+name = "boj_2981"
 path = "numbcomb/boj_2981_euclidean.rs"
 
 [[example]]
@@ -388,7 +388,7 @@ name = "boj_11050"
 path = "numbcomb/boj_11050.rs"
 
 [[example]]
-name = "boj_11051_dp_binomial_coefficient"
+name = "boj_11051"
 path = "numbcomb/boj_11051_dp_binomial_coefficient.rs"
 
 [[example]]
@@ -404,7 +404,7 @@ name = "boj_1676"
 path = "numbcomb/boj_1676.rs"
 
 [[example]]
-name = "boj_2004_binomial_coefficient"
+name = "boj_2004"
 path = "numbcomb/boj_2004_binomial_coefficient.rs"
 
 [[example]]
@@ -448,7 +448,7 @@ name = "boj_5430"
 path = "qdeck/boj_5430.rs"
 
 [[example]]
-name = "boj_24060_merge_sort"
+name = "boj_24060"
 path = "recursion/boj_24060_merge_sort.rs"
 
 [[example]]
@@ -464,7 +464,7 @@ name = "boj_10773"
 path = "stack/boj_10773.rs"
 
 [[example]]
-name = "boj_4949_string"
+name = "boj_4949"
 path = "stack/boj_4949_string.rs"
 
 [[example]]
@@ -480,5 +480,9 @@ name = "boj_1874"
 path = "stack/boj_1874.rs"
 
 [[example]]
-name = "boj_11758_ccw"
+name = "boj_11758"
 path = "geometry/boj_11758_ccw.rs"
+
+[[example]]
+name = "boj_1305"
+path = "str/boj_1305_kmp.rs"
