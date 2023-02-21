@@ -33,14 +33,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let txt = sc.read::<String>();
     let pattern = txt.as_bytes();
     let mut table: Vec<usize> = vec![0; l+1];
-    let mut pattern_idx = 0;
+    let mut pi = 0;
     for (i, b) in txt.as_bytes().iter().enumerate().skip(1) {
-        while pattern_idx > 0 && &pattern[pattern_idx] != b {
-            pattern_idx = table[pattern_idx - 1];
+        while pi > 0 && &pattern[pi] != b {
+            pi = table[pi - 1];
         }
-        if &pattern[pattern_idx] == b {
-            pattern_idx += 1;
-            table[i] = pattern_idx;
+        if &pattern[pi] == b {
+            pi += 1;
+            table[i] = pi;
         }
     }
     writeln!(output, "{}", l - table[l-1])?;
