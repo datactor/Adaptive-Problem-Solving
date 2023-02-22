@@ -490,3 +490,7 @@ path = "str/boj_1305_kmp.rs"
 [[example]]
 name = "boj_1557"
 path = "math/boj_1557_mobius_bisec.rs"
+
+[[example]]
+name = "boj_18185"
+path = "greedy/boj_18185.rs"
