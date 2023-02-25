@@ -502,3 +502,7 @@ path = "greedy/boj_18186.rs"
 [[example]]
 name = "boj_4008"
 path = "dp/boj_4008_prefix_sum_convex_hull_trick.rs"
+
+[[example]]
+name = "boj_13263"
+path = "dp/boj_13263_convex_hull_trick.rs"
