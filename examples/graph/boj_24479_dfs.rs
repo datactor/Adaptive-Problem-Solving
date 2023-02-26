@@ -1,3 +1,5 @@
+// https://www.acmicpc.net/problem/24479
+
 use std::{
     io::{self, prelude::*, BufWriter},
     error::Error,
