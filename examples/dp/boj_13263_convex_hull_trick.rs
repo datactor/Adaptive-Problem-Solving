@@ -1,5 +1,7 @@
 // https://www.acmicpc.net/problem/13263
 // O(N lg N)
+// https://stonejjun.tistory.com/50
+// https://m.blog.naver.com/kks227/221418495037
 
 use std::{
     io::{self, prelude::*, BufWriter},

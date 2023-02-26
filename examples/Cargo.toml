@@ -506,3 +506,7 @@ path = "dp/boj_4008_prefix_sum_convex_hull_trick.rs"
 [[example]]
 name = "boj_13263"
 path = "dp/boj_13263_convex_hull_trick.rs"
+
+[[example]]
+name = "boj_24479"
+path = "graph/boj_24479_dfs.rs"
