@@ -40,18 +40,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         graph[v].push(u);
     }
 
-    for i in 1..=n {
-        graph[i].sort()
-    }
+    (1..n+1).for_each(|i| graph[i].sort());
 
     let mut visited = vec![0; n+1];
 
     unsafe { dfs(&mut visited, &graph, r); }
 
     for i in 1..=n {
-        if i != 0 {
-            writeln!(output, "{}", visited[i])?;
-        }
+        writeln!(output, "{}", visited[i])?;
     }
 
     Ok(())
