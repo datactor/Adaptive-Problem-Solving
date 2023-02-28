@@ -1,6 +1,9 @@
 // https://www.acmicpc.net/problem/24481
+
 // dfs 문제지만 bfs로 풀음
 // bfs특) 노드를 방문할 때마다 방문하지 않은 adj_neighbor를 추후 처리를 위한 대기열에 추가함.
+// 대기열을 만들기 때문에 메모리를 많이 사용하지만, 비가중 그래프에서 시작 노드에서 다른 노드까지의
+// 최단 경로(edge 수 측면에서)를 찾는 것이 보장됨.
 
 use std::{
     io::{self, prelude::*, BufWriter},
@@ -57,7 +60,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         visited[cur_node] = true;
         nodes_depth[cur_node] = depth;
 
-        // bfs특) 노드를 방문할 때마다 방문하지않은 adj_neighbor를 추후 처리를 위한 대기열에 추가함.
         for next_node in &graph[cur_node] {
             if !visited[*next_node] {
                 q.push((*next_node, depth+1))
