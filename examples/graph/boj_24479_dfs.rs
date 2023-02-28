@@ -1,5 +1,8 @@
 // https://www.acmicpc.net/problem/24479
 
+// dfs특) 스택을 사용해 방문할 노드를 저장하고,
+// 방문하지 않은 adj_neighbor가 남아있지 않을 때까지 노드를 재귀적으로 방문함
+
 use std::{
     io::{self, prelude::*, BufWriter},
     error::Error,
