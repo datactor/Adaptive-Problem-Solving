@@ -1,5 +1,6 @@
 // https://www.acmicpc.net/problem/24481
 // dfs 문제지만 bfs로 풀음
+// bfs특) 노드를 방문할 때마다 방문하지 않은 adj_neighbor를 추후 처리를 위한 대기열에 추가함.
 
 use std::{
     io::{self, prelude::*, BufWriter},
