@@ -1,4 +1,5 @@
 // https://www.acmicpc.net/problem/24481
+// dfs 문제지만 bfs로 풀음
 
 use std::{
     io::{self, prelude::*, BufWriter},
@@ -45,19 +46,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         graph[i].reverse();
     }
 
-    let mut v = Vec::from(vec![(r, 0)]);
+    let mut q = Vec::from(vec![(r, 0)]);
 
-    while !v.is_empty() {
-        let (cur_node, depth) = v.pop().unwrap();
+    while !q.is_empty() {
+        let (cur_node, depth) = q.pop().unwrap();
         if visited[cur_node] {
             continue
         }
         visited[cur_node] = true;
         nodes_depth[cur_node] = depth;
 
+        // bfs특) 노드를 방문할 때마다 방문하지않은 adj_neighbor를 추후 처리를 위한 대기열에 추가함.
         for next_node in &graph[cur_node] {
             if !visited[*next_node] {
-                v.push((*next_node, depth+1))
+                q.push((*next_node, depth+1))
             }
         }
     }
