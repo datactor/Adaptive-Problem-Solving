@@ -514,3 +514,7 @@ path = "graph/boj_24479_dfs.rs"
 [[example]]
 name = "boj_24480"
 path = "graph/boj_24480_dfs.rs"
+
+[[example]]
+name = "boj_24481"
+path = "graph/boj_24481_dfs.rs"
