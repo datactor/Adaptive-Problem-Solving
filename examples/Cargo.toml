@@ -526,3 +526,7 @@ path = "math/boj_9506.rs"
 [[example]]
 name = "boj_24313"
 path = "math/boj_24313.rs"
+
+[[example]]
+name = "boj_1240"
+path = "graph/boj_1240_bfs.rs"
