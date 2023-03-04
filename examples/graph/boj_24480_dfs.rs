@@ -3,6 +3,8 @@
 use std::{
     io::{self, prelude::*, BufWriter},
     error::Error,
+    rc::Rc,
+    cell::RefCell,
 };
 
 struct Scanner<'a> {
@@ -20,8 +22,6 @@ impl<'a> Scanner<'a> {
         self.input.next().unwrap().parse::<T>().ok().unwrap()
     }
 }
-
-static mut CNT: usize = 1;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
@@ -45,25 +45,24 @@ fn main() -> Result<(), Box<dyn Error>> {
         graph[i].reverse();
     }
 
-    println!("{:?}", graph);
-
     let mut visited = vec![0; n+1];
 
-    unsafe { dfs(&mut visited, &graph, r); }
+    let cnt = Rc::new(RefCell::new(1));
 
-    for i in visited {
-        writeln!(output, "{}", i)?;
+    dfs(&mut visited, &graph, r, &cnt);
+
+    for i in 1..=n {
+        writeln!(output, "{}", visited[i])?;
     }
 
     Ok(())
 }
 
-unsafe fn dfs(visited: &mut Vec<usize>, adj_list: &Vec<Vec<usize>>, start_node: usize) {
-    visited[start_node] = CNT;
+fn dfs(visited: &mut Vec<usize>, adj_list: &Vec<Vec<usize>>, start_node: usize, cnt: &Rc<RefCell<usize>>) {
+    visited[start_node] = cnt.replace_with(|&mut c| c+1);
     for &x in adj_list[start_node].iter() {
         if visited[x] == 0 {
-            CNT += 1;
-            dfs(visited, adj_list, x);
+            dfs(visited, adj_list, x, cnt);
         }
     }
 }
