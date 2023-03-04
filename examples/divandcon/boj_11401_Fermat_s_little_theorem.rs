@@ -21,7 +21,7 @@ use std::{
     io::{self},
 };
 
-static P: u128 = 1_000_000_007;
+const P: u64 = 1_000_000_007;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut input = String::new();
@@ -29,30 +29,29 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut v = input
         .split_ascii_whitespace()
-        .map(|s| s.parse::<u128>())
+        .map(|s| s.parse::<u64>())
         .flatten();
     let (n, k) = (v.next().unwrap(), v.next().unwrap());
 
     let a = fac(k + 1, n);
     let b = fac(2, n - k) % P;
 
-    let x = ((1 / b) as f64) as u128;
-    println!("{}", (a % P) * sqr(b, P - 2) % P);
+    println!("{}", (a % P) * mod_pow(b, P - 2) % P);
     Ok(())
 }
 
-fn fac(mut s: u128, mut n: u128) -> u128 {
-    let mut tmp = 1;
-    for i in s..n + 1 {
-        tmp = (tmp * i) % P;
+fn fac(start: u64, end: u64) -> u64 {
+    let mut result = 1;
+    for i in start..=end {
+        result = (result * i) % P;
     }
-    tmp
+    result
 }
 
-fn sqr(a: u128, b: u128) -> u128 {
-    match b {
+fn mod_pow(base: u64, exponent: u64) -> u64 {
+    match exponent {
         0 => 1,
-        b if b % 2 == 1 => (sqr(a, b - 1) * a) % P,
-        _ => (sqr(a, b / 2).pow(2)) % P,
+        e if e % 2 == 1 => (mod_pow(base, e - 1) * base) % P,
+        _ => (mod_pow(base, exponent / 2).pow(2)) % P,
     }
 }

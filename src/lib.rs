@@ -36,8 +36,8 @@ pub fn combinations<T>(data: &[T], r: usize) -> Vec<Vec<&T>> {
 /// (n!/k!(n-k)!)%p = n!%p * (k!(n-k)!)^(p-2) % p
 ///
 ///                 = (n!/k!)%p * (n-k)!^(p-2) % p
-pub fn fermat_little_theorem(n: u128, r: u128, p: u128) -> u128 {
-    fn fac(start: u128, end: u128) -> u128 {
+pub fn fermat_little_theorem(n: u64, r: u64, p: u64) -> u64 {
+    fn fac(start: u64, end: u64) -> u64 {
         let mut result = 1;
         for i in start..=end {
             result = (result * i) % p;
@@ -45,7 +45,7 @@ pub fn fermat_little_theorem(n: u128, r: u128, p: u128) -> u128 {
         result
     }
 
-    fn mod_pow(base: u128, exponent: u128) -> u128 {
+    fn mod_pow(base: u64, exponent: u64) -> u64 {
         match exponent {
             0 => 1,
             e if e % 2 == 1 => (mod_pow(base, e - 1) * base) % p,
