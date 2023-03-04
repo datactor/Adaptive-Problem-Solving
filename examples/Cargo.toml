@@ -530,3 +530,7 @@ path = "math/boj_24313.rs"
 [[example]]
 name = "boj_1240"
 path = "graph/boj_1240_bfs.rs"
+
+[[example]]
+name = "boj_16134"
+path = "math/boj_16134_nCrMODprime_Fermat_little_theorem.rs"
