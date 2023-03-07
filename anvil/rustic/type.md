@@ -46,11 +46,9 @@ Copy trait과 swallow-copy(new reference copy in Rust idiom)는 둘다 스택의
 Copy trait을 사용하면 원래 값의 소유권은 그대로 유지되고, 새로운 소유권을 가진 새 복사 값이 생성된다.
 반면에 swallow-copy(new reference copy)를 사용하면 원본 값을 참조하는 새로운 참조 pointer가 생성된다.
 원본 값의 소유권은 변경되지 않으며 원래 값에 대한 새로운 소유권을 생성하지 않고 빌린 참조문과 동일한 소유권을 가진다.
-(여기서 갖는 소유권은 원본 값의 소유권이 아니라 reperence pointer의 소유권이다.)
 
-즉, 원본 값의 레퍼런스에 swallow-copy를 몇번 수행하든 소유권은 두개이다.
-1. 원본 값의 소유권
-2. 원본 값을 참조한 참조 pointer의 소유권(몇번을 copy하든 새로운 소유권을 생성하지 않고 모두 동일하게 갖는다.)
+즉, 원본 값의 레퍼런스에 swallow-copy를 몇번 수행하든 소유권은 1개이다.
+1. 원본 값의 소유권. 이것을 몇번을 swallow-copy하든 새로운 소유권을 생성하지 않고 모두 동일하게 갖는다.
 
 즉, mutable reference pointer와 immutable reference pointer 모두 보유하는 소유권은 하나이다.
 
