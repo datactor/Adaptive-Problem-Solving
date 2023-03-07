@@ -17,8 +17,8 @@ copy, clone 등으로 새롭게 생성하지 않고 기존의 리소스를 사�
 즉, 여기서 할당 해제는 Drop trait이 수행하는 메소드가 아니고 자체적인 기능이며,
 이외의 소유권, 차용 시스템 역시 rust의 라이브러리에 있는 기능이 아니다.
 
-move sementic과 소유권, 차용 시스템은 borrow checker에서 수행하는 핵심 기능 덕분에
-가비지 컬렉터 없이도 메모리 안전을 보장받을 수 있다.
+move sementic, 소유권, 차용 시스템은 borrow checker에서 수행하는 핵심 기능으로
+덕분에 가비지 컬렉터 없이도 메모리 안전을 보장받을 수 있다.
 
 move sementic의 이동시 원래 변수의 무효화 기능은 Use-After-Free를 방지하며,
 borrow system은 참조와 불변 참조의 엄격한 borrow rule을 통해 스레드 단위에서도 data races가 방지된다.
