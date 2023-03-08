@@ -41,3 +41,17 @@ Feel free to submit a pull request when you find a bug or incorrect description,
 
 Note: This is not meant to be a complete learning resource for PS and Rust.
 I hope you think of it as a place to organize the concept of PS in a broad sense.
+
+## License
+This project is licensed under the Apache License, Version 2.0.
+
+The Apache License, Version 2.0 is a permissive open-source software license that allows for the use,
+modification, and distribution of this software, as long as the original copyright and license notices are retained.
+
+This software is provided "AS IS," without warranty of any kind, express or implied,
+including but not limited to the warranties of merchantability, fitness for a particular purpose,
+and noninfringement. In no event shall the author or copyright holder be liable for any claim,
+damages, or other liability arising from the use of this software.
+
+For more information, please refer to the Apache License,
+Version 2.0 at http://www.apache.org/licenses/LICENSE-2.0.
