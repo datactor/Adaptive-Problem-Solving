@@ -7,8 +7,8 @@ as well as conceptual explanations of Rust for PS in the broad sense.
 
 ### Folder structure
 - `examples/`: contains various algorithm problems solved in Rust,
-  organized by problem category (e.g. backtracking, dynamic programming, etc.) in the `examples` folder.
-- `problems/`: contains explanations of Rust for PS in the broad sense.
+  organized by problem category (e.g. backtracking, dynamic programming, etc.).
+- `notes/`: contains explanations of Rust for PS in the broad sense.
 
 
 ## Examples
@@ -27,3 +27,10 @@ To run the examples, simply navigate to the `example` folder and use the `cargo 
 ```bash
 cd examples
 cargo run cargo run --example boj_2156
+```
+
+## Contributions
+
+Contributions to this repository are welcome
+
+Feel free to submit a pull request when you find a bug or incorrect description, or when you have any questions.
