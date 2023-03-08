@@ -3,12 +3,16 @@
 ## Rc
 
 Rc(Reference Counting)는 런타임 시 값에 대한 참조 수를 추적하는 type으로,
-값의 다중 소유권을 허용한다. Rc 값이 clone되면 참조 횟수가 증가하고 삭제(drop)되면
-참조 횟수가 감소한다.
-강한 참조 횟수가 0이 되면 약한 참조 횟수를 확인한다. 약한 참조가 0이 아니라면, 공유 데이터는 할당해제되지 않고 그대로 살아있다.
-그렇지만 이 상태에서 Rc에 접근하면 패닉이 발생한다. 약한 참조는 데이터를 활성 상태로 유지할 만큼 강력하지 않다는 의미이다.
-패닉이 발생하면 자동으로 사라지게 되며, 강한 참조가 0일 때 약한 참조가 남은 경우 Rc를 다시 사용하려면 upgrade하여 강한 참조로 변경해야 한다.
-강한 참조와 약한 참조 모두가 0이 된다면, Rc는 dealloc을 수행해 모든 할당을 해제한다.
+값의 다중 소유권을 허용한다.
+Rc::clone을 수행할 때마다 clone된 포인터를 ptr필드에 기입하고 strong count를 증가시킨다.
+반대로 Rc::clone된 스마트 포인터가 drop될 때마다 ptr필드에서 스마트 포인터는 제거되고
+strong count를 감소시킨다. 강한 참조가 0이 된다면, Rc는 약한 참조를 확인한다.
+약한 참조 횟수도 0일 경우 Rc는 dealloc을 수행해 모든 할당을 해제한다.
+그러나 약한 참조 횟수가 0이 아닌 경우 dealloc되지 않고 활성상태로 유지된다는 점을 기억해야 한다.
+예를 들어 강한 참조 횟수가 1이고 약한 참조 횟수가 0이 아닌 상황에서 Rc를 drop한다면,
+인스턴스는 사라지지만 메모리는 할당해제되지 않기 때문에 주의해야 한다.
+이 공유 데이터는 메모리에 남아 있지만 접근할 수단이 없기 때문에, 사실상 손실되어 사용할 수 없으며
+메모리 낭비가 발생한다. 그렇기 때문에 weak참조를 사용할 경우 적절히 관리하여 이러한 상황을 방지해야 한다.
 
 ### Reference Pointer vs smart pointer Rc::clone
 원본 값과, 참조 포인터가 있다고 했을때, 소유권은
@@ -82,15 +86,6 @@ dyn borrow checker가 동적 코드를 분석해 borrow rule을 따르는지 확
 수행한다고 보면 된다. 즉 Rc<RefCell<T>>는 컴파일러에 예외 사항을 주는 타입이 아니라,
 rust보다 똑똑한 프로그래머의 기발한 발상인 것이다.
 
-
-
-Rc와 RefCell을 결합하면 값의 다중 소유권 및 변경이 가능합니다. 그러나 RefCell은 단일 스레드에서만 사용할 수 있으므로 Rc와 RefCell을 함께 사용하는 것은 동시 프로그래밍에 적합하지 않습니다.
-
-순환 참조는 두 개 이상의 값이 서로를 참조하여 순환을 형성할 때 발생합니다. 값이 올바르게 삭제되지 않으면 이로 인해 메모리 누수가 발생할 수 있습니다. 이를 방지하기 위해 Rust는 순환 참조를 끊는 데 사용할 수 있는 Weak 포인터 유형을 제공합니다.
-
-Rc 및 RefCell을 사용할 때 런타임 패닉을 피하기 위해 차용 규칙을 인식하는 것이 중요합니다. 참조 카운팅 및 내부 가변성을 사용하는 성능 영향을 고려하는 것도 중요합니다. Rc와 RefCell은 특정한 경우에 유용할 수 있지만 신중하게 필요한 경우에만 사용해야 합니다. 또한 Rc를 사용할 때 순환 참조를 생성하지 않도록 주의해야 합니다.
-
-전반적으로 Rc와 RefCell은 Rust에서 공유 소유권 및 내부 가변성을 관리하는 데 유용한 도구가 될 수 있지만 주의해서 사용해야 합니다. 한계를 이해합니다.
 ```rust
 #[derive(Debug)]
 enum List {
@@ -121,3 +116,80 @@ fn main() {
 }
 ```
 
+Rc와 RefCell을 결합하면 값의 다중 소유권 및 interior mutability를 허용한다.
+그러나 Rc는 atomic하지 않아 참조 횟수 업데이트의 완전 성공과 완전 실패를 보장하지 않으며,
+RefCell은 락을 걸지 않기 때문에, 다중 스레드 환경에서 Rc<RefCell<T>를 사용하는 것은
+동시 프로그래밍에 적합하지 않다.
+
+## Reference cycles
+
+Reference cycles can lead to memory leak
+순환 참조는 두 개 이상의 값이 서로를 참조하여 순환을 형성할 때 발생한다.
+값이 올바르게 삭제되지 않으면 이로 인해 메모리 누수가 발생할 수 있다.
+
+```rust
+use std::rc::Rc;
+use std::cell::RefCell;
+
+struct Person {
+    name: String,
+    best_friend: Option<Rc<RefCell<Person>>>,
+}
+
+fn main() {
+    let alice = Rc::new(RefCell::new(Person {
+        name: String::from("Alice"),
+        best_friend: None,
+    }));
+
+    let bob = Rc::new(RefCell::new(Person {
+        name: String::from("Bob"),
+        best_friend: None,
+    }));
+
+    alice.borrow_mut().best_friend = Some(Rc::clone(&bob));
+    bob.borrow_mut().best_friend = Some(Rc::clone(&alice));
+}
+```
+위의 코드와 같이, 서로를 순환 참조하는 Rc 스마트 포인터를 계속해서 생성한다면
+strong count가 계속해서 증가하게 된다. alice 또는 bob의 참조 횟수가 0으로 떨어지지 않으면
+Person 인스턴스(공유 데이터)가 메모리에 무기한 남아있기 때문에
+메모리 누수로 이어질 수 있다.
+
+이를 방지하기 위해 Rust는 순환 참조를 끊는 데 사용할 수 있는 weak pointer type을 제공한다.
+weak count는 strong count와 달리 0부터 시작하며, 명시적으로 downgrade하지 않으면 count되지 않는다.
+즉 명시적으로 downgrade 또는 upgrade 하지 않으면 Rc 포인터가 drop되거나 새로운 Rc::clone()이 생성되더라도
+weak count의 수는 변경되지 않는다.
+```rust
+use std::rc::{Rc, Weak};
+use std::cell::RefCell;
+
+struct Person {
+    name: String,
+    best_friend: Option<Weak<RefCell<Person>>>,
+}
+
+fn main() {
+    let alice = Rc::new(RefCell::new(Person {
+        name: String::from("Alice"),
+        best_friend: None,
+    }));
+
+    let bob = Rc::new(RefCell::new(Person {
+        name: String::from("Bob"),
+        best_friend: None,
+    }));
+
+    alice.borrow_mut().best_friend = Some(Rc::downgrade(&bob));
+    bob.borrow_mut().best_friend = Some(Rc::downgrade(&alice));
+
+    // We can still access alice and bob here, but when their
+    // reference counts drop to zero, they will be deallocated
+}
+```
+
+
+Rc 및 RefCell을 사용할 때 런타임 패닉을 피하기 위해 차용 규칙을 인식하는 것과
+참조 카운팅 및 내부 가변성을 사용하는 성능 영향을 고려하는 것이 중요하다.
+Rc와 RefCell은 특정한 경우에 유용할 수 있지만 신중하게 필요한 경우에만 사용해야 한다.
+또한 Rc를 사용할 때 순환 참조를 생성하지 않도록 주의해야 한다.
