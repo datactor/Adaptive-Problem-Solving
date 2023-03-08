@@ -57,13 +57,12 @@ impl<T> Drop for Rc<T> {
     }
 }
 ```
-즉, 일반 reference pointer를 drop한다고해서 원본에는 아무 일도 일어나지 않지만(서로의 소유권을 공유하고 있지 않기 때문에),
-
-Rc 스마트 포인터는 Rc 원본의 모든 부분을 '차용'이 아닌 '소유'하고 있기 때문에
+즉, 일반 reference pointer를 drop한다고해서 원본에는 아무 일도 일어나지 않지만
+(서로의 소유권을 공유하고 있지 않기 때문에),
+Rc 스마트 포인터는 Rc 원본을 '차용'이 아닌 '소유'하고 있기 때문에
 Rc::clone의 self를 drop하면 원본 Rc에도 반영이 되는 것이다.
-Rc::clone은 '원본 데이터를 그대로 소유하는 복제된 객체'를 생성하기 때문에
+Rc::clone 메소드는 '원본 데이터를 그대로 소유하는 복제된 객체'를 생성하기 때문에
 포인터임에도 불구하고 clone이라고 네이밍 되었다는 생각이 든다.
-
 
 ## RefCell
 내부 가변성을 제공하는 유형으로, 변경할 수 없는 참조가 있는 경우에도
@@ -74,8 +73,8 @@ Rc::clone은 '원본 데이터를 그대로 소유하는 복제된 객체'를 �
 Rc<RefCell<T>>를 컴파일할 때, borrow checker의 검사와 borrow rule은 아무것도 변하는게 없다.
 borrow checker가 봤을땐 RefCell은 immutable 변수로 보이기 때문에 검사를 해도
 무결성으로 인식하는 것이다. 즉, borrow checker는 컴파일 시간에 한정하여 정적 코드에 기타 버그가
-없는지 확인하는 정적 코드 분석 툴이다. 그렇기 때문에 RefCell을 사용했을 때는, 공유 데이터에 대한
-가변 엑세스로 인해 발생할 수 있는 잠재적인 data races를 비롯한 문제들을 감지하지 못한다.
+없는지 확인하는 정적 코드 분석 툴이다. 그렇기 때문에 RefCell을 사용했을 때는 borrow checker가
+공유 데이터에 대한 가변 엑세스로 인해 발생할 수 있는 잠재적인 data races를 비롯한 문제들을 감지하지 못한다.
 
 이후에 러스트는 평소와 같이 runtime 코드 분석 툴인 dyn borrow checker가 검사를 수행한다.
 dyn borrow checker는 이러한 규칙이 런타임에도 올바르게 준수되는지 확인한다.
@@ -116,7 +115,6 @@ fn main() {
     println!("{}", Rc::strong_count(&a))
 }
 ```
-
 Rc와 RefCell을 결합하면 값의 다중 소유권 및 interior mutability를 허용한다.
 그러나 Rc는 atomic하지 않아 참조 횟수 업데이트의 완전 성공과 완전 실패를 보장하지 않으며,
 RefCell은 락을 걸지 않기 때문에, 다중 스레드 환경에서 Rc<RefCell<T>를 사용하는 것은
@@ -188,7 +186,6 @@ fn main() {
     // reference counts drop to zero, they will be deallocated
 }
 ```
-
 
 Rc 및 RefCell을 사용할 때 런타임 패닉을 피하기 위해 차용 규칙을 인식하는 것과
 참조 카운팅 및 내부 가변성을 사용하는 성능 영향을 고려하는 것이 중요하다.
