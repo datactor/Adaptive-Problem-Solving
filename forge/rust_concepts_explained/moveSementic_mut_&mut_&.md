@@ -45,11 +45,49 @@ move sementic과 마찬가지로, &mut 계약, 소유권, 빌림은 rust 내부�
 컴파일타임에 borrow checker에 의해 검사된다.
 
 ## mut vs &mut
+mutable refernce는 mutable 변수에 대해 원본 값을 변경할 수 있는 레퍼런스이다.
+reference가 원본의 데이터를 수정할 수 있는 대신 몇가지 제약사항이 있다.
+그 중 널리 알려진 것은 borrow rule에 포함되어 있다.
+- borrow rules
+  1. Each value in Rust has a variable that's called its owner.
+  2. There can only be one owner for each value at any given time.
+  3. When the owner goes out of scope, the value will be dropped.
+  4. References to a value can be created using the & symbol.
+     References do not have ownership and do not affect the lifetime of the value.
+  5. ~~Immutable references (&T) can be created to a value as many times as you want,
+     but you cannot create a mutable reference (&mut T)
+     if there's an existing immutable reference to that value.~~  
+     You can create as many immutable references as you want, but if you create a mutable reference
+     when there is an existing immutable reference to that value,
+     the existing immutable reference becomes invalid and cannot be used.
+     From the time of creating a variable reference, only the variable reference becomes valid.
+  6. You can have either one mutable reference or any number of immutable references to a value,
+     but not both at the same time.
+  7. References must always be valid; that is,
+     they must point to a value that still exists and has not yet been dropped.
+     Rust's borrow checker enforces this rule at compile-time.
+  8. Ownership can be transferred using the move keyword.
+  
+5번째 rule인 "You cannot create a new mutable reference if there is an existing immutable reference."은,
+현재 기준으로는 이전의 immutable references들을 무효화 하면서 새로 생성한 가변 참조를 유효하게 만든다.
+그러므로 새로운 mutable reference를 생성할 수 있다.
+
+borrow rule에 명시되지 않은 mut과 &mut의 주요 차이점 중 하나는 다음과 같다.  
+&mut이 원본 값에 대한 독점적인 계약인 반면, mut은 단순히 변수를 변경 가능하게 표시한다는 것이다. 
+여기서 독점적이라는 것은, &mut reference를 통해 접근하여 수정하는 것 이외의 모든 행위(원본에 직접 엑세스 해서 수정하는 경우 포함하여)는
+계약 위반이라는 뜻이다. 위반하면 &mut reference는 무효화 된다.
+
+이러한 제약을 가지고 있는 &mut에 비하면 일반 mut은 제약이 없는 편이지만,
+한가지 주의 해야 할 사항이 있다.  
+5번째 borrow rule과 비슷하게 mut variable을 immutable reference로 차용 중 일때,
+immutable reference를 소비하기 전에 변수를 수정하면 immutable reference는 무효화 되면서
+변수가 수정 된다.
+
 
 ```Rust
 use std::{
-io::{self, prelude::*},
-error::Error,
+    io::{self, prelude::*},
+    error::Error,
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -62,14 +100,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 1. String type의 input 객체를 mutable로 생성한다.
 2. stdin().read_to_string으로 받은 IO를 &mut input에 덮어 씌운다.
-(input 값이 아닌 input의 참조에 덮어씌운다. 아직까지 input의 '값'은 그대로 empty string인 상태)
+(input 값이 아닌 input의 참조 포인터 객체에 덮어씌운다. 아직까지 input의 '값'은 그대로 empty string인 상태)
 3. read_to_string 메서드는 &mut input이 가리키는 메모리 위치에 기록하여 원본 값을 업데이트한다.
 참조자는 당연히 메모리 위치를 기록하지만, 원본값을 업데이트 하는 것은 역참조와 mutable이 필요하다
 (역참조가 없다면 참조자만 변경하고 원본 값은 변경되지 않음).
 역참조 작업은 read_to_string 함수 내에서 명시적으로 수행되지 않는다.
 대신 가변 참조인 &mut 입력이 read_to_string에 인수로 전달되는 순간 자동으로 역참조된다(read_to_string같은 특정 함수만 자동 역참조 기능이 있다).
 그런 다음 메서드는 참조가 가리키는 메모리 위치(input value)의 끝부터 기록하여 역참조된 원본 input 값을 업데이트한다.
-
 
 4. 만약 read_to_string의 인자를 &mut input이 아니라 mut input을 사용했다면,
 input이 read_to_string으로 이동되면서 소유권도 이동되고
