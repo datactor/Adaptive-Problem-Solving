@@ -23,7 +23,8 @@ Rc의 경우에도, Rc 원본 값과 Rc::clone의 소유권은 원본 하나이�
 원본값과 일반 참조 포인터와의 관계와는 대조적으로,
 '공유 데이터를 포함한 원본'을 Rc::clone된 스마트 포인터들이 모두 공유(소유)한다.
 스마트 포인터인 Rc::clone이 죽으면 Rc의 소유권은 공유되어 있기 때문에 counter가 감소한다.
-(move sementic등으로 러스트의 drop trait이 발동한다면 Rc원본의 counter가 줄어든다)
+(move sementic(할당 등의 이유로 Rc type의 기능과는 별개로 borrow checker가 clone을 삭제시키면,
+Rc원본에서 drop을 호출하여 count 감소) 또는 Drop trait이 발동한다면 Rc원본의 count가 줄어든다)
 
 즉, 둘의 차이를 요약하면
 - 일반 포인터는 원본의 소유권을 '차용'한다. immutable 포인터는 읽기 전용 액세스 권한을 갖지만,
