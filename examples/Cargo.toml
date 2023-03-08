@@ -542,3 +542,7 @@ path = "graph/boj_10026_bfs.rs"
 [[example]]
 name = "boj_16234"
 path = "graph/boj_16234_bfs.rs"
+
+[[example]]
+name = "boj_1330"
+path = "imple/boj_1330.rs"
