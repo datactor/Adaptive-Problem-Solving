@@ -10,7 +10,7 @@ copy, clone 등으로 새롭게 생성하지 않고 기존의 리소스를 사�
 함수에서 반환된 값은 함수의 스택 프레임에서 caller의 스택 프레임으로 이동한다.
 즉 새로운 소유권을 생성하지 않고 소유권의 움직임은 다음과 같다.
 
-`변수(최초의 소유권) -> 인자로써 함수의 스택프레임 -> 반환값 -> caller`
+`variable (initial ownership) -> function's stack frame as argument -> return value -> caller`
 
 이것은 러스트 내부의 기능이 아닌 borrow checker가 수행하는 독립적인 기능이다.
 
@@ -84,6 +84,7 @@ borrow rule에 명시되지 않은 mut과 &mut의 주요 차이점 중 하나는
 immutable reference를 소비하기 전에 변수를 수정하면 immutable reference는 무효화 되면서
 변수가 수정 된다.
 
+&mut 사용 예:
 ```Rust
 use std::{
     io::{self, prelude::*},
