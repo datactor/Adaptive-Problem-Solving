@@ -68,8 +68,9 @@ reference가 원본의 데이터를 수정할 수 있는 대신 몇가지 제약
      Rust's borrow checker enforces this rule at compile-time.
   8. Ownership can be transferred using the move keyword.
   
-5번째 rule인 "You cannot create a new mutable reference if there is an existing immutable reference."은,
-현재 기준으로는 이전의 immutable references들을 무효화 하면서 새로 생성한 가변 참조를 유효하게 만든다.
+5번째 rule은 현재 기준으로 수정한다.  
+immutable references들은 얼마든지 생성할 수 있지만, immutable reference가 유효한 상태에서 mutable reference를 생성하면,
+기존의 immutable references들을 모두 무효화 하면서 새로 생성한 mutable reference만 유효하게 만든다.
 그러므로 새로운 mutable reference를 생성할 수 있다.
 
 borrow rule에 명시되지 않은 mut과 &mut의 주요 차이점 중 하나는 다음과 같다.  
@@ -82,7 +83,6 @@ borrow rule에 명시되지 않은 mut과 &mut의 주요 차이점 중 하나는
 5번째 borrow rule과 비슷하게 mut variable을 immutable reference로 차용 중 일때,
 immutable reference를 소비하기 전에 변수를 수정하면 immutable reference는 무효화 되면서
 변수가 수정 된다.
-
 
 ```Rust
 use std::{
