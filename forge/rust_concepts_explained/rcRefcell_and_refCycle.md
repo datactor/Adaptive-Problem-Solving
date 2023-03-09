@@ -13,6 +13,22 @@ strong count를 감소시킨다. 강한 참조가 0이 된다면, Rc는 약한 �
 인스턴스는 사라지지만 메모리는 할당해제되지 않기 때문에 주의해야 한다.
 이 공유 데이터는 메모리에 남아 있지만 접근할 수단이 없기 때문에, 사실상 손실되어 사용할 수 없으며
 메모리 낭비가 발생한다. 그렇기 때문에 weak참조를 사용할 경우 적절히 관리하여 이러한 상황을 방지해야 한다.
+```rust
+#[cfg_attr(not(test), rustc_diagnostic_item = "Rc")]
+#[stable(feature = "rust1", since = "1.0.0")]
+#[rustc_insignificant_dtor]
+pub struct Rc<T: ?Sized> {
+    ptr: NonNull<RcBox<T>>,
+    phantom: PhantomData<RcBox<T>>,
+}
+
+#[repr(C)]
+struct RcBox<T: ?Sized> {
+    strong: Cell<usize>,
+    weak: Cell<usize>,
+    value: T,
+}
+```
 
 ### Reference Pointer vs smart pointer Rc::clone
 원본 값과, 참조 포인터가 있다고 했을때, 소유권은
