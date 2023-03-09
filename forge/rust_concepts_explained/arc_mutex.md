@@ -1,6 +1,8 @@
 # Arc<Mutex< T >>
 
 ## Mutex
+
+### Mutex Rules and Usage
 mutual exclusion의 줄임말로, 주어진 시간에 오직 하나의 스레드만 데이터 접근을 허용한다.
 Mutex 내부에 접근하기 위해서 스레드는 먼저 Mutex lock을 얻기를 요청함으로써 신호를 보내야 한다.
 락은 누군가가 배타적으로 Mutex 내부 값에 접근하는지를 추적하는 뮤텍스의 데이터 구조이다.
@@ -34,6 +36,7 @@ impl<T> Drop for MutexGuard<'_, T> {
 }
 ```
 
+### Atomic unlocking with Futex
 Mutex type은 운영체제에서 제공하는 저수준 동기화 primitive(inner field)를 사용해
 스레드간 상호 배제를 달성한다.  
 여기서 우리가 실제로 다루는 Mutex의 inner type은 sys::Mutex로 이루어져 있고,
@@ -86,7 +89,8 @@ impl<T> Mutex<T> {
 }
 ```
 
-여기에는 아토믹에 더불어 sync를 통한 정확성 보장도 포함되는데, 우리가 정확성 보장을 위한 sync를 구현하지 않아도
+### Low-Level Synchronization with Futex
+위에서 언급한 아토믹에 더불어 sync를 통한 정확성 보장도 포함되는데, 우리가 정확성 보장을 위한 sync를 구현하지 않아도
 운영체제 단위에서 수행하는 저수준 동기화 프리미티브인 `futex(fast userspace mutex)`를 불러오기 때문에
 운영체제가 동기화를 보장해준다. 우리는 그저 syn::Mutex를 사용해 lock을 획득하고 해제하면 futex가 동기화 처리를 해준다.  
 
