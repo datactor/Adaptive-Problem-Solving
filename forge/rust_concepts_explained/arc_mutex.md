@@ -269,7 +269,7 @@ impl<T> Drop for Arc<T> {
 Arc에 대한 Clone 구현은 원래 참조에 대한 사전 정보가 다른 스레드가 개체를 잘못 삭제하는 것을
 방지하기 때문에 엄격한 Ordering이 필요없어, 'Relaxed' Ordering을 사용한다.
 Drop 구현은 Rc와 같이 더 이상 strong count나 weak count가 없으면
-강한 참조 수를 줄이고 할당을 해제합니다. 여전히 다른 strong count가 있는 경우 개수를 줄인다.
+강한 참조 수를 줄이고 할당을 해제한다. 여전히 다른 strong count가 있는 경우 개수를 줄인다.
 강한 참조 카운트와 약한 참조 카운트는 ArcInner struct 저장되며
 usize::MAX는 make_mut 및 get_mut에서 경합을 피하기 위해 약한 포인터를 업그레이드하거나
 강한 포인터를 다운그레이드하는 기능을 일시적으로 "잠그는" 센티넬 역할을 한다.
