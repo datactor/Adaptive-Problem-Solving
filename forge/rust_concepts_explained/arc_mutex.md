@@ -269,10 +269,14 @@ impl<T> Drop for Arc<T> {
 Arc에 대한 Clone 구현은 원래 참조에 대한 사전 정보가 다른 스레드가 개체를 잘못 삭제하는 것을
 방지하기 때문에 엄격한 Ordering이 필요없어, 'Relaxed' Ordering을 사용한다.
 Drop 구현은 Rc와 같이 더 이상 strong count나 weak count가 없으면
-강한 참조 수를 줄이고 할당을 해제한다. 여전히 다른 strong count가 있는 경우 개수를 줄인다.
+강한 참조 수를 0으로 만들고 할당을 해제한다. 여전히 strong count가 남아 있는 경우 개수를 줄인다.
 강한 참조 카운트와 약한 참조 카운트는 ArcInner struct 저장되며
 usize::MAX는 make_mut 및 get_mut에서 경합을 피하기 위해 약한 포인터를 업그레이드하거나
-강한 포인터를 다운그레이드하는 기능을 일시적으로 "locking하는" Sentinel 역할을 한다.
+강한 포인터를 다운그레이드하는 기능을 일시적으로 "locking하는" Sentinel 역할을 한다.  
+예를 들어서, 일반적인 경우에서는 UAF가 발생하지 않지만 atomic이 매순간 정확하지는 않다.
+다른 스레드에서 강한 참조를 점유하고 있는 상황에서 순간적인 오류로 실제는 spare 강한 참조가 없지만, Arc에서
+spare 강한 참조가 남아 있으며, 더 이상 사용되지 않는다고 잘못 가정하고 weak으로 downgrade 한다면,
+이미 점유하고 있는 참조에서 UAF가 발생할 수 있다. 이 경우를 대비해 Sentinel을 세운다.
 
 대규모 ref count 및 use-after-free 오류를 방지하기 위해 Arc는 중단 기능을 사용하여 최대 refcount를
 확인한다. ref count가 너무 크면 프로그램이 중단된다.
