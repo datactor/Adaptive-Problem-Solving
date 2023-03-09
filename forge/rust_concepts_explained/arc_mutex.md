@@ -141,8 +141,10 @@ futex와 같은 운영체제 내부의 프리미티브는 한 번에 하나의 �
 데이터 경합을 방지하고 스레드 동기화를 통해 프로그램의 정확성을 보장한다.
 
 ## Arc
-Rc와 같이 값의 소유자 수를 추적하는 참조 횟수를 추적하여 다중 소유권을 허용하는 스마트 포인터이다.
-차이점은 멀티 스레드 context에서 사용할 수 있는 atomic ref count pointer 라는 것이다.  
+Rc와 같이 값의 소유자 수를 추적하는 참조 횟수를 추적하여 다중 소유권을 허용하는 스마트 포인터이며,
+strong counting, weak counting, 할당해제 규칙 등 대부분의 메카니즘은 Rc와 같다.
+차이점은 Arc는 멀티 스레드 context에서 사용할 수 있는 atomic ref count pointer 라는 것이다.  
+
 Rc는 내부의 RcBox struct에서 일반 스칼라 연산을 사용하여 증가 및 감소하는 reference를 count한다.
 즉, atomic 연산이 필요하지 않은 단일 스레드 context에서만 사용될 수 있음을 의미한다.  
 반면 Arc는 내부 ArcInner struct에서 atomic 연산을 사용하여 증가 및 감소하는 AtomicUsize type의 값에
