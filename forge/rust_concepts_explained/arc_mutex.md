@@ -272,7 +272,7 @@ Drop 구현은 Rc와 같이 더 이상 strong count나 weak count가 없으면
 강한 참조 수를 줄이고 할당을 해제한다. 여전히 다른 strong count가 있는 경우 개수를 줄인다.
 강한 참조 카운트와 약한 참조 카운트는 ArcInner struct 저장되며
 usize::MAX는 make_mut 및 get_mut에서 경합을 피하기 위해 약한 포인터를 업그레이드하거나
-강한 포인터를 다운그레이드하는 기능을 일시적으로 "잠그는" 센티넬 역할을 한다.
+강한 포인터를 다운그레이드하는 기능을 일시적으로 "locking하는" Sentinel 역할을 한다.
 
 대규모 ref count 및 use-after-free 오류를 방지하기 위해 Arc는 중단 기능을 사용하여 최대 refcount를
 확인한다. ref count가 너무 크면 프로그램이 중단된다.
