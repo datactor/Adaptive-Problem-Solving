@@ -1,7 +1,7 @@
-# Rust-based Self-directed Problem Solving and Concepts explained
+# Rust-based Problem Solving and Concepts explained
 
-This repository contains solutions to algorithmic problems for online judges using the Rust programming language,
-as well as conceptual explanations of Rust for PS in the broad sense.
+This repository contains solutions to algorithmic problems,
+as well as conceptual explanations of Rust and PS in the broad sense.
 
 ## Overview
 
