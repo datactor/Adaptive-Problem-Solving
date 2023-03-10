@@ -1,7 +1,8 @@
 # Comprehensive Problem Solving and Pursuing Deep Dive to Rust Concepts
 
 This repository contains solutions to algorithmic problems,
-as well as in-depth conceptual explanations of Rust and PS in the broad sense.
+as well as in-depth conceptual explanations of Rust.
+The PS stands for the acquisition of technological skills for problem-solving in the broad sense.
 
 ## Overview
 
