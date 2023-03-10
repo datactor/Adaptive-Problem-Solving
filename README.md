@@ -22,14 +22,14 @@ that weren't obvious to me or that I am fascinated by, as well as other enchanti
 
 ## Getting Started
 
-To run the examples, simply navigate to the `example` folder and use the   
+To run the examples, simply navigate to the `examples` folder and use the   
 `cargo run --example "{judge}_{number}"`
 command.  
 
 For example:
 ```bash
 cd examples
-cargo run cargo run --example boj_2156
+cargo run --example boj_2156
 ```
 
 ## Contributions
