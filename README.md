@@ -4,13 +4,10 @@ This repository contains solutions to algorithmic problems,
 as well as conceptual explanations of Rust.
 The PS stands for the acquisition of technological skills for problem-solving in the broad sense.
 
-## Overview
-
-### Folder structure
+## Folder structure
 - `examples/`: contains various algorithm problems solved in Rust,
   organized by problem category (e.g. backtracking, dynamic programming, etc.).
-- `forge/`: contains explanations of Rust's sharp swords and tough armor.
-
+- `forge/`: contains explanations of Rust's sharp swords, tough armor and other fine trinkets.
 
 ## Examples
 
