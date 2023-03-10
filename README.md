@@ -5,6 +5,7 @@ as well as conceptual explanations of Rust.
 The PS stands for the acquisition of technological skills for problem-solving in the broad sense.
 
 ## Folder structure
+
 - `examples/`: contains various algorithm problems solved in Rust,
   organized by problem category (e.g. backtracking, dynamic programming, etc.).
 - `forge/`: contains explanations of Rust's sharp swords, tough armor and other fine trinkets.
@@ -36,6 +37,7 @@ cargo run cargo run --example boj_2156
 Feel free to submit a pull request when you find a bug or incorrect description, or when you have any questions.
 
 ## License
+
 This project is licensed under the Apache License, Version 2.0.
 
 The Apache License, Version 2.0 is a permissive open-source software license that allows for the use,
