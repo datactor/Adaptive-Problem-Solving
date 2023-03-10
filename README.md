@@ -17,7 +17,7 @@ The Rust code for each solution is located in the `examples` subfolder of the ex
 ## Forge
 
 The `forge` folder contains markdown files that explain concepts in Rust
-that weren't obvious to me or that I am fascinated by. 
+that weren't obvious to me or that I am fascinated by, as well as other enchanting technologies.
 
 ## Getting Started
 
