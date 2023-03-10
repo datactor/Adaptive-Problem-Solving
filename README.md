@@ -1,7 +1,7 @@
-# Comprehensive Problem Solving and Pursuing Deep Dive to Rust Concepts
+# Comprehensive Problem Solving and Dive to Rust Concepts
 
 This repository contains solutions to algorithmic problems,
-as well as in-depth conceptual explanations of Rust.
+as well as conceptual explanations of Rust.
 The PS stands for the acquisition of technological skills for problem-solving in the broad sense.
 
 ## Overview
@@ -36,12 +36,7 @@ cargo run cargo run --example boj_2156
 
 ## Contributions
 
-Contributions to this repository are welcome.
-
 Feel free to submit a pull request when you find a bug or incorrect description, or when you have any questions.
-
-Note: This is not meant to be a complete learning resource for PS and Rust.
-I hope you think of it as a place to organize the concept of PS in a broad sense.
 
 ## License
 This project is licensed under the Apache License, Version 2.0.
