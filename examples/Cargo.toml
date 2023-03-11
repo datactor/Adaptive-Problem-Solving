@@ -550,3 +550,7 @@ path = "imple/boj_1330.rs"
 [[example]]
 name = "boj_24725"
 path = "bruteforce/boj_24725.rs"
+
+[[example]]
+name = "boj_11049"
+path = "dp/boj_11049.rs"
