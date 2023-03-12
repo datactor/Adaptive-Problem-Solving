@@ -554,3 +554,7 @@ path = "bruteforce/boj_24725.rs"
 [[example]]
 name = "boj_11049"
 path = "dp/boj_11049.rs"
+
+[[example]]
+name = "boj_1520"
+path = "graph/boj_1520_dfs_dp.rs"
