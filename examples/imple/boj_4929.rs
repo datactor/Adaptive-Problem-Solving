@@ -17,10 +17,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         let v2 = input();
 
-        let v1 = v1.split_ascii_whitespace();
-        let v1: Vec<i32> = v1.skip(1).map(|s| s.parse::<i32>().unwrap()).collect();
-        let v2 = v2.split_ascii_whitespace();
-        let v2: Vec<i32> = v2.skip(1).map(|s| s.parse::<i32>().unwrap()).collect();
+        let v1: Vec<i32> = v1.split_whitespace().skip(1).map(|s| s.parse().unwrap()).collect();
+        let v2: Vec<i32> = v2.split_whitespace().skip(1).map(|s| s.parse().unwrap()).collect();
 
         let (mut ans, mut i, mut j) = (0, 0, 0);
         let (mut ns, mut ms) = (0, 0);
