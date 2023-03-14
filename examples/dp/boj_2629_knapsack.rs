@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut sc = Scanner::new(&input);
 
     let n = sc.read::<usize>();
-    let mut v: Vec<i32> = (0..n).map(|_| sc.read::<i32>()).collect();
+    let v: Vec<i32> = (0..n).map(|_| sc.read::<i32>()).collect();
 
     let m = sc.read::<usize>();
     let beads: Vec<i32> = (0..m).map(|_| sc.read::<i32>()).collect();
@@ -99,7 +99,58 @@ fn main() -> Result<(), Box<dyn Error>> {
         write!(output, "{}", res)?;
     }
 
-    println!("{:?}", dp);
-
     Ok(())
 }
+
+// // flatten dp
+// fn main() -> Result<(), Box<dyn Error>> {
+//     let mut input = String::new();
+//     let mut output = BufWriter::new(io::stdout().lock());
+//     io::stdin().read_to_string(&mut input)?;
+//
+//     let mut sc = Scanner::new(&input);
+//
+//     let n = sc.read::<usize>();
+//     let mut v: Vec<usize> = (0..n).map(|_| sc.read::<usize>()).collect();
+//
+//     let m = sc.read::<usize>();
+//     let beads: Vec<usize> = (0..m).map(|_| sc.read::<usize>()).collect();
+//
+//     let max_weight = v.iter().sum::<usize>();
+//     let mut dp = vec![false; max_weight+1];
+//     dp[0] = true;
+//
+//     let mut weights = Vec::new();
+//     let mut cur_weight = 0;
+//
+//     for i in 0..n {
+//         for j in 0..=cur_weight {
+//             let weight = v[i] + j;
+//             let weight_abs_diff = v[i].abs_diff(j);
+//
+//             if dp[j] && !dp[weight] {
+//                 weights.push(weight);
+//             }
+//
+//             if dp[j] && !dp[weight_abs_diff] {
+//                 weights.push(weight_abs_diff);
+//             }
+//         }
+//         cur_weight += v[i];
+//
+//         while !weights.is_empty() {
+//             dp[weights.pop().unwrap()] = true;
+//         }
+//     }
+//
+//     for bead in beads {
+//         write!(output,
+//                match bead {
+//                    bead if bead <= max_weight && dp[bead] => "Y ",
+//                    _ => "N ",
+//                }
+//         )?;
+//     }
+//
+//     Ok(())
+// }
