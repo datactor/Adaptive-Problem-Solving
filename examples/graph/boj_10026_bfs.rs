@@ -1,3 +1,5 @@
+// https://www.acmicpc.net/problem/10026
+
 use std::{
     io::{self, prelude::*},
     collections::VecDeque,
