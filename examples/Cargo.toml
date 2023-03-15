@@ -565,4 +565,8 @@ path = "imple/boj_4929.rs"
 
 [[example]]
 name = "boj_2629"
-path = "dp/boj_2629_knapsack.rs"
+path = "dp/boj_2629_0-1knapsack.rs"
+
+[[example]]
+name = "boj_7579"
+path = "dp/boj_7579_0-1knapsack.rs"
