@@ -66,8 +66,6 @@ Consistent Hashing은 hash tables, balanced trees, or linked lists와 같은
 그런 다음 노드는 자신의 ID와 시계 방향 이웃의 ID 사이의 원 부분에 대한 소유권을 갖는다.
 키가 시스템에 삽입되면 원의 한 지점으로 해시되고 이 지점에서 시계 방향으로 간격을 소유한 노드가 키 저장을 담당한다.
 
-### Data Structures
-
 ### Node ID Generation
 새 노드가 시스템에 추가되면 일반적으로 해시 함수를 사용하여 생성되는 고유 식별자가 할당된다.
 식별자는 노드가 원 전체에 고르게 분포되도록 무작위로 선택된다.
