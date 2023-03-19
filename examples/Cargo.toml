@@ -582,3 +582,7 @@ path = "data_structure/boj_gold4_17298_stack.rs"
 [[example]]
 name = "boj_17299"
 path = "data_structure/boj_gold3_17299_stack.rs"
+
+[[example]]
+name = "boj_1725"
+path = "stack/boj_platinum5_1725.rs"
