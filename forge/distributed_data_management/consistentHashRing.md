@@ -53,7 +53,7 @@ Consistent Hashing은 노드 손실이 해당 노드에 할당된 키에만 영�
 
 ### Consistency and Availability
 Consistent Hashing은 eventual consistency을 제공한다. 즉, 시스템의 모든 노드가 결국 일관된 상태로 수렴된다.
-그러나 Consistent Hashing은 노드가 다른 시간에 다른 데이터 보기를 가질 수 있으므로 strong consistency는 보장하지 않는다.
+그러나 노드들은 다른 시간에 다른 데이터 views를 가질 수 있으므로 strong consistency는 보장하지 않는다.
 
 앞서 언급한 것과 같이 Consistent Hashing은 일부 노드가 실패하더라도 시스템이 계속 작동하므로 고가용성을 제공한다.
 그러나 많은 수의 노드가 손실되면 부하의 불균형과 성능 저하가 발생할 수 있다.
