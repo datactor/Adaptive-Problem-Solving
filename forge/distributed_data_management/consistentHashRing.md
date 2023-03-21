@@ -11,11 +11,11 @@ Karger 등에 의해 처음 소개되었다.
 
 ![conHashRing](../../img/conHashRing.png)
 
-## Background
+## 1. Background
 Consistent Hashing은 데이터 파티셔닝 및 노드 멤버십을 관리하기 위해 대규모 분산 시스템에서 일반적으로 사용되는 분산 해시 테이블이다.
 Consistent Hashing을 사용하면 전체 데이터 배포에 영향을 주지 않고 시스템에서 노드를 추가하거나 제거할 수 있다.
 
-## How Consistent Hashing Works
+## 2. How Consistent Hashing Works
 Consistent Hashing에서 각 노드에는 일반적으로 해시 함수를 사용하여 생성되는
 고유 식별자가 할당된다. key space는 일련의 간격으로 파티션되며 각 간격은
 시스템의 노드 중 하나에 할당된다.  
@@ -45,7 +45,7 @@ Consistent Hashing에서 각 노드에는 일반적으로 해시 함수를 사�
    - 시계 방향으로 노드 소유 interval이 키 저장을 담당한다.
    - 정렬된 키 목록에서 이진 검색을 사용하여 효율적으로 조회할 수 있다.
 
-## Advantages of Consistent Hashing
+## 3. Advantages of Consistent Hashing
 Consistent Hashing static hashing 및 dyn hashing과 같은 기존 해싱 기술에 비해 몇 가지 이점을 제공한다.
 
 ### Load Balancing
@@ -68,7 +68,7 @@ Consistent Hashing은 eventual consistency을 제공한다. 즉, 시스템의 �
 앞서 언급한 것과 같이 Consistent Hashing은 일부 노드가 실패하더라도 시스템이 계속 작동하므로 고가용성을 제공한다.
 그러나 많은 수의 노드가 손실되면 부하의 불균형과 성능 저하가 발생할 수 있다.
 
-## Implementation of Consistent Hashing
+## 4. Implementation of Consistent Hashing
 Consistent Hashing은 hash tables, balanced trees, or linked lists와 같은
 다양한 data structures를 사용하여 구현할 수 있다. 가장 일반적인 구현은 fixed number of slots이 있는 circular hash table이다.
 
@@ -103,7 +103,7 @@ NOTE_ 그러나 이것은 일부 노드가 다른 노드보다 더 많은 수의
 가상 노드는 동일한 물리적 노드에 여러 식별자를 할당하여 생성된다.
 이렇게 하면 로드가 노드 전체에 고르게 분산되고 노드가 추가되거나 제거될 때 다시 매핑해야 하는 키 수가 줄어든다.
 
-## The ConsistentHashRing Struct
+## 5. The ConsistentHashRing Struct
 Consistent Hash Ring은 원형 링으로 표시되며 각 노드는 해시 값을 기준으로 링의 한 지점에 표시된다.
 링에 키를 저장하기 위해 키는 먼저 링의 한 지점으로 해시된다. 그러면 키가 해시된 지점에서 시계방향으로 링에 나타나는 첫 번째 노드에 키가 저장된다.
 시계 방향으로 노드가 없으면(키를 저장할 적절한 노드를 찾지 못한 채 해시 링에 대한 루프가 완료되었다면) 루프에서 만난 마지막 노드 바로 다음 노드인,
@@ -190,11 +190,11 @@ get_node 메서드는 정렬된 벡터에서 해당 키를 찾기 위해 binary_
 이러한 단점을 해결하기 위해 Rendezvous Hashing 또는 Jump Hashing과 같은 Consistent Hashing의
 다른 구현이 제안되었다. 이러한 구현은 rebalancing의 필요성을 최소화하고 시스템의 성능 및 load balancing을 개선하는 것을 목표로 한다.
 
-## Use Cases
+## 6. Use Cases
 Consistent Hashing은 contents delivery networks, 분산 데이터베이스 및 P2P 네트워크와 같은 다양한 분산 시스템에서 사용된다.
 노드 수가 많고 동적이며 로드를 예측할 수 없는 시스템에서 특히 유용하다.
 
-## Limitations
+## 7. Limitations
 Consistent Hashing 기술에는 시스템을 설계하고 구현할 때 고려해야 할 몇 가지 limitation 사항이 있다.
 주요 risk중 하나는 핫스팟 및 부하 불균형(데이터 지역성)의 데이터 분포 가능성이다.
 핫스팟은 노드가 불균형적으로 많은 수의 키를 담당할 때 발생하며, 이는 가상 노드와 같은 기술을 사용하여 로드를 보다 균등하게 분산함으로써
@@ -206,7 +206,7 @@ Consistent Hashing은 또한 일부 응용 프로그램에서 필요할지도 �
 또 다른 해시 함수는 분산 속성이 더 우수하여 로드 밸런싱 및 성능이 향상될 수 있다.
 따라서 최적의 성능과 로드 밸런싱을 보장하려면 특정 사용 사례에 적합한 해시 함수를 신중하게 선택하는 것이 중요하다.
 
-## Comparison with Other Techniques
+## 8. Comparison with Other Techniques
 Consistent Hashing은 분산 해싱에 사용되는 여러 기술 중 하나이다.
 다른 기술로는 static hashing, dynamic hashing, and rendezvous hashing, jump hashing등이 있다.
 이러한 각 기술에는 고유한 강점과 약점이 있으며 기술 선택은 시스템의 특정 요구 사항에 따라 다르다.
