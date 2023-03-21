@@ -2,8 +2,18 @@
 Consistent Hashing은 노드가 추가되거나 제거될 때 다시 매핑해야 하는
 키의 수를 최소화하면서 부하의 균형을 맞추는 방식으로 노드 집합에 데이터를
 배포하는 방법을 제공하는 분산 해싱 기술이다.  
+Consistent Hashing을 사용하면 해시 함수를 사용해 키가 원의 한 점에 매핑되고
+각 노드도 동일한 원의 한 점에 매핑된다. 그런 다음 해시 링은 원을 파티션으로 균등하게 분할하며 형성되며 각
+파티션은 해시 값 범위를 나타낸다. 모든 노드는 해시 값을 기반으로 링에 저장될 수 있으며 키는 해당 해시 값 범위에 속하는 노드에 매핑된다.
+이렇게 하면 각 노드가 특정 범위의 키를 담당하고 전체 키 분포가 노드 간에 균등하게 균형을 이루게 된다.  
 1997년 논문 "Consistent Hashing and Random Trees: Distributed Caching Protocols for Relieving Hot Spots on the World Wide Web"에서
 Karger 등에 의해 처음 소개되었다.
+
+![conHashRing]()
+
+## Background
+Consistent Hashing은 데이터 파티셔닝 및 노드 멤버십을 관리하기 위해 대규모 분산 시스템에서 일반적으로 사용되는 분산 해시 테이블이다.
+Consistent Hashing을 사용하면 전체 데이터 배포에 영향을 주지 않고 시스템에서 노드를 추가하거나 제거할 수 있다.
 
 ## How Consistent Hashing Works
 Consistent Hashing에서 각 노드에는 일반적으로 해시 함수를 사용하여 생성되는
@@ -94,6 +104,11 @@ NOTE_ 그러나 이것은 일부 노드가 다른 노드보다 더 많은 수의
 이렇게 하면 로드가 노드 전체에 고르게 분산되고 노드가 추가되거나 제거될 때 다시 매핑해야 하는 키 수가 줄어든다.
 
 ## The ConsistentHashRing Struct
+Consistent Hash Ring은 원형 링으로 표시되며 각 노드는 해시 값을 기준으로 링의 한 지점에 표시된다.
+링에 키를 저장하기 위해 키는 먼저 링의 한 지점으로 해시된다. 그러면 키가 해시된 지점에서 시계방향으로 링에 나타나는 첫 번째 노드에 키가 저장된다.
+시계 방향으로 노드가 없으면(키를 저장할 적절한 노드를 찾지 못한 채 해시 링에 대한 루프가 완료되었다면) 루프에서 만난 마지막 노드 바로 다음 노드인,
+해시 링의 첫 번째 노드에 키가 저장된다.
+
 다음은 hash table과 circular linked list를 사용한 Consistent Hashing의 예이다. (written in Rust)
 ```rust
 pub struct ConsistentHashRing {
