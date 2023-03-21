@@ -47,7 +47,7 @@ Robert Jenkins가 제안한 알고리즘의 변형을 사용한다.
 Jenkins의 해시 함수는 입력 키를 받아 32비트 해시 값을 출력으로 생성하는 비암호화 해시 함수이다.
 이 함수는 입력 키를 해시 값으로 변환하기 위해 비트 시프트와 비트 연산의 조합을 사용한다.
 해시 함수는 상대적으로 간단하고 빠르지만 여전히 키에 대한 해시 값의 좋은 분포를 제공한다.
-https://burtleburtle.net/bob/hash/evahash.html
+https://burtleburtle.net/bob/hash/evahash.html  
 https://en.wikipedia.org/wiki/Jenkins_hash_function
 
 ### Explanation of how the hash function maps keys to hash values
@@ -177,3 +177,62 @@ JumpConsistent 해싱에는 하나의 해시 함수만 필요한 반면, 기존�
 높은 서비스 레이턴시 및 시스템 복잡성 증가 등의 여러 측면에서 성능에 문제가 될 가능성이 있다.  
 대조적으로 JumpConsistent Hashing은 Rebalancing에 보다 효율적인 접근 방식을 사용하여 재매핑해야 하는 데이터의 양을 줄이고 
 위와 같은 잠재적인 성능 문제를 방지한다.
+
+## 5. JumpConsistent Hashing in Practice
+JumpConsistent Hashing은 실제로 다양한 분산 시스템에 널리 사용되었다.
+JumpConsistent Hashing은 그 자체로도 뛰어난 기술이지만, 여전히 개선될 수 있는 여지가 남아 있다.
+
+### Real-world examples of JumpConsistent Hashing in action
+JumpConsistent Hashing은 Google의 Spanner 데이터베이스 및 Cassandra 데이터베이스를 비롯한 여러 실제 애플리케이션에서 사용되었다.
+다음은 몇 가지 실제 사례이다.
+
+#### Content Delivery Networks (CDNs)
+CDN은 종종 JumpConsistent Hashing을 사용하여 여러 서버에 콘텐츠를 배포한다.
+CDN을 통해 콘텐츠는 전 세계 사용자에게 빠르고 효율적으로 제공되어야 하며 JumpConsistent Hashing은 해당 콘텐츠를 서버 전체에 고르게 배포하여
+핫스팟 가능성을 줄이고 사용자의 빠른 액세스 시간을 보장한다.
+
+#### Distributed Databases
+분산 데이터베이스는 종종 Consistent Hashing을 사용하여 노드 간에 데이터를 분할하지만,
+JumpConsistent Hashing은 키 배포에 보다 효율적인 접근 방식을 제공한다.
+가상 버킷을 사용하고 노드를 추가하거나 제거할 때 재조정해야 하는 데이터 양을 최소화함으로써
+JumpConsistent Hashing은 분산 데이터베이스의 성능과 확장성을 개선하는 데 도움이 될 수 있다.
+
+#### Network Load Balancers
+Network Load Balancers는 JumpConsistent Hashing을 사용하여 여러 서버에 트래픽을 분산한다.
+네트워크 로드 밸런싱을 사용하면 한 서버에 과부하가 걸려 성능 문제가 발생하지 않도록 서버 전체에 트래픽을 고르게 분산시키는 것이 중요하다.
+JumpConsistent Hashing은 요청의 해시된 값을 기반으로 서버 전체에 트래픽을 고르게 분배하여 이를 달성하는 데 도움된다.
+
+### Optimization Techniques for Improving Performance
+JumpConsistent Hashing은 기존의 Consistent Hashing에 비해 많은 이점을 제공하지만 여전히 성능을 최적화할 수 있는 여지가 남아 있다.
+이러한 기술 중 하나는 캐싱을 사용하여 해시 함수 호출 수를 줄이고 키를 가상 버킷에 매핑하는 오버헤드를 최소화하는 것이다.
+또 다른 기술은 JumpConsistent Hashing과 함께 Consistent Hashing을 사용하여 키 배포에 훨씬 더 효율적인 접근 방식을 제공하는 것이다.
+두 기술을 함께 사용하면 가장 까다로운 분산 시스템에서도 고성능과 확장성을 달성할 수 있다.
+
+## 6. Limitations of JumpConsistent Hashing
+JumpConsistent Hashing은 기존의 Consistent Hashing에 비해 몇 가지 장점이 있는 반면에 고려해야 할 몇 가지 제약 사항도 있다.
+### Explanation of potential drawbacks or limitations of JumpConsistent Hashing
+#### 1) Limited Number of Buckets
+JumpConsistent Hashing은 고정된 수의 가상 버킷을 사용하여 노드 간에 키를 배포한다.
+이는 시스템의 노드 수를 가상 버킷 수 이상으로 늘릴 수 없음을 의미한다. 즉, 시스템을 동적으로 확장하기 어려울 수 있다.
+더 많은 노드가 추가되면 Load balancing을 유지하기 위해 더 많은 수의 가상 버킷으로 시스템을 재구성해야 한다.
+
+
+#### 2) Hash Collisions
+다른 해싱 알고리즘과 마찬가지로 JumpConsistent Hashing은 해시 충돌을 겪을 수 있다.
+두 개의 키가 동일한 가상 버킷에 매핑되면 로드 분산이 고르지 않고 시스템에서 핫스팟이 발생할 수 있다.
+좋은 해시 함수와 충분한 수의 가상 버킷을 사용하여 해시 충돌 가능성을 줄일 수 있지만 여전히 인식해야 할 잠재적인 문제이다.
+
+#### 3) Limited Key Range
+JumpConsistent Hashing은 64비트 키와 함께 작동하도록 설계되어 특정 애플리케이션에서 유용성이 제한될 수 있다.
+더 큰 키가 필요한 경우 다른 접근 방식을 고려해야 할 수도 있다.
+
+#### 4) Limited Rebalancing Options
+JumpConsistent Hashing은 Rebalancing과 관련하여 기존의 Consistent Hashing보다 효율적이지만 rebalancing 방법에는 여전히 제한이 있다.
+예를 들어 노드가 시스템에서 추가되거나 제거되면 영향을 받는 가상 버킷의 키만 다시 매핑하면 된다.
+이는 전체 rebalancing을 트리거하기에 충분한 키가 추가되거나 제거될 때까지 시스템에 약간의 imbalance가 있을 수 있음을 의미한다.
+
+#### 5) Multiple Jumps Required for Key Lookup
+JumpConsistent Hashing은 키가 속한 가상 버킷을 찾기 위해 여러 번의 점프가 필요하므로 다른 해싱 알고리즘에 비해 대기 시간이 길어질 수 있다.
+
+이러한 제한 사항을 인식함으로써 효과적이고 효율적인 방식으로 JumpConsistent Hashing을 사용하는 분산 시스템을 설계할 수 있다.
+JumpConsistent Hashing 또는 다른 기술을 사용할지 여부를 결정할 때 시스템의 특정 요구 사항과 요구 사항을 고려하는 것이 중요하다.
