@@ -9,7 +9,7 @@ Consistent Hashing을 사용하면 해시 함수를 사용해 키가 원의 한 
 1997년 논문 "Consistent Hashing and Random Trees: Distributed Caching Protocols for Relieving Hot Spots on the World Wide Web"에서
 Karger 등에 의해 처음 소개되었다.
 
-![conHashRing](../img/conHashRing.png)
+![conHashRing](../../img/conHashRing.png)
 
 ## Background
 Consistent Hashing은 데이터 파티셔닝 및 노드 멤버십을 관리하기 위해 대규모 분산 시스템에서 일반적으로 사용되는 분산 해시 테이블이다.
