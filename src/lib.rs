@@ -16,6 +16,22 @@ pub fn combinations<T>(data: &[T], r: usize) -> Vec<Vec<&T>> {
     result
 }
 
+// Sieve of Eratosthenes
+fn prime_list(n: usize) -> Vec<usize> {
+    let mut sieve = vec![true; n + 1];
+    let m = (n as f32).sqrt();
+    for i in 2..=m as usize {
+        if sieve[i] {
+            for j in (2 * i..=n).step_by(i) {
+                sieve[j] = false
+            }
+        }
+    }
+    return (2..=n)
+        .filter_map(|i| (sieve[i] == true).then(|| i))
+        .collect::<Vec<_>>();
+}
+
 /// Fermat's little Theorem - `O(n + lgp)`
 ///
 /// p가 소수이면, 모든 정수 a에 대해 a^p ≡ a (mod p)이다.
