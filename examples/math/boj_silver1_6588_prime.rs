@@ -3,7 +3,10 @@
 use std::io::{self, prelude::*, BufWriter};
 
 fn main() -> io::Result<()> {
-    let mut input = io::stdin().lock().lines().map(|x| x.unwrap().trim().parse::<usize>().unwrap()); // lazy
+    let mut input = io::stdin()
+        .lock()
+        .lines()
+        .map(|x| x.unwrap().trim().parse::<usize>().unwrap()); // lazy
     let mut output = BufWriter::new(io::stdout().lock());
 
     let mut table = is_prime_list(1_000_000);
