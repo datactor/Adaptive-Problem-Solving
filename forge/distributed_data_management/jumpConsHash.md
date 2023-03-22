@@ -2,10 +2,10 @@
 Jump Consistent Hashing은 효율적인 데이터 배포 및 로드 밸런싱을 위해 분산 시스템에서 사용되는 기술이다.
 JumpConsistent Hashing은 지정된 수의 버킷에 키를 균일하게 분배하는 해싱 알고리즘으로,
 2014년 John Lamping과 Eric Veach의 연구 논문에서 처음 소개되었다.
-이 알고리즘은 일관된 해시 링을 사용하여 노드 클러스터 전체에 데이터를 배포한다.
+이 알고리즘은 Consistent Hash Ring을 사용하여 노드 클러스터 전체에 데이터를 배포한다.
 노드 전체에 부하를 고르게 분산하고 리소스를 효율적으로 사용하는 등 기존의 Consistent Hashing 에 비해 몇 가지 이점을 제공한다.
 
-Jump Consistent Hashing는 키를 해시 값에 매핑하는 데 Robert Jenkins의 해시 함수를 사용한다.
+Jump Consistent Hashing은 키를 해시 값에 매핑하는 데 Robert Jenkins의 해시 함수를 사용한다.
 이 알고리즘은 일련의 해시 값을 가상 버킷 세트로 나누고 버킷 사이를 이동하여 노드에 키를 할당하는 방식으로 작동한다.
 Jump Consistent Hashing은 핫스팟의 위험 감소 및 로드 밸런싱 개선을 포함하여 기존의 일관된 해싱에 비해 몇 가지 장점이 있다.
 실제로 Jump Consistent Hashing은 다양한 실제 응용 프로그램에서 사용할 수 있으며 다양한 기술을 통해 최적화할 수 있다.
