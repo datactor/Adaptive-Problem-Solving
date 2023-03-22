@@ -46,7 +46,7 @@ Robert Jenkins가 제안한 알고리즘의 변형을 사용한다.
 ### Overview of the hash function used in JumpConsistent Hashing
 Jenkins의 해시 함수는 입력 키를 받아 32비트 해시 값을 출력으로 생성하는 비암호화 해시 함수이다.
 이 함수는 입력 키를 해시 값으로 변환하기 위해 비트 시프트와 비트 연산의 조합을 사용한다.
-해시 함수는 상대적으로 간단하고 빠르지만 여전히 키에 대한 해시 값의 좋은 분포를 제공한다.
+해시 함수는 상대적으로 간단하고 빠르지만 여전히 키에 대한 해시 값의 좋은 분포를 제공한다.  
 https://burtleburtle.net/bob/hash/evahash.html  
 https://en.wikipedia.org/wiki/Jenkins_hash_function
 
