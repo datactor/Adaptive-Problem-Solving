@@ -278,7 +278,7 @@ Range-based 및 Hash-based Sharding의 조합을 사용하여 여러 노드에 �
 
 성공적인 샤딩 구현의 실제 사례를 검토하여 자체 시스템에서 샤딩을 구현하는데 참고하자.
 
-## 8. Sharding in Blockchain DB
+## 8. Sharding in Blockchain
 Sharding을 사용하는 솔라나의 DB를 살펴보자.
 솔라나는 고성능 분산형 블록체인 플랫폼으로 샤딩을 사용하여 높은 처리량과 낮은 트랜잭션 지연을 가능하게 한다.
 Solana에서 샤딩은 "account sharding"이라는 기술을 사용하여 구현된다.
