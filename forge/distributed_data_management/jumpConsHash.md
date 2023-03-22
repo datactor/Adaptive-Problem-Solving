@@ -239,26 +239,41 @@ JumpConsistent Hashing 또는 다른 기술을 사용할지 여부를 결정할 
 
 
 ## 7. Implementation Details
-이 섹션에서는 코드에서 Jump Consistent Hashing의 구현 세부 사항에 대해 논의하고 성능을 향상시키기 위한 다양한 최적화 기술을 탐색한다.
+여기서는 알고리즘이 작동하는 방식과 성능을 개선하는 데 사용할 수 있는 다양한 최적화 기술을 포함하여
+Rust에서 JumpConsistent Hashing의 구현 세부 사항에 대한 개요를 제공한다.
 
 ### Details on implementing JumpConsistent Hashing in code
 Jump Consistent Hashing은 Lamping과 Veach가 원본 논문에서 설명한 것처럼 간단한 알고리즘을 사용하여 구현할 수 있다.
-
+1. 'jump consistent_hash' 함수는 64비트 입력 값을 지정된 수의 출력 버킷 중 하나에 매핑하는데 사용된다. 두 개의 입력 args를 사용한다.
+   - key는 해싱할 입력값을 나타낸다.
+   - num_buckets는 입력 값이 매핑될 수 있는 출력 버킷의 수를 나타낸다.
+2. Linear congruential generator는 선형 방정식을 사용하여 초기 시드 값을 기반으로 일련의 값을 생성하는 'pseudorandom number generator'
+   의 한 유형이다. JumpConsistentHash 알고리즘의 이 구현에서 Linear congruential generator는 입력 값을 출력 버킷에 매핑하는 데 사용되는
+   일련의 해시 값을 생성하는데 사용된다.
+3. 입력 값이 매핑되어야 하는 Bucket을 Calculation을 하는데 사용되는 루프는 가능한 각 버킷을 반복하고, linear congrential generator를
+   사용하여 각 반복에 대한 해시 값을 계산하고 해시 값을 사용하여 입력되는 버킷의 인덱스를 계산한다. 값은 JumpConsistent Hash 알고리즘을 사용하여
+   매핑되어야 한다. 계산에 고정 소수점 산술을 사용하면 알고리즘이 다양한 플랫폼에서 일관된 결과를 생성할 수 있다.
+4. 'jump_consistent_hash' 함수는 입력 값이 매핑되어야 하는 버킷의 인덱스를 u32로 반환한다. 이 값은 입력 값을
+   적절한 출력 버킷으로 보내는데 사용할 수 있다.
 ```rust
+// Maps a 64-bit key to one of num_buckets output buckets
 fn jump_consistent_hash(key: u64, num_buckets: u32) -> u32 {
    let mut hash: i64 = -1;
    let mut j: i64 = 0;
 
+   // Bucket Calculation
    while j < num_buckets as i64 {
       hash = j;
+      // Generate hash values using a linear congruential generator
       key = key.wrapping_mul(2862933555777941757).wrapping_add(1);
       j = ((hash + 1) as f64 * (1u64 << 31) as f64 / ((key >> 33) + 1) as f64).floor() as i64;
    }
 
+   // Return the index of the bucket to which the key should be mapped
    hash as u32
 }
 ```
-이 함수는 64비트 키와 버킷 수를 입력으로 받아 버킷 인덱스를 반환한다. 간단한 루프를 사용하여 주어진 키에 대한 적절한 버킷을 계산한다.
+64비트 키와 버킷 수를 입력으로 받아 버킷 인덱스를 반환한다. 간단한 루프를 사용하여 주어진 키에 대한 적절한 버킷을 계산한다.
 
 ### Discussion of optimization techniques for improving performance
 Jump Consistent Hashing의 성능을 개선하기 위해 적용할 수 있는 몇 가지 최적화 기술이 있다.
