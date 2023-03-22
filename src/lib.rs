@@ -16,7 +16,7 @@ pub fn combinations<T>(data: &[T], r: usize) -> Vec<Vec<&T>> {
     result
 }
 
-// Sieve of Eratosthenes
+/// Sieve of Eratosthenes
 fn prime_list(n: usize) -> Vec<usize> {
     let mut sieve = vec![true; n + 1];
     let m = (n as f32).sqrt();

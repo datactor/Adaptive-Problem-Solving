@@ -236,3 +236,60 @@ JumpConsistent Hashing은 키가 속한 가상 버킷을 찾기 위해 여러 �
 
 이러한 제한 사항을 인식함으로써 효과적이고 효율적인 방식으로 JumpConsistent Hashing을 사용하는 분산 시스템을 설계할 수 있다.
 JumpConsistent Hashing 또는 다른 기술을 사용할지 여부를 결정할 때 시스템의 특정 요구 사항과 요구 사항을 고려하는 것이 중요하다.
+
+
+## 7. Implementation Details
+이 섹션에서는 코드에서 Jump Consistent Hashing의 구현 세부 사항에 대해 논의하고 성능을 향상시키기 위한 다양한 최적화 기술을 탐색한다.
+
+### Details on implementing JumpConsistent Hashing in code
+Jump Consistent Hashing은 Lamping과 Veach가 원본 논문에서 설명한 것처럼 간단한 알고리즘을 사용하여 구현할 수 있다.
+
+```rust
+fn jump_consistent_hash(key: u64, num_buckets: u32) -> u32 {
+   let mut hash: i64 = -1;
+   let mut j: i64 = 0;
+
+   while j < num_buckets as i64 {
+      hash = j;
+      key = key.wrapping_mul(2862933555777941757).wrapping_add(1);
+      j = ((hash + 1) as f64 * (1u64 << 31) as f64 / ((key >> 33) + 1) as f64).floor() as i64;
+   }
+
+   hash as u32
+}
+```
+이 함수는 64비트 키와 버킷 수를 입력으로 받아 버킷 인덱스를 반환합니다. 간단한 루프를 사용하여 주어진 키에 대한 적절한 버킷을 계산한다.
+
+### Discussion of optimization techniques for improving performance
+Jump Consistent Hashing의 성능을 개선하기 위해 적용할 수 있는 몇 가지 최적화 기술이 있다.
+#### 1) Paralleization
+이 알고리즘은 여러 코어에서 병렬화될 수 있으므로 많은 수의 키 또는 버킷을 처리할 때 더 빠른 계산이 가능하다.
+
+#### 2) Caching
+자주 엑세스하는 키를 캐시하여 인기 있는 키의 계산 시간을 줄일 수 있다. LRU(Least Recently Used) 캐시를 구현하는 것은
+캐시 크기를 관리하고 덜 자주 사용되는 키를 제거하기 위한 효과적인 전략이 될 수 있다.
+
+#### 3) Vectorization
+최신 프로세서는 여러 데이터 요소를 동시에 처리할 수 있는 SIMD(Single Instruction Multiple Data) 작업을 지원한다. SIMD 명령을 활용하면
+알고리즘의 성능을 크게 향상시킬 수 있다.
+
+## 8. Conclusion
+### Recap of the advantages of JumpConsistent Hashing over traditional consistent hashing
+#### 1) Minimal disruption
+버킷 수가 변경되면 키의 일부만 다시 매핑되어 데이터 배포에 미치는 영향을 최소화 한다.
+#### 2) Simplicity
+알고리즘은 구현 및 이해가 간단하여 기존 시스템에 쉽게 통합할 수 있다.
+#### 3) Statelessness
+링 구조의 유지 관리가 필요한 기존의 Consistent Hashing과 달리 Jump Consistent Hasing은 상태가 없으며,
+키와 버킷 수만 입력하면 된다.
+
+### Final thoughts and potential areas for future development
+Jump Consistent Hashing은 노드 클러스터 전체에 데이터를 배포하는데 유용한 기술임은 이미 검증되었다.
+버킷 변경 중 단순성과 최소한의 중단으로 인해 다양한 응용 분야에서 매력적인 선택이다.
+
+향후 개발이 가능한 영역은 다음과 같다.
+
+1. 알고리즘의 성능을 더욱 최적화하기 위해 머신 러닝 기술의 적용을 고려.
+2. 분산 시스템의 load balancing과 같은 특정 사용 사례에 대한 Jump Consistent Hashing의
+   적합성 평가 및 가능한 application 탐색
+3. Jump Consistent Hashing의 키 분포 및 전반적인 성능에 대한 다양한 해싱 기능의 영향을 조사.

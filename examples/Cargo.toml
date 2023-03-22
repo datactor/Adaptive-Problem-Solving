@@ -594,3 +594,7 @@ path = "stack/boj_platinum5_3015.rs"
 [[example]]
 name = "boj_6588"
 path = "math/boj_silver1_6588_prime.rs"
+
+[[example]]
+name = "boj_24444"
+path = "graph/boj_silver2_24444_bfs.rs"
