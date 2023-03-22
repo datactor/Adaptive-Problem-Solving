@@ -258,7 +258,7 @@ fn jump_consistent_hash(key: u64, num_buckets: u32) -> u32 {
    hash as u32
 }
 ```
-이 함수는 64비트 키와 버킷 수를 입력으로 받아 버킷 인덱스를 반환합니다. 간단한 루프를 사용하여 주어진 키에 대한 적절한 버킷을 계산한다.
+이 함수는 64비트 키와 버킷 수를 입력으로 받아 버킷 인덱스를 반환한다. 간단한 루프를 사용하여 주어진 키에 대한 적절한 버킷을 계산한다.
 
 ### Discussion of optimization techniques for improving performance
 Jump Consistent Hashing의 성능을 개선하기 위해 적용할 수 있는 몇 가지 최적화 기술이 있다.
