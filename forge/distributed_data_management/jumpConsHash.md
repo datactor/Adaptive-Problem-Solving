@@ -306,5 +306,5 @@ Jump Consistent Hashing은 노드 클러스터 전체에 데이터를 배포하�
 
 1. 알고리즘의 성능을 더욱 최적화하기 위해 머신 러닝 기술의 적용을 고려.
 2. 분산 시스템의 load balancing과 같은 특정 사용 사례에 대한 Jump Consistent Hashing의
-   적합성 평가 및 가능한 application 탐색
-3. Jump Consistent Hashing의 키 분포 및 전반적인 성능에 대한 다양한 해싱 기능의 영향을 조사.
+   적합성 평가 및 적용 가능한 app 또는 extensions 탐색
+3. Jump Consistent Hashing의 키 분포 및 전반적인 성능에 적합한 다양한 해싱 알고리즘 조사.
