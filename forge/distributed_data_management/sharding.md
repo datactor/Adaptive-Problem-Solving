@@ -44,14 +44,6 @@ Pubkey는 account를 식별하는 데 사용되며 해시 값은 account 관리�
 전반적으로 샤딩은 분산 데이터베이스의 sharding은 확장성을 향상시키는 중요한 기술이며,
 솔라나에서 sharding을 사용하면 탈중앙화 네트워크에서 높은 트랜잭션 처리량과 짧은 대기 시간을 달성하는 데 효과가 있음을 알 수 있다.
 
-### AccountDB sharding 인덱싱 시도
-
-sharding 구현 중에 조금 더 현실적인 문제에 부딪혔다.
-account key만으로 해당 key가 저장된 shard를 어떻게 찾아가야 할까?
-shard index가 저장된 db를 만들어서 메모리에 올려둬 추가적인 리소스를 사용해야 할까?
-
-
-
 ## Conclusion
 - Summarize the main points of the document
 - Provide some final thoughts on sharding in Solana and large-scale systems in general

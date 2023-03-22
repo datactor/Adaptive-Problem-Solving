@@ -1,4 +1,9 @@
 # Jump Consistent Hashing
+
+Jump Consistent Hashing은 보다 간단하고 빠르게 설계된 Consistent Hashing의 변형입니다.
+Consistent Hashing에 익숙하지 않은 경우 [Consistent Hash Ring](https://github.com/datactor/rust-problem-solving/blob/main/forge/distributed_data_management/consistentHashRing.md)
+을 먼저 읽는 것이 좋습니다. 여기서는 Jump Consistent가 어떻게 작동하는지 살펴보겠습니다.
+
 Jump Consistent Hashing은 효율적인 데이터 배포 및 로드 밸런싱을 위해 분산 시스템에서 사용되는 기술이다.
 JumpConsistent Hashing은 지정된 수의 버킷에 키를 균일하게 분배하는 해싱 알고리즘으로,
 2014년 John Lamping과 Eric Veach의 연구 논문에서 처음 소개되었다.
