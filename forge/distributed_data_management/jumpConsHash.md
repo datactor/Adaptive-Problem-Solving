@@ -264,7 +264,7 @@ Jump Consistent Hashing은 Lamping과 Veach가 원본 논문에서 설명한 것
 Linear congruential generator를 사용한 jump_consistent_hash 구현
 ```rust
 // Maps a 64-bit key to one of num_buckets output buckets
-fn jump_consistent_hash(key: u64, num_buckets: u32) -> u32 {
+fn jump_consistent_hash(mut key: u64, num_buckets: u32) -> u32 {
    let mut hash: i64 = -1;
    let mut j: i64 = 0;
 
