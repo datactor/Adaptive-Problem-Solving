@@ -255,6 +255,8 @@ Jump Consistent Hashing은 Lamping과 Veach가 원본 논문에서 설명한 것
    매핑되어야 한다. 계산에 고정 소수점 산술을 사용하면 알고리즘이 다양한 플랫폼에서 일관된 결과를 생성할 수 있다.
 4. 'jump_consistent_hash' 함수는 입력 값이 매핑되어야 하는 버킷의 인덱스를 u32로 반환한다. 이 값은 입력 값을
    적절한 출력 버킷으로 보내는데 사용할 수 있다.
+
+Linear congruential generator를 사용한 jump_consistent_hash 구현
 ```rust
 // Maps a 64-bit key to one of num_buckets output buckets
 fn jump_consistent_hash(key: u64, num_buckets: u32) -> u32 {
@@ -272,8 +274,21 @@ fn jump_consistent_hash(key: u64, num_buckets: u32) -> u32 {
    // Return the index of the bucket to which the key should be mapped
    hash as u32
 }
+
 ```
 64비트 키와 버킷 수를 입력으로 받아 버킷 인덱스를 반환한다. 간단한 루프를 사용하여 주어진 키에 대한 적절한 버킷을 계산한다.
+- _NOTE: LCG(선형 합동 생성기)는, 비록 최대 주기를 가지도록 인자를 선택했더라도 아주 좋은 품질의 난수열을 생성해 내지 못한다.
+  예를 들어 선형 합동 생성기가 만드는 연속된 난수들 사이에 상당한 상관 관계가 존재하기 때문에 몬테 카를로 시뮬레이션에 적합하지 않으며,
+  마지막으로 생성된 난수를 알면 그 뒤에 만들어질 난수를 모두 예측할 수 있기 때문에 암호학적인 목적으로도 사용할 수 없다.  
+  즉, 블록체인의 주요 해싱 알고리즘으로 사용될 수 없다. 그렇지만 분산 시스템에서 네트워크를 통해 워크로드를 분산하는 것과 같은
+  비암호화 목적의 사용에는 유용한 선택일 수 있는 이유가 있다.
+  1) 계산 오버헤드 측면에서 유리하다.  
+     곱셈, 덧셈 및 비트 이동과 같은 간단한 수학연산을 사용해 상대적으로 계산 속도가 빠르다.
+  2) 상태 크기가 상대적으로 작다.  
+     즉 생성기의 내부 상태를 저장하는데 필요한 메모리가 더 적다.
+  3) 잘 이해된 수학적 구조를 가지고 있어 특정 사용 사례에 대해 쉽게 분석하고 최적화할 수 있다.  
+     이는 속도와 확장성이 중요한 요소인 분산 시스템에서 더 나은 성능과 효율성으로 이어질 수 있다.
+
 
 ### Discussion of optimization techniques for improving performance
 Jump Consistent Hashing의 성능을 개선하기 위해 적용할 수 있는 몇 가지 최적화 기술이 있다.
@@ -308,3 +323,15 @@ Jump Consistent Hashing은 노드 클러스터 전체에 데이터를 배포하�
 2. 분산 시스템의 load balancing과 같은 특정 사용 사례에 대한 Jump Consistent Hashing의
    적합성 평가 및 적용 가능한 app 또는 extensions 탐색
 3. Jump Consistent Hashing의 키 분포 및 전반적인 성능에 적합한 다양한 해싱 알고리즘 조사.
+4. Consistent Hashing과 Jump Consistent Hashing을 결합
+   - 전제: Consistent Hashing은 적은 수의 노드가 요청의 많은 부분을 담당하는 열악한 부하 균형 및 핫스팟으로 어려움을 겪을 수 있다.
+   - 아이디어: Consistent Hashing을 사용하여 시스템의 각 노드에 해시 값 범위를 할당한 다음 JumpConsistent Hashing을 사용하여
+     키의 해시값보다 큰 가장 작은 해시 값을 가진 노드에 키를 매핑한다. JumpConsistent Hashing을 추가로 사용하면 손쉬운 노드 추가 및 제거,
+     감소된 키 재분배와 같은 Consistent Hashing의 이점을 계속 유지하면서 키가 노드 전체에 균등하게 분배되도록 할 수 있다.  
+     즉, 키 배포의 기본 구조는 각 노드에 해시 값 범위를 할당하는 Consistent Hashing을 사용하고,
+     키매핑 노드 접근 방식은 jumpConsistent Hashing을 사용하여, 각 키를 키의 해시 값보다 큰 가장 작은 해시 값을 가진 노드에 매핑함으로써
+     키가 시스템의 노드 전체에 고르게 분산되도록 하여 부하 균형을 개선하고 핫스팟을 줄인다.
+   - 효과: Consistent Hashing과 JumpConsitent Hashing을 결합하여 가장 까다로운 분산시스템에서도 높은 성능과 확장성을 달성할 수 있다.
+     로드는 노드 전체에 고르게 분산되어 요청으로 인해 노드가 과부하되지 않도록 하는 동시에 필요에 따라 노드를 추가하거나 제거하여
+     시스템을 쉽게 확장하거나 축소할 수 있다. 또한 JumpConsistent Hashing은 키를 노드에 매핑하는 빠르고 효율적인 방법을 제공하여
+     시스템이 짧은 대기 시간으로 많은 양의 요청을 처리할 수 있도록 한다.
