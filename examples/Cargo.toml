@@ -598,3 +598,7 @@ path = "math/boj_silver1_6588_prime.rs"
 [[example]]
 name = "boj_24444"
 path = "graph/boj_silver2_24444_bfs.rs"
+
+[[example]]
+name = "boj_24445"
+path = "graph/boj_silver2_24445_bfs.rs"
