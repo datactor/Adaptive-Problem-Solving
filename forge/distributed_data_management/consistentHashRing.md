@@ -162,7 +162,7 @@ impl ConsistentHashRing {
                 }
             }
         };
-        Some(self.nodes.get(&self.sorted_keys[pos]).unwrap().clone())
+       self.nodes.get(&self.sorted_keys[pos]).map(|node| node.clone())
     }
 
     fn hash(key: &str) -> u64 {
