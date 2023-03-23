@@ -46,7 +46,7 @@ Consistent Hashing에서 각 노드에는 일반적으로 해시 함수를 사�
    - 정렬된 키 목록에서 이진 검색을 사용하여 효율적으로 조회할 수 있다.
 
 ## 3. Advantages of Consistent Hashing
-Consistent Hashing static hashing 및 dyn hashing과 같은 기존 해싱 기술에 비해 몇 가지 이점을 제공한다.
+Consistent Hashing은 static hashing 및 dyn hashing과 같은 기존 해싱 기술에 비해 몇 가지 이점을 제공한다.
 
 ### Load Balancing
 Consistent Hashing은 부하가 시스템의 노드 전체에 고르게 분산되도록 한다.
