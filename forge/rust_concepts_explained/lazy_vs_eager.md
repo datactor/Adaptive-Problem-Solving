@@ -318,6 +318,69 @@ Rust에서 지연 평가를 사용하는 경우의 예는 다음과 같다.
 - 나중에 프로그램 실행에 필요할 수도 있고 필요하지 않을 수도 있는 복잡한 값을 계산할 때.
 - 결과를 즉시 사용할 수 없는 네트워크 요청과 같은 비동기 작업 작업.
 
+##### The impact of lazy evaluation on Rust's ownership model
+Rust에서 소유권 모델은 주어진 시간에 메모리 조각에 대해 단 한 명의 소유자만 있고 소유자가 범위를 벗어나면 해당 메모리가 할당 해제되도록 한다.
+이 모델은 동일한 메모리 조각에 대한 여러 참조가 동시에 존재하지 않도록 하여 데이터 경합 및 기타 메모리 관련 버그를 방지하는 borrow checker에 의해 시행된다.
+
+lazy evaluation은 몇 가지 방식으로 Rust의 소유권 모델에 영향을 미칠 수 있다.
+lazy evaluation를 사용하는 경우 필요할 때까지 변수 생성을 연기할 수 있으므로 메모리 사용량을 줄이는 데 도움이 될 수 있다.
+그러나 이러한 변수가 제대로 관리되지 않으면 ownership 및 borrowing 문제로 이어질 수 있다.
+예를 들어 lazy variable이 함수 내에서 생성되고 참조로 반환되는 경우 참조가 사용되기 전에 범위를 벗어날 수 있으므로 댕글링 참조 및 런타임 오류가 발생할 수 있다.
+```rust
+fn get_lazy_value() -> &'static i32 {
+    lazy_static! {
+        static ref LAZY_VALUE: i32 = {
+            println!("Initializing lazy value");
+            42
+        };
+    }
+    &LAZY_VALUE
+}
+
+fn main() {
+    let lazy_ref = get_lazy_value();
+    // At this point, the lazy value has not been initialized yet
+    println!("Lazy value: {}", lazy_ref);
+}
+```
+이 예에서는 lazy_static 매크로를 사용하여 LAZY_VALUE라는 지연 평가 변수를 생성한다.
+get_lazy_value 함수는 이 변수에 대한 참조를 반환한다.
+그러나 변수는 느리게 평가되므로 함수가 반환될 때 아직 초기화되지 않을 수 있다.
+그런 다음 참조가 함수 외부에서 사용되면 댕글링 참조 및 런타임 오류가 발생할 수 있다.
+
+이 문제를 피하기 위해 Rust의 Rc 또는 Arc type을 사용하여 lazy variable의 소유권을 관리할 수 있다.
+이러한 유형은 데이터가 조기에 삭제되지 않도록 하면서 동일한 데이터에 대한 여러 참조를 허용한다.
+
+다음은 lazy variable를 관리하기 위해 Rc를 사용하는 업데이트된 예다:
+```rust
+use std::rc::Rc;
+
+fn get_lazy_value() -> Rc<i32> {
+    lazy_static! {
+        static ref LAZY_VALUE: Rc<i32> = {
+            println!("Initializing lazy value");
+            Rc::new(42)
+        };
+    }
+    Rc::clone(&LAZY_VALUE)
+}
+
+fn main() {
+    let lazy_ref = get_lazy_value();
+    // Now, the lazy value is guaranteed to be initialized before we use it
+    println!("Lazy value: {}", lazy_ref);
+}
+```
+이 예제에서는 Rc를 사용하여 lazy variable의 소유권을 관리한다.
+get_lazy_value 함수는 이제 참조 카운터에서 관리하는 변수에 대한 Rc 참조를 반환한다.
+이렇게 하면 변수가 중간에 삭제되지 않고 참조가 항상 유효하다.
+
+다음으로 eager evaluation은 소유권과 차용이 적절하게 관리되도록 하는 데 도움이 될 수 있지만 불필요한 메모리 사용과 성능 저하로 이어질 수도 있다.
+예를 들어 전체 파일이 일부만 사용되더라도 열심히 메모리에 로드되면 불필요한 메모리 사용 및 성능 저하가 발생할 수 있다.
+
+전반적으로 Rust의 소유권 모델에 대한 lazy evaluation과 eager evaluation의 영향을 신중하게 고려하고 적절하게 사용하는 것이 중요하다.
+소유권과 차용의 적절한 관리는 메모리 관련 버그를 피하고 Rust 프로그램의 안전성과 정확성을 보장하는 데 중요하다.
+
 ##### Examples of When to Use Eager Evaluation
 즉시 평가는 일반적으로 대부분의 사용 사례에서 지연 평가보다 더 효율적이고 편리하다.
 Rust에서 즉시 평가를 사용하는 경우의 예는 다음과 같다.
