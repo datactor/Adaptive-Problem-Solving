@@ -9,7 +9,7 @@ Asynchronous programming은 concurrent execution of code을 허용함으로써 �
 
 Rust의 async/await는 `lazy evaluation` 원칙에 따라 구축된 언어 기능이다.  
 즉, 코드가 즉시 실행되는 `eager evaluation`과 달리 필요할 때만 코드가 실행된다.
-`lazy evaluation`은 async/await의 기본 원칙이다. 이것에 익숙하지 않은 경우 [lazy vs eager](https://github.com/datactor/rust-problem-solving/blob/main/forge/rust_concepts_explained/lazy_vs_eager.md)
+`lazy evaluation`에 익숙하지 않은 경우 [lazy vs eager](https://github.com/datactor/rust-problem-solving/blob/main/forge/rust_concepts_explained/lazy_vs_eager.md)
 를 먼저 읽는 것이 좋다.
 
 async/await를 사용하면 장기 실행 작업이 완료되기를 기다리는 동안 'pause'한 다음,
@@ -111,3 +111,61 @@ async fn fetch_url(url: &str) -> Result<String, reqwest::Error> {
 ```
 
 이 함수는 reqwest 크레이트를 사용하여 URL의 콘텐츠를 비동기적으로 가져오고 응답 본문이 포함된 Result를 반환하거나 요청이 실패하면 오류를 반환한다.
+
+## 3. Await Expressions
+
+### Overview of await expressions in Rust
+비동기 함수는 Rust의 async/await 프로그래밍 모델의 강력한 기능입니다. 프로그램이 다른 코드를 실행하는 동안 장기 실행 작업의 실행을 일시 중지할 수 있으므로 차단 없이 동시에 실행할 수 있는 코드를 작성할 수 있습니다.
+
+
+Rust에서 비동기 함수는 async 키워드를 사용하여 정의됩니다. 비동기 함수가 호출되면 Future를 반환합니다. 이 유형은 아직 사용할 수 없지만 미래의 어느 시점에 있을 값을 나타내는 유형입니다. This Future를 사용하면 비동기 함수의 실행을 일시 중지하고 나중에 값을 사용할 수 있게 되면 다시 시작할 수 있습니다.
+
+
+Rust에서 비동기 함수의 이점은 많습니다. 차단하지 않고 동시에 여러 작업을 실행할 수 있으므로 보다 효율적이고 반응이 빠른 코드를 작성할 수 있습니다. 또한 외부 리소스를 사용할 수 있을 때까지 기다려야 하는 경우가 많은 I/O 작업을 보다 쉽게 ​​처리할 수 있도록 하여 복잡한 코드를 단순화할 수 있습니다.
+
+
+전반적으로, 비동기 함수는 확장 가능한 고성능 Rust 애플리케이션을 작성하기 위한 중요한 도구입니다. 다음 섹션에서는 비동기 함수가 작동하는 방식과 이를 코드에서 사용하는 방법에 대해 자세히 알아봅니다.
+### How await suspends execution until a Future is ready
+
+### Basic syntax of await expressions
+
+
+## 4. Working with Futures
+
+### Polling a Future for progress
+
+### Chaining Futures using combinators
+
+### Handling errors with Result and ? operator
+
+
+## 5. Pinning in Rust
+
+### Overview of pinning in Rust
+
+### Why pinning is important in async/await code
+
+### Examples of using pinning in async/await code
+
+
+## 6. Advanced Topics
+
+### Async streams and sinks
+
+### Cancelling Futures
+
+### Sharing state between Futures using Arc and Mutex
+
+
+## 7. Best Practices and Pitfalls
+
+### Best practices for writing efficient and maintainable async code
+
+### Common pitfalls to avoid when working with async code
+
+
+## 8. Conclusion
+
+### Recap of key points
+
+### Final thoughts and recommendations for learning more about async/await in Rust.

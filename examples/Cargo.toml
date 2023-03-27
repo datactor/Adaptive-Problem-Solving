@@ -614,3 +614,7 @@ path = "graph/boj_silver2_1012_bfs.rs"
 [[example]]
 name = "boj_7569"
 path = "graph/boj_gold5_7569_bfs.rs"
+
+[[example]]
+name = "boj_2206"
+path = "graph/boj_gold3_2206_bfs.rs"
