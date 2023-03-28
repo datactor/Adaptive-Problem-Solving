@@ -14,15 +14,19 @@ fn main() -> io::Result<()> {
 
     let mut sum = 0;
 
+    // 신발끈 초기화
     let mut xs = (0, 0);
     let mut ys = (0, 0);
 
     let (mut x0, mut y0) = (0, 0);
 
+    // lazy input
     for i in 0..n {
+        // edge가 교차하지 않는 완전한 다각형이라고 가정
         let l = line();
         let (x, y) = l.split_once(' ').unwrap();
         let (x, y) = (x.parse::<i64>().unwrap(), y.parse::<i64>().unwrap());
+
         if i == 0 {
             (x0, y0) = (x, y);
             xs.1 = x;
@@ -34,7 +38,7 @@ fn main() -> io::Result<()> {
         sum += xs.0 * ys.1 - xs.1 * ys.0;
     }
 
-    // 첫번째 점과 마지막 점이 동일하지 않을 경우를 대비
+    // 첫번째 점과 마지막 점이 동일할 경우를 대비
     if x0 != xs.1 || y0 != ys.1 {
         sum += xs.1 * y0 - x0 * ys.1;
     }
