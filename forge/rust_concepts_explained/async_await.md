@@ -115,20 +115,67 @@ async fn fetch_url(url: &str) -> Result<String, reqwest::Error> {
 ## 3. Await Expressions
 
 ### Overview of await expressions in Rust
-비동기 함수는 Rust의 async/await 프로그래밍 모델의 강력한 기능입니다. 프로그램이 다른 코드를 실행하는 동안 장기 실행 작업의 실행을 일시 중지할 수 있으므로 차단 없이 동시에 실행할 수 있는 코드를 작성할 수 있습니다.
+Rust의 async/await 모델에서 `await`은 `Future`의 결과가 준비(Poll::Ready(T))될 때까지 함수 실행을 일시 중지하는 데 사용된다.
+이 섹션에서는 Rust에서 await 표현식이 작동하는 기본 사항을 다뤄보자.
 
+`Future`는 네트워크 요청이나 파일 읽기와 같이 아직 완료되지 않은 비동기 작업을 나타내는 trait이다.  
+예를 들어 루틴 함수와, 서브 루틴인 비동기 함수에서 `await` 표현식을 만나면 서브 루틴 함수는 `Future`에서 `poll`메서드를 호출하는 코드를 생성한다.
+이 메서드는 관련 코드 스니펫(서브 루틴 함수)을 실행하고 `Future`에 `Poll` state를 반환한다(기본 값인 Pending state).
+`Future`가 아직 준비 되지 않은 경우, poll 메서드는 `Poll::Pending` state를 반환하고, executor는 `Future`를 FIFO 대기열의 끝으로 푸시하고
+executor는 thread::yield_now()를 호출하여 제어권을 OS scheduler로 넘긴다. OS scheduler는 실행할 다른 작업을 예약할 수 있다.
+즉, Rust의 async/await에서는 직접 context switching하지 않고 OS scheduler를 이용한다.
+executor내의 FIFO 대기열을 통해 OS 스케줄러는 실행할 다른 작업을 예약하고 non-blocking context switching 할 수 있다(async/await에서는 기본적으로 thread switching이 아닌 process switch).
+이렇게 되면 기존 thread에 대하여 차단하지 않고 OS 스케줄러에 의해 FIFO 대기열 순으로 스케줄링하며 코드를 실행할 수 한다.
+나중에 Future가 준비되면 poll 메서드가 다시 호출되고 `Poll::Ready(T)` state를 반환한다.
+그런 다음 Rust runtime은 async 함수 실행을 재개한다. 이 함수는 `await` 표현식이 발생한 지점부터 계속된다.
+이를 통해 Rust compiler는 스레드를 차단하지 않고 I/O bound 작업을 처리할 수 있는 효율적이고 성능이 뛰어난 비동기 코드를 작성할 수 있다.
 
-Rust에서 비동기 함수는 async 키워드를 사용하여 정의됩니다. 비동기 함수가 호출되면 Future를 반환합니다. 이 유형은 아직 사용할 수 없지만 미래의 어느 시점에 있을 값을 나타내는 유형입니다. This Future를 사용하면 비동기 함수의 실행을 일시 중지하고 나중에 값을 사용할 수 있게 되면 다시 시작할 수 있습니다.
+`await` 키워드는 함수에서 실행을 일시 중지하고 `Future`가 완료될 때까지 기다리는 것이 안전한 지점을 표시하는 데 사용된다.
+`Future`는 실행을 재개할 준비가 되었을 때 런타임에 알릴 책임이 있으며, 이 시점에서 함수는 중단된 지점에서 계속할 수 있다.
 
+`await` 표현식은 Rust의 async/await 모델의 가장 중요한 기능 중 하나인데, 이는 개발자가 더 읽기 쉽고 추론하기 쉬운 비동기 코드를 작성할 수 있게 해주기 때문이다.
+비동기 작업으로 작업할 때에도 순차 프로그래밍 기술을 사용할 수 있으므로 효율적이고 유지 관리 가능한 코드를 더 쉽게 작성할 수 있다.
 
-Rust에서 비동기 함수의 이점은 많습니다. 차단하지 않고 동시에 여러 작업을 실행할 수 있으므로 보다 효율적이고 반응이 빠른 코드를 작성할 수 있습니다. 또한 외부 리소스를 사용할 수 있을 때까지 기다려야 하는 경우가 많은 I/O 작업을 보다 쉽게 ​​처리할 수 있도록 하여 복잡한 코드를 단순화할 수 있습니다.
-
-
-전반적으로, 비동기 함수는 확장 가능한 고성능 Rust 애플리케이션을 작성하기 위한 중요한 도구입니다. 다음 섹션에서는 비동기 함수가 작동하는 방식과 이를 코드에서 사용하는 방법에 대해 자세히 알아봅니다.
 ### How await suspends execution until a Future is ready
+`await`이 호출되면 기다리고 있는 Future가 완료되었는지 확인한다.
+그렇지 않은 경우 기능이 일시 중단되고 제어가 런타임으로 반환되어 다른 작업을 실행할 수 있다.
+`Future`가 준비되면 기능이 재개되고 계속 실행된다.
+
+Rust에서 HTTP 요청을 만드는 데 일반적으로 사용되는 reqwest crate의 예를 들어보자.
+
+reqwest를 사용하여 비동기 HTTP GET 요청을 만들고 싶다고 가정.
+URL의 응답 본문을 가져오고 Result<String, reqwest::Error>를 반환하는 비동기 함수를 정의할 수 있다.
+
+```rust
+async fn fetch_url(url: &str) -> Result<String, reqwest::Error> {
+    let response = reqwest::get(url).await?;
+    let body = response.text().await?;
+    Ok(body)
+}
+```
+이 함수에서는 await 키워드를 사용하여 함수의 나머지 부분을 계속하기 전에 response future가 완료될 때까지 기다린다.
+Future가 아직 완료되지 않은 경우 함수가 일시 중지되고 제어가 런타임으로 반환되어 다른 작업을 실행한다.
+
+response future가 준비되면 함수가 다시 재개되어 응답 본문을 가져오기 위해 text future를 기다리는 다음 코드 줄을 계속 진행한다.
+
+이것이 await 표현식의 기본 연산이다.
+기다리고 있는 `Future`가 완료될 때까지 현재 함수의 실행을 일시 중지한 다음 `Future`가 준비되면 실행을 재개한다.
+
+요약하면 함수가 일시 중단되면 Rust runtime이 다른 작업을 실행하도록 스레드를 유지하고(non-blocking) 전환할 수 있다는 점은 있다.
+이를 통해 컴퓨팅 리소스를 보다 효율적으로 사용하고 앱 응답성을 향상시킬 수 있다.
 
 ### Basic syntax of await expressions
+await는 Future 객체와 함께 사용되어 결과가 준비될 때까지 함수 실행을 일시 중단한다.
 
+```rust
+async fn my_function() -> Result<(), MyError> {
+    let result = some_async_operation().await?;
+    // Do something with the result
+    Ok(())
+}
+```
+여기서 some_async_operation()은 Future를 반환하는 함수이며 await 키워드는 완료를 기다리는 데 사용된다.
+`?` 연산자는 Future 실행 중에 발생하는 모든 오류를 전파하는 데 사용된다(에러시 MyError 반환).
 
 ## 4. Working with Futures
 
@@ -139,7 +186,16 @@ Rust에서 비동기 함수의 이점은 많습니다. 차단하지 않고 동�
 ### Handling errors with Result and ? operator
 
 
-## 5. Pinning in Rust
+## 5. Executors
+
+### Overview of Executors in Rust
+
+### The Executor Trait
+
+### Managing Tasks with a Custom Executor
+
+
+## 6. Pinning in Rust
 
 ### Overview of pinning in Rust
 
@@ -148,7 +204,7 @@ Rust에서 비동기 함수의 이점은 많습니다. 차단하지 않고 동�
 ### Examples of using pinning in async/await code
 
 
-## 6. Advanced Topics
+## 7. Advanced Topics
 
 ### Async streams and sinks
 
@@ -157,14 +213,14 @@ Rust에서 비동기 함수의 이점은 많습니다. 차단하지 않고 동�
 ### Sharing state between Futures using Arc and Mutex
 
 
-## 7. Best Practices and Pitfalls
+## 8. Best Practices and Pitfalls
 
 ### Best practices for writing efficient and maintainable async code
 
 ### Common pitfalls to avoid when working with async code
 
 
-## 8. Conclusion
+## 9. Conclusion
 
 ### Recap of key points
 
