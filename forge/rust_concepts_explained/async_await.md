@@ -64,7 +64,7 @@ async fn my_func1() {
     println!("This is an async function");
 }
 ```
-위의 my_func1()을 async keyword를 사용하지 않고 간략하게 구현하면 다음과 같다.
+위의 my_func1()을 async keyword를 사용하지 않고 구현하면 다음과 같다.
 ```rust
 enum Poll<T> {
     Ready(T),
@@ -136,7 +136,7 @@ Rust의 async/await 모델에서 `await`은 `Future`의 결과가 준비(Poll::R
 이 섹션에서는 Rust에서 await 표현식이 작동하는 기본 사항을 다뤄보자.
 
 `Future`는 네트워크 요청이나 파일 읽기와 같이 아직 완료되지 않은 비동기 작업을 나타내는 trait이다.  
-예를 들어 루틴 함수와, 서브 루틴인 비동기 함수에서 `await` 표현식을 만나면 서브 루틴 함수는 `Future`에서 `poll`메서드를 호출하는 코드를 생성한다.
+예를 들어 루틴 함수와, 서브 루틴인 비동기 함수에서 `await` 표현식을 만나면 서브 루틴 함수는 `Future`에서 `poll`메서드를 호출한다.
 이 메서드는 관련 코드 스니펫(서브 루틴 함수)을 실행하고 `Future`에 `Poll` state를 반환한다(기본 값인 Pending state).
 `Future`가 아직 준비 되지 않은 경우, poll 메서드는 `Poll::Pending` state를 반환하고, executor는 `Future`를 FIFO 대기열의 끝으로 푸시하고
 executor는 thread::yield_now()를 호출하여 제어권을 OS scheduler로 넘긴다. OS scheduler는 실행할 다른 작업을 예약할 수 있다.
@@ -546,9 +546,242 @@ async/await code와 함께 사용하도록 의도된 type에서 자체적으로�
 
 ### The role of Context in asynchronous programming
 
+#### Definition of Context
+Rust의 async/await 모델에서 Context는 Future의 poll 메서드에 전달되는 type이다.
+'Context'는 Future가 executor와 상호 작용하는 데 필요한 정보를 제공하고 Future가 진행할 준비가 되었을 때 신호를 보낼 수 있도록 한다.
+
+```rust
+/// The context of an asynchronous task.
+///
+/// Currently, `Context` only serves to provide access to a [`&Waker`](Waker)
+/// which can be used to wake the current task.
+#[stable(feature = "futures_api", since = "1.36.0")]
+pub struct Context<'a> {
+    waker: &'a Waker,
+    // Ensure we future-proof against variance changes by forcing
+    // the lifetime to be invariant (argument-position lifetimes
+    // are contravariant while return-position lifetimes are
+    // covariant).
+    _marker: PhantomData<fn(&'a ()) -> &'a ()>,
+}
+
+impl<'a> Context<'a> {
+   /// Create a new `Context` from a [`&Waker`](Waker).
+   #[stable(feature = "futures_api", since = "1.36.0")]
+   #[rustc_const_unstable(feature = "const_waker", issue = "102012")]
+   #[must_use]
+   #[inline]
+   pub const fn from_waker(waker: &'a Waker) -> Self {
+      Context { waker, _marker: PhantomData }
+   }
+
+   /// Returns a reference to the [`Waker`] for the current task.
+   #[stable(feature = "futures_api", since = "1.36.0")]
+   #[rustc_const_unstable(feature = "const_waker", issue = "102012")]
+   #[must_use]
+   #[inline]
+   pub const fn waker(&self) -> &'a Waker {
+      &self.waker
+   }
+}
+```
+여기의 `_marker`field는 `PhantomData` type으로, Rust의 `PhantomData`는 실제로 사용되지는 않지만, 해당 데이터와 라이프타임을 공유하기 위해 사용된다.
+즉, Task가 완료되거나 삭제된 후 해당 Context가 사용될 수 없도록 하기 위함이다.
+Task의 lifetime과 연계된 PhantomData가 존재함으로써, 작업이 삭제되면 PhantomData가 무효화되어 전체 Context를 무효화 시킨다.
+
+이렇게 하면 부실하거나 잘못된 `Context`가 실수로 잘못된 Task를 깨우거나 해제된 메모리에 엑세스하는 데 사용되어
+정의되지 않은 동작 또는 메모리 안전 문제로 이어질 수 있는 버그를 방지하는 데 도움이 된다.
+
+#### How Context works in Rust's async/await model
+Future의 poll 메서드가 호출되면 Context 객체가 전달된다.
+Context에는 Future가 executor와 상호 작용할 수 있도록 하는 현재 작업에 대한 참조가 포함되어 있다.
+
+Context는 또한 Waker 개체에 대한 참조를 제공합니다. 'Waker'는 퓨처에서 진행 준비가 되었을 때 실행자에게 알리는 데 사용됩니다. 이를 통해 실행자는 퓨처를 불필요하게 폴링하는 것을 방지하고 CPU 사용량을 줄여 성능을 향상시킬 수 있습니다.
+
+#### Examples of using Context in Rust
+다음은 Rust에서 Context를 사용하는 예입니다
+```rust
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
+struct MyFuture {
+    counter: u32,
+}
+
+impl Future for MyFuture {
+    type Output = u32;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if self.counter < 10 {
+            self.counter += 1;
+            cx.waker().wake_by_ref();
+            Poll::Pending
+        } else {
+            Poll::Ready(self.counter)
+        }
+    }
+}
+
+fn main() {
+    let future = MyFuture { counter: 0 };
+    let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+    let mut pinned = Pin::new(&mut MyFuture { counter: 0 });
+
+    // Poll the future until it completes
+    loop {
+        match pinned.as_mut().poll(&mut cx) {
+            Poll::Ready(output) => {
+                println!("Future completed with output: {}", output);
+                break;
+            }
+            Poll::Pending => {
+                println!("Future not yet ready");
+            }
+        }
+    }
+}
+```
+이 예제에서는 10까지 세고 최종 개수를 출력으로 반환하는 사용자 지정 미래 'MyFuture'를 정의한다.
+poll 메소드는 Context의 Waker 객체를 사용하여 Future가 아직 진행할 준비가 되지 않았음을 executor에게 알린다.
+
+main에서 MyFuture의 새 인스턴스를 생성하고 아무것도 하지 않는 Waker로 Context를 초기화한다.
+그런 다음 Pin을 사용하여 Future에 대한 mutable 참조를 만들고 준비될 때까지 poll 메서드를 반복적으로 호출한다.
+poll을 호출할 때마다 Context 객체를 전달하여 Future가 executor와 상호 작용할 수 있도록 한다.
+Future가 아직 준비되지 않은 경우 poll 메서드는 Poll::Pending을 반환하고 루프가 계속된다.
+Future가 준비되면 poll 메서드는 Poll::Ready(output)을 반환하고 output을 print한다.
+
+이 예제는 Rust에서 비동기 작업을 관리하기 위해 Context 및 Waker 객체가 어떻게 사용되는지 보여줍니다.
+Future가 executor와 상호작용하고 진행할 준비가 되었을 때 신호를 보낼 수 있는 방법을 제공함으로써
+Rust의 async/await 모델은 효율적이고 성능이 뛰어난 비동기 프로그래밍을 가능하게 한다.
+
 ### How Waker manages task wake-ups
 
-### Working with Context and Waker in custom futures
+#### Definition of Waker
+`Waker`는 Future를 기다리고 있는 Task를 깨우는 역할을 하는 struct이다.
+`Waker`는 기본적으로 executor에게 Task를 진행할 준비가 되었음을 알리는 데 사용할 수 있는 핸들이다.
+```rust
+#[repr(transparent)]
+#[stable(feature = "futures_api", since = "1.36.0")]
+pub struct Waker {
+    waker: RawWaker,
+}
+```
+#### Why Waker is important in Rust's async/await model
+Task를 깨울 방법이 없다면 Future는 언제 진행할 준비가 되었는지 신호를 보낼 방법이 없다.
+때문에 `Waker` struct는 Rust의 async/await 모델의 필수적인 부분이다.
+이는 Future가 진행 준비가 되었을 때 executor에게 알릴 수 있기 때문이다.
+
+#### How Waker works in Rust
+Future가 polling되면 `Waker` 객체에 대한 참조를 받는다.
+Future는 이 객체를 사용하여 `Waker`에서 `wake` 메서드를 호출하여 진행할 준비가 되었음을 알릴 수 있다.
+이 메서드는 executor에게 Task를 진행할 준비가 되었음을 알리는 데 사용되며 executor는 실행할 작업을 예약할 수 있다.
+```rust
+pub trait Future {
+    type Output;
+
+    fn poll(&mut self, cx: &mut Context<'_>) -> Poll<Self::Output>;
+}
+
+pub struct Context<'a> {
+    waker: &'a Waker,
+    _marker: PhantomData<fn(&'a ()) -> &'a ()>,
+}
+
+pub struct Waker {
+    waker: RawWaker,
+}
+
+impl Waker {
+    pub fn wake(self: Arc<Self>) {
+       // The actual wakeup call is delegated through a virtual function call
+       // to the implementation which is defined by the executor.
+       let wake = self.waker.vtable.wake;
+       let data = self.waker.data;
+
+       // Don't call `drop` -- the waker will be consumed by `wake`.
+       crate::mem::forget(self);
+    }
+
+    pub fn wake_by_ref(&self) {
+       // SAFETY: This is safe because `Waker::from_raw` is the only way
+       // to initialize `wake` and `data` requiring the user to acknowledge
+       // that the contract of `RawWaker` is upheld.
+       unsafe { (wake)(data) };
+    }
+}
+```
+
+#### Examples of using Waker in Rust
+다음은 Rust에서 wake-ups를 관리하기 위해 Waker type을 사용하는 방법의 예이다:
+```rust
+use std::sync::{Arc, Mutex};
+use std::task::{Context, Poll, Waker};
+use std::task::waker_ref;
+
+struct MyFuture {
+    waker: Option<Arc<Mutex<Waker>>>,
+    counter: u32,
+}
+
+impl MyFuture {
+    fn new() -> MyFuture {
+        MyFuture { waker: None, counter: 0 }
+    }
+
+    fn notify(&mut self) {
+        if let Some(waker) = self.waker.take() {
+            let waker = waker.lock().unwrap().clone();
+            waker.wake();
+        }
+    }
+}
+
+impl Future for MyFuture {
+    type Output = u32;
+
+    fn poll(&mut self, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if self.counter < 10 {
+            self.counter += 1;
+            self.waker = Some(Arc::new(Mutex::new(cx.waker().clone())));
+            Poll::Pending
+        } else {
+            Poll::Ready(self.counter)
+        }
+    }
+}
+
+fn main() {
+    let mut future = MyFuture::new();
+    let waker = Arc::new(Mutex::new(waker_ref(&future)));
+    let mut cx = Context::from_waker(&*waker.lock().unwrap());
+
+    loop {
+        match future.poll(&mut cx) {
+            Poll::Ready(output) => {
+                println!("Future completed with output: {}", output);
+                break;
+            }
+            Poll::Pending => {
+                println!("Future not yet ready");
+                future.notify();
+            }
+        }
+    }
+}
+```
+이 예제에서는 최대 10까지 세고 최종 개수를 출력으로 반환하는 사용자 지정 Future 'MyFuture'를 정의한다.
+poll 메서드는 Context의 Waker 객체를 사용하여 Future가 아직 진행할 준비가 되지 않았음을 executor에게 알린다.
+
+'notify' 메소드는 Future가 아직 준비되지 않았을 때 호출되며, Future를 다시 polling해야 한다는 신호를 executor에게 알리기 위해 waker를 깨운다.
+
+main에서 MyFuture의 새 인스턴스를 만들고 Future를 가리키는 Waker로 Context를 초기화한다.
+그런 다음 준비가 될 때까지 poll 메서드를 반복해서 호출한다.
+아직 준비되지 않은 경우 notify 메서드를 사용하여 Waker를 깨운다.
+Future가 준비되면 poll 메서드는 Poll::Ready(output)을 반환하고 output을 print한다.
+
+이 예제는 Future가 진행될 준비가 되었을 때 executor에게 알려서 Rust에서 비동기 작업을 관리하기 위해 Waker 객체가 어떻게 사용되는지 보여준다.
+executor가 Future를 불필요하게 polling하지 않도록 함으로써 Rust의 async/await 모델은 효율적이고 성능이 뛰어난 비동기 프로그래밍을 가능하게 한다.
 
 
 ## 7. Executors
@@ -572,10 +805,6 @@ Task(Futures) 대기열에 대해서 라운드 로빈 방식으로
 예를 들어 executor가 loop를 돌때, Poll::Ready(T)의 Future를 만나게 되면 곧바로 context switching 하지 않고,
 Ready가 반환된 해당 Future(즉 .await 표현식을 만났던 async 함수)를 처리하고(Ready됨으로써 push_back 하지 않으며 Task queue에서 삭제된다),
 executor의 구현에 따라 다음의 동작 중 하나를 수행한다.
-
-### The Executor Trait
-The Executor trait is a key abstraction in Rust's async/await ecosystem,
-providing a standardized way to manage the lifecycle of Futures and coordinate their execution across threads.
 
 ### Managing Tasks with a Custom Executor
 다음은 여러 Future 객체에 대해 모니터링 루프를 실행할 수 있는 executor 구현의 예이다.
@@ -879,11 +1108,324 @@ Task를 실행할 준비가 되면 이벤트 루프가 깨어나 호출자 기�
 ## 9. Advanced Topics
 
 ### Async streams and sinks
+#### Definition of async streams and sinks
+일반적으로 사용되는 동기식 스트림 및 싱크는 blocking IO를 사용하여 스트림과 데이터를 송수신한다.
+즉, 작업이 완료될 때까지 송신 또는 수신 코드가 blocking된다.
+이 접근 방식은 간단하고 이해하기 쉽지만 특히 많은 스트림을 동시에 처리할 때 성능 문제가 발생할 수 있다.
+
+반면에 비동기 스트림 및 싱크는 non-blocking IO를 사용하며 blocking 없이 여러 스트림을 동시에 처리하도록 설계되었다.
+비동기 스트림 및 싱크를 사용하면 전송 또는 수신 코드가 blocking되지 않으므로 스트림에서 데이터를 전송하거나 수신하는 동안
+애플리케이션이 계속 실행될 수 있다. 이는 특히 동시성이 높은 애플리케이션에서 성능을 향상시킬 수 있다.
+
+multi-thread 스트림 및 싱크는 다중 스레드를 사용하여 다중 스트림을 동시에 처리한다.
+이 접근 방식은 비동기 스트림 및 싱크와 유사하지만 구현하기가 더 복잡할 수 있으며 제대로 처리되지 않으면 동기화 문제가 발생할 수 있으며,
+많은 리소스를 필요로 한다.
+
+비동기 스트림은 비동기적으로 생성되고 비동기적으로 소비되는 값의 스트림이다.
+즉, 단일 값 대신 일련의 값을 반환하는 Future type이다.
+비동기 싱크는 값을 소비자에게 비동기적으로 보내는 방법이다.
+
+Rust에서 비동기 스트림과 싱크는 'Stream' 및 'Sink' trait을 사용하여 구현되어 동시성에 대해 고도로 최적화된 복잡한 데이터 흐름을 생성할 수 있다.
+이러한 trait을 사용하여 여러 스트림을 동시에 처리하는 성능이 뛰어나고 확장 가능한 애플리케이션을 만들 수 있다.
+
+#### Implementing async streams and sinks in Rust
+비동기 스트림 또는 싱크를 구현하려면 각각 Stream 또는 Sink trate를 구현하는 구조체를 정의해야 한다.
+이 두 가지 trait은 모두 future crate에서 제공된다.
+
+다음은 난수 시퀀스를 생성하는 비동기 스트림의 예이다.
+```rust
+use futures::Stream;
+use rand::{thread_rng, Rng};
+
+struct RandomNumberStream {
+   count: usize,
+}
+
+impl Stream for RandomNumberStream {
+   type Item = u32;
+
+   fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+      let mut rng = thread_rng();
+      if self.count < 10 {
+         self.count += 1;
+         Poll::Ready(Some(rng.gen()))
+      } else {
+         Poll::Ready(None)
+      }
+   }
+}
+```
+여기에서 Stream trait을 구현하는 RandomNumberStream이라는 구조체를 정의한다.
+poll_next 메서드는 난수를 생성하고 이를 Some 값으로 반환한다.
+10개의 값을 생성한 후 None을 반환하여 스트림의 끝을 알린다.
+
+다음은 RandomNumberStream을 사용하여 10개의 난수를 생성하고 print하는 방법의 예이다.
+```rust
+use futures::StreamExt;
+
+#[tokio::main]
+async fn main() {
+    let mut stream = RandomNumberStream { count: 0 };
+    while let Some(num) = stream.next().await {
+        println!("{}", num);
+    }
+}
+```
+이 예제에서는 RandomNumberStream의 새 인스턴스를 만들고 future crate에서 제공하는 StreamExt trait을 사용하여 스트림을 소비한다.
+while let 루프를 사용하여 스트림을 반복하고 각 값을 print한다. next() 메서드는 스트림의 다음 값으로 해석되는 Future를 반환한다.
+우리는 이 Future가 다음 값을 얻기를 기다린다.
+
+#### Using async streams and sinks in Rust
+채팅 서버의 예를 들어 들어보자.
+클라이언트로부터 메시지를 수신하고 연결된 모든 클라이언트에게 브로드캐스트하는 채팅 서버를 구현한다고 가정한다.
+
+```rust
+// Define Message type
+struct Message {
+   sender: String,
+   content: String,
+}
+```
+
+```rust
+// Define server struct, which will keep track of all connected clients and incoming messages
+use futures::StreamExt;
+use futures::SinkExt;
+use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::mpsc::{self, Sender, Receiver};
+
+struct ChatServer {
+   clients: Vec<Sender<Message>>,
+   messages: Receiver<Message>,
+}
+```
+clients는 연결된 각 클라이언트에 대해 하나씩 있는 Sender의 벡터이다.
+서버가 메시지를 수신할 때마다 각 클라이언트의 'Sender'를 통해 메시지를 브로드캐스팅하여 연결된 모든 클라이언트에게 해당 메시지를 보낸다.
+
+messages는 서버가 클라이언트로부터 메시지를 수신하는 데 사용하는 Receiver이다.
+각 수신 메시지는 이 'Receiver'에 추가된다.
+
+```rust
+// implement the server's run method
+impl ChatServer {
+   async fn run(&mut self) -> Result<(), Box<dyn Error>> {
+      while let Some(message) = self.messages.next().await {
+         for client in self.clients.iter_mut() {
+            client.send(message.clone()).await?;
+         }
+      }
+      Ok(())
+   }
+}
+```
+여기서는 messages Receiver의 next() 메서드를 사용하여 다음 수신 메시지를 기다린다.
+메시지가 도착하면 연결된 각 클라이언트의 Sender를 반복하고 send() 메서드를 사용하여 메시지를 브로드캐스트한다.
+
+```rust
+// Define a method to handle new client connections
+async fn handle_client(mut stream: TcpStream, sender: Sender<Message>) -> Result<(), Box<dyn Error>> {
+    let mut buf = [0; 1024];
+
+    loop {
+        let n = stream.read(&mut buf).await?;
+
+        if n == 0 {
+            break;
+        }
+
+        let message = Message {
+            sender: format!("{}", stream.peer_addr()?),
+            content: String::from_utf8_lossy(&buf[0..n]).to_string(),
+        };
+
+        sender.send(message).await?;
+    }
+
+    Ok(())
+}
+```
+이 함수는 각각의 새 클라이언트 연결에 대해 호출된다.
+클라이언트의 TcpStream에서 들어오는 메시지를 읽고 서버의 messages Receiver로 보낸다.
+
+```rust
+// Finally, implement the main function that creates the ChatServer,
+// listens for incoming client connections, and spawns a new task to handle each incoming connection
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+   let mut server = ChatServer {
+      clients: vec![],
+      messages: mpsc::channel(1024).1,
+   };
+
+   let listener = TcpListener::bind("localhost:8080").await?;
+   println!("Listening on {}", listener.local_addr()?);
+
+   loop {
+      let (stream, _) = listener.accept().await?;
+      println!("Accepted connection from {}", stream.peer_addr()?);
+
+      let (tx, rx) = mpsc::channel(1024);
+      server.clients.push(tx);
+
+      let sender = server.messages.clone();
+      tokio::spawn(async move {
+         if let Err(e) = handle_client(stream, rx).await {
+            eprintln!("Error: {}", e);
+         }
+      });
+   }
+
+   Ok(())
+}
+```
+main() 함수는 mpsc::channel 메서드를 사용하여 빈 clients 벡터와 새 Receiver가 있는 새 ChatServer 인스턴스를 생성한다.
+그런 다음 새 TcpListener 인스턴스를 만들고 포트 8080에서 수신 대기를 시작한다.
+
+이어지는 무한 루프에서 서버는 'listener.accept()' 메서드를 사용하여 들어오는 클라이언트 연결을 수락한다.
+들어오는 각 연결에 대해 handle_client() 함수는 tokio::spawn() 메서드를 사용하여 새 작업에서 호출된다.
+handle_client() 함수는 클라이언트의 TcpStream 및 Sender<Message>를 args로 사용한다.
+TcpStream에서 들어오는 메시지를 읽고 수신된 메시지로 새 Message 인스턴스를 만들고 Sender.send() 메서드를 사용하여 서버의 messages Receiver로 보낸다.
+
+ChatServer 인스턴스의 messages Receiver는 StreamExt trait에서 제공하는 next() 메서드를 사용하여 루프에서 소비된다.
+새 메시지가 수신될 때마다 for 루프는 Sender.send() 메서드를 사용하여 연결된 모든 클라이언트에 메시지를 보낸다.
+
+handle_client 함수가 오류를 반환하면 표준 오류 스트림에 print된다.
+handle_client 기능 자체는 여기에 표시되지 않지만 들어오는 클라이언트 메시지를 처리하고 ChatServer 인스턴스를 사용하여 다른 클라이언트에 보내는 것으로 가정한다.
+
+이 구현은 비동기 스트림과 싱크를 사용하여 여러 클라이언트를 동시에 처리할 수 있는 고성능 채팅 서버를 구축하는 방법을 보여준다.
+async/await 구문인 tokio::spawn()과 futures 및 tokio 크레이트에서 제공하는 Stream 및 Sink trait을 사용하면
+복잡한 데이터 흐름을 쉽게 구축하고 여러 비동기 작업을 동시에 처리할 수 있다.
 
 ### Cancelling Futures
+future와 async/await 구문을 사용하는 Rust의 비동기 프로그래밍은 여러 Task와 Task를 동시에 처리할 수 있는 고성능 코드를 작성하는 강력한 방법을 제공한다.
+그러나 때로는 특히, 장기 실행 애플리케이션에서 실행 중인 future를 취소해야 할 필요가 있다.
+
+#### The need for canceling Futures
+여러 상황에서 Future를 취소해야 할 필요성이 있을 수 있다.
+예를 들어 사용자가 진행 중인 Task를 취소하기로 결정하거나 제한 시간이 만료되어 장기 실행 작업을 취소해야 하는 경우이다.
+Future를 취소하는 것은 더 이상 특정 작업을 수행할 필요가 없을 때에도 유용할 수 있다.
+
+#### Implementing cancellation in Rust
+Rust는 Future에 대한 cancellation을 구현하는 다양한 방법을 제공한다.
+한 가지 방법은 'futures-util' crate에서 제공하는 `AbortHandle` 및 `Abortable` type을 사용하는 것이다.
+
+다음은 장기 실행 future를 취소하기 위해 `Abortable`을 사용하는 예이다.
+```rust
+use std::time::Duration;
+use tokio::{time, task};
+use futures::future::{self, FutureExt};
+use futures_util::future::AbortHandle;
+use futures_util::future::Abortable;
+
+async fn long_running_operation() {
+   println!("Long running operation started");
+   time::sleep(Duration::from_secs(10)).await;
+   println!("Long running operation finished");
+}
+
+async fn run() {
+   let (abort_handle, abort_registration) = AbortHandle::new_pair();
+   let long_running_task = task::spawn(long_running_operation());
+   let abortable_task = Abortable::new(long_running_task, abort_registration);
+
+   time::sleep(Duration::from_secs(3)).await;
+   abort_handle.abort();
+}
+
+#[tokio::main]
+async fn main() {
+   run().await;
+}
+```
+이 예제에서는 먼저 단순히 10초 동안 휴면하는 'long_running_operation'을 정의한다.
+그런 다음 `AbortHandle::new_pair` 메서드를 사용하여 `AbortHandle` 및 `AbortRegistration`을 생성하는 'run' 함수를 정의한다.
+그런 다음 'run' 함수는 `task::spawn` 메서드를 사용하여 새 작업을 생성하고 `Abortable::new` 메서드를 사용하여 `Abortable` Future에 wrapping한다.
+이렇게 하면 'long_running_operation'을 비동기적으로 실행하고 `abort_handle`을 사용하여 중단할 수 있는 새 작업이 생성된다.
+
+그런 다음 'run' 함수는 'time::sleep' 메서드를 사용하여 3초 동안 대기하고 `abort_handle.abort()`를 호출하여 장기 실행 작업을 취소한다.
+
+#### Best practices for handling cancellation in Rust
+Rust에서 cancellation을 구현할 때 코드가 안전하고 효율적인지 확인하기 위해 몇 가지 모범 사례를 따르는 것이 중요하다.
+
+다음은 몇가지 권장 tip이다.
+- `futures-util` 크레이트에서 제공하는 `Abortable` type을 사용하여 장기 실행 Future를 wrapping하여 취소 가능하게 한다.
+- `AbortHandle` 및 `AbortRegistration`을 사용하여 새로운 `AbortHandle` 및 `Abortable` pair를 만든다.
+- 장기 실행 future에서 `AbortHandle::is_aborted` 메서드를 사용하여 취소 여부를 항상 확인하여 적절하게 취소할 수 있는지 확인한다.
+- 일정 시간이 지나면 장기 실행 Future를 자동으로 취소하기 위해 time-out을 사용하는 것을 고려하기.
+- I/O 작업과 같은 부작용이 있을 수 있는 Future를 취소할 때 주의하고 Future가 취소되더라도 제대로 정리되었는지 확인.
+
+이러한 모범 사례를 따르면 Rust 애플리케이션에서 안전하고 효율적인 취소를 구현할 수 있다.
 
 ### Sharing state between Futures using Arc and Mutex
 
+#### The challenge of sharing state in asynchronous programming
+비동기 프로그래밍에는 종종 여러 작업 또는 Future 간에 공유 상태로 작업하는 것이 포함된다.
+그러나 Task가 동시에 실행되고 동일한 데이터에 동시에 액세스할 수 있으므로
+데이터 경합, 교착 상태 및 기타 동기화 문제를 비롯한 여러 가지 문제가 발생할 수 있으므로 작업 간에 상태를 공유하는 것은 어려울 수 있다.
+Rust에서는 OS레벨에서 최적화된 Arc 및 Mutex type등의 공유 상태 Task를 위한 도구를 제공한다.
+
+#### Implementing shared state in Rust
+Arc 및 Mutex type을 사용해서 Task 간에 상태를 안전하게 공유할 수 있다.
+Arc는 여러 작업에서 값의 소유권을 공유하는 데 사용되는 반면 Mutex는 한 번에 하나의 작업만 값에 액세스할 수 있도록 상호 배제 및 내부 가변성을 제공한다.
+
+다음은 Arc와 Mutex를 사용하여 Task간에 상태를 공유하는 방법의 예이다.
+```rust
+use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc;
+
+struct SharedState {
+    counter: Arc<Mutex<u32>>,
+    sender: mpsc::UnboundedSender<String>,
+}
+
+impl SharedState {
+    fn new(counter: Arc<Mutex<u32>>, sender: mpsc::UnboundedSender<String>) -> Self {
+        Self { counter, sender }
+    }
+
+    async fn increment_counter(&self) {
+        let mut counter = self.counter.lock().unwrap();
+        *counter += 1;
+        self.sender.send(format!("Counter: {}", *counter)).unwrap();
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let counter = Arc::new(Mutex::new(0));
+    let (sender, mut receiver) = mpsc::unbounded_channel();
+    let shared_state = SharedState::new(counter.clone(), sender);
+
+    tokio::spawn(async move {
+        loop {
+            shared_state.increment_counter().await;
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    });
+
+    while let Some(message) = receiver.recv().await {
+        println!("{}", message);
+    }
+}
+```
+이 예제에서는 Arc<Mutex<u32>> 및 mpsc::UnboundedSender<String>을 포함하는 SharedState struct를 정의한다.
+Arc<Mutex<u32>>는 Task 간에 u32 값의 소유권을 공유하는 데 사용되는 반면 mpsc::UnboundedSender<String>은 작업 간에 메시지를 보내는 데 사용된다.
+
+counter 값을 증가시키고 보낸 사람에게 메시지를 보내는 increment_counter라는 SharedState struct에 대한 새 메서드를 정의한다.
+counter 값은 한 번에 하나의 작업만 값에 액세스할 수 있도록 하는 Mutex에 의해 보호된다(lock).
+
+기본 함수에서 새 Arc<Mutex<u32>> 및 mpsc::UnboundedSender<String>을 만들고 새 SharedState 인스턴스에 전달한다.
+그런 다음 shared_state 인스턴스에서 increment_counter 메서드를 반복적으로 호출하고 호출 사이에 1초 동안 휴면하는 새 작업을 생성한다.
+
+마지막으로 receiver를 반복하고 수신된 메시지를 print한다.
+
+#### Best practices for working with shared state in Rust
+Rust에서 공유 상태로 작업할 때 동기화 문제 및 기타 문제를 방지하기 위해 모범 사례를 따르는 것이 중요하다.
+몇 가지 모범 사례는 다음과 같다.
+
+- Minimize the amount of shared state: 필요한 Task 간에만 데이터를 공유하고, 공유할 필요가 없는 데이터는 공유하지 않는다.
+- Use locks sparingly: lock은 경합을 일으키고 프로그램 속도를 저하시킬 수 있으므로 필요할 때만 사용하기.
+- Avoid dead
 
 ## 10. Asynchronous Patterns and Best Practices
 
@@ -941,7 +1483,82 @@ async fn fetch_url(url: &str) -> Result<String, reqwest::Error> {
 비동기 코드에서도 Result type과 `?` 연산자를 사용하여 효율적이고 읽기 쉽고 추론하기 쉬운 코드를 작성할 수 있는 방식으로 오류를 처리할 수 있다.
 
 ### Efficiently using async/await and avoiding common pitfalls
+#### Avoiding blocking operations
+I/O 또는 파일 액세스 대기와 같은 blocking 작업은 비동기 코드의 성능에 부정적인 영향을 미칠 수 있다.
+코드가 효율적이고 반응이 빠르도록 non-blocking 작업을 사용하는 것이 권장된다.
+```rust
+async fn read_file(path: &Path) -> io::Result<String> {
+    let mut file = File::open(path).await?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).await?;
+    Ok(contents)
+}
+```
+이 예제에서는 open() 및 read_to_string() 메서드의 비동기 버전을 사용하여 파일 내용을 읽는다.
+이 메서드는 파일을 읽을 수 있을 때 비동기적으로 해결될 Future를 반환한다.
 
+#### Using timeouts and cancellation
+Future가 무한 루프에 빠지거나 완료하는 데 예상보다 오래 걸리면 비동기 코드를 디버깅하기 어려울 수 있다.
+제한 시간 및 취소를 사용하면 이러한 문제를 방지하고 코드의 응답성을 개선하는 데 도움이 될 수 있다.
+
+```rust
+async fn run_with_timeout<F, T>(future: F, timeout: Duration) -> Result<T, ()>
+where
+    F: Future<Output = T>,
+{
+    select! {
+        result = future => Ok(result),
+        _ = tokio::time::delay_for(timeout) => Err(())
+    }
+}
+```
+이 예제는 시간 제한이 있는 Future를 실행하기 위한 Tokio 라이브러리의 매크로인 select! 매크로를 사용한다.
+이 매크로는 Future를 실행하고 제한 시간 내에 완료되면 출력을 반환한다.
+Future가 제한 시간 내에 완료되지 않으면 매크로가 오류를 반환한다.
+
+#### Avoiding unnecessary heap allocations
+힙 할당은 비동기 코드 속도를 늦추고 메모리 사용량을 증가시킬 수 있다.
+코드를 효율적으로 실행하려면 가능한 한 불필요한 할당을 피하는 것이 중요하다.
+```rust
+async fn calculate_sum(numbers: &[u32]) -> u32 {
+    let mut sum = 0;
+    for number in numbers {
+        sum += number;
+    }
+    sum
+}
+```
+이 예에서는 가변 합계 변수(sum)와 for 루프를 사용하여 슬라이스에 있는 모든 숫자의 합계를 계산한다.
+이 접근 방식은 숫자를 저장하기 위해 새 컬렉션에 메모리를 할당할 필요가 없다.
+
+#### Using async blocks
+async 블록은 읽기 쉽고 효율적인 방식으로 비동기 코드를 작성하기 위한 강력한 도구이다.
+이를 통해 Future를 반환하는 코드 블록을 정의할 수 있으며, 이는 더 복잡한 비동기식 워크플로를 우리에게 익숙한 동기식 함수로 구축하는 데 사용할 수 있다.
+```rust
+async fn fetch_all_urls(urls: &[&str]) -> Vec<String> {
+    let mut results = Vec::new();
+    for url in urls {
+        let response = reqwest::get(url).await.unwrap();
+        let body = response.text().await.unwrap();
+        results.push(body);
+    }
+    results
+}
+```
+이 예에서는 async 블록을 사용하여 여러 URL의 콘텐츠를 동시에 가져온다.
+`async` 블록을 사용하면 여러 비동기 작업을 병렬로 실행하고 응답 벡터로 확인되는 단일 Future를 반환할 수 있다.
+
+#### Choosing the right executor
+executor의 선택은 비동기 코드의 성능과 동작에 상당한 영향을 미칠 수 있다.
+각각 고유한 강점과 약점이 있는 다양한 executor들이 있다.
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    // ...
+}
+```
+이 예제에서는 tokio::main 매크로를 사용하여 새 Tokio 런타임을 생성하고 프로그램의 기본 executor로 설정한다.
+이 executor는 처리량이 많은 네트워크 애플리케이션에 최적화되어 있으며 많은 비동기 워크로드에 적합하다.
 
 ## 11. Conclusion
 
