@@ -1563,5 +1563,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
 ## 11. Conclusion
 
 ### Recap of key points
+비동기 프로그래밍의 기초와 Rust의 async/await 구문을 사용하여 비동기 코드를 작성하는 방법을 다뤄봤다.
+Rust에서 Future와 Task가 어떻게 작동하는지, Stream과 Sinks를 사용하여 비동기 Context에서 데이터 스트림을 처리하는 방법에 대해 살펴봤다.
+또한 비동기 코드에서 오류 및 cancellation을 처리하는 방법과 Arc<Mutex<Pin<Future>>를 사용하여 Future 간에 상태를 공유하는 방법을 다뤄봤다.
+
+다음은 주요 내용의 요약이다.
+
+- 비동기 프로그래밍을 사용하면 여러 I/O 작업을 동시에 처리할 수 있는 비차단 코드를 작성할 수 있다.
+- Rust의 async/await 구문은 읽기 쉽고 추론하기 쉬운 동기식 문법의 비동기 코드를 작성하는 방법을 제공한다.
+- Future와 Task는 Rust의 비동기 프로그래밍 모델의 building blocks들이며 비동기 계산을 표현하고 예약할 수 있도록 한다.
+- stream 및 sink는 비동기 context에서 데이터 스트림을 처리할 수 있도록 하는 추상화이며 복잡한 데이터 흐름을 구축하는 데 사용할 수 있다.
+- Error handling 및 cancellation은 비동기 프로그래밍의 중요한 측면이며 Rust는 이를 처리하는 데 도움이 되는 여러 가지 도구와 모범 사례를 제공한다.
+- Future 사이에서 상태를 공유하는 것은 어려울 수 있지만 Rust의 Arc, Mutex type은 이를 위한 안전하고 효율적인 방법을 제공한다.
 
 ### Final thoughts and recommendations for learning more about async/await in Rust.
+Rust의 async/await 구문을 처음 시작하는 경우 주제에 대한 훌륭한 소개를 제공하는 공식 Rust 문서부터 시작하는 것이 좋다.
+또한 Rust에서 비동기 프로그래밍에 대해 더 많이 배울 수 있도록 도와주는 많은 훌륭한 Rust 리소스와 커뮤니티가 있다.
+
+일반적으로 권장되는 일부 특정 리소스는 다음과 같다.
+
+[The Rust Programming Language book](https://doc.rust-lang.org/book/title-page.html)  
+[The Asynchronous Programming in Rust](https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html)  
+[The Tokio documentation](https://tokio.rs/)  
+[The Rustonomicon](https://doc.rust-lang.org/nomicon/concurrency.html)  
+The Rust async ecosystem  
