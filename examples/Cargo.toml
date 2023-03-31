@@ -621,12 +621,16 @@ path = "graph/boj_gold3_2206_bfs.rs"
 
 [[example]]
 name = "boj_2166"
-path = "geometry/boj_gold5_2166_shoelace.rs"
+path = "geometry/boj_g5_2166_shoelace.rs"
 
 [[example]]
 name = "boj_17386"
-path = "geometry/boj_gold3_17386_ccw.rs"
+path = "geometry/boj_g3_17386_ccw.rs"
 
 [[example]]
 name = "boj_1708"
 path = "geometry/boj_platinum5_1708_ccw_convex_hull.rs"
+
+[[example]]
+name = "boj_1027"
+path = "geometry/boj_g4_1027_visible_building.rs"
