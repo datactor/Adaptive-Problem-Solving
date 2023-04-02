@@ -634,3 +634,7 @@ path = "geometry/boj_platinum5_1708_ccw_convex_hull.rs"
 [[example]]
 name = "boj_1027"
 path = "geometry/boj_g4_1027_visible_building.rs"
+
+[[example]]
+name = "boj_1358"
+path = "geometry/boj_s4_1358.rs"
