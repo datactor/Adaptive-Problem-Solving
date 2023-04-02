@@ -518,7 +518,7 @@ RefCell<T>에는 다음과 같은 특징이 있다.
    - borrow()는 내부 값에 대한 불변 참조를 반환한다. 이것은 RefCell<T>에 대한 공유 참조를 매개변수로 취하고 Ref<T> struct를 반환한다.
      여기서 주의할 것은 borrow()메서드로 생성한 새로운 참조 변수는 RefCell<T> type이 아니라, Ref<T> type이라는 것이다.
      이것은 본질적으로 런타임에 Rust의 borrow rule을 시행하는 smart pointer이다.
-     여러 Ref<T>가 동시에 존재할 수 있지만 동일한 데이터에 대한 변경 가능한 참조(RefMut<T>)와 공존할 수는 없다.(compile은 된다.)
+     여러 Ref<T>가 동시에 존재할 수 있지만 동일한 데이터에 대한 변경 가능한 참조(RefMut<T>)와 공존할 수는 없다(compile은 되지만 runtime panic!).
      mutable reference가 존재하는 경우에 borrow() 호출을 시도하면 런타임 panic!이 발생한다.
    - borrow_mut()은 내부 값에 대한 변경 가능한 참조를 반환한다. RefCell<T>에 대한 배타적 참조를 매개변수로 사용하고 RefMut<T> struct를 반환한다.
      한 번에 하나의 RefMut<T>만 존재할 수 있으며 어떤 Ref<T>와도 공존할 수 없다. 우리가 아는 &mut 과 같이, RefMut type의 변수를 수정하면 원본 RefCell<T>가 수정된다.
@@ -526,7 +526,7 @@ RefCell<T>에는 다음과 같은 특징이 있다.
      그러나 borrow check로 인한 런타임 오버헤드 및 런타임 패닉 가능성과 같은 일부 장단점이 있다.
      RefCell<T>를 신중하게 사용하고 Ref<T> 및 RefMut<T> struct에 의해 시행되는 borrow rule을 이해하는 것이 중요하다.
    
-3. RefCell<T>는 스레드로부터 안전하지 않다.
+3. RefCell<T>은 스레드로부터 안전하지 않다.
    - RefCell<T>를 여러 스레드에서 동시에 사용하는 것은 안전하지 않다.
      이는 RefCell<T>이 메모리 안전성을 단일 스레드 내에서 작동할때만 강화하고, 오버헤드를 줄이기 위해 Rust의 borrow rule에 의존하기 때문이다.
      때문에 RefCell<T>에는 다중 스레드 환경에서 데이터의 안전성을 위한 lock을 포함한 여러 동기 primitives들의 구현이 없다.
@@ -552,3 +552,44 @@ RefCell<T>에는 다음과 같은 특징이 있다.
      이렇게 하면 프로그램을 종료하지 않고도 borrow errors를 정상적으로 gracefully하게 처리할 수 있다.
      borrow checker는 컴파일 시간에 Rust의 borrow rule에 대한 잠재적인 위반을 감지하지만 경우에 따라 모든 잠재적 위반을 포착할 수 없으며
      borrow rule이 위반되지 않았는지 확인하기 위해 runtime check가 필요하다.
+
+### UnsafeCell: definition, how to use, and trade-offs
+UnsafeCell<T>는 Rust에서 공유 가능한 가장 낮은 수준의 mutable 컨테이너이다.
+스레드 간에 공유할 수 있고 런타임 안전 보장을 제공하지 않는 값 T에 대한 raw pointer이다.
+UnsafeCell<T>는 자체 동기화 프리미티브 또는 데이터 구조를 구현해야 하거나
+내부 가변성이 필요한 낮은 수준의 안전하지 않은 작업을 수행해야 할 때 사용된다.
+UnsafeCell<T>에는 다음과 같은 특징이 있다.
+
+- raw pointer type이므로 적절한 주의 없이 사용하는 것은 안전하지 않다.
+- 내용에 대한 포인터일 뿐이므로 메서드가 없다.
+- 잘못 사용하면 정의되지 않은 동작이 발생할 수 있다.
+
+### std::cell: Cell vs. RefCell vs. UnsafeCell, and When to Use Each One
+Rust의 std::cell 모듈은 Cell, RefCell 및 UnsafeCell을 제공하며 각각 고유한 특징과 사용 사례가 있다.
+특정 사용 사례에 적합한 컨테이너를 선택하는 것은 안전하고 효율적인 동시 프로그램을 작성하는 데 중요하다.
+다음은 각 컨테이너를 사용하는 경우에 대한 간단한 요약이다.
+
+- 단일 스레드 내에서 공유되고 여러 참조 또는 런타임 borrow check가 필요하지 않으며, 값을 변경해야 하는 경우 Cell<T>를 사용한다.
+- 단일 스레드 내에서 공유되고 여러 참조 또는 런타임 borrow check가 필요하며, 값을 변경해야 하는 경우 RefCell<T>를 사용한다.
+- 고유 동기 프리미티브 또는 데이터 구조를 구현해야 하거나 내부 가변성이 필요한 낮은 수준의 안전하지 않은 작업을 수행해야 하는 경우
+  UnsafeCell<T>를 사용한다. Cell type의 struct들은 기본적으로 내부에 UnsafeCell 필드를 가지고 있다.
+
+## 3. Overview of Rust's standard synchronization primitives.
+### std::sync: Atomic types and ordering guarantees
+### Arc: definition, how to use, and trade-offs
+### Barrier: definition, how to use, and trade-offs
+### Condvar: definition, how to use, and trade-offs
+### mpsc: definition, how to use, and trade-offs
+### Mutex: definition, how to use, and trade-offs
+### Once: definition, how to use, and trade-offs
+### RwLock: definition, how to use, and trade-offs
+
+## 4. Introduction to crossbeam
+
+## 5. Crossbeam channels
+
+## 6. Crossbeam atomic types
+
+## 7. Work stealing with crossbeam and Rayon
+
+## 8. Conclusion
