@@ -584,26 +584,196 @@ https://doc.rust-lang.org/core/sync/atomic/index.html
 동기화에 대한 한 가지 접근 방식은 한 번에 하나의 스레드만 데이터에 엑세스할 수 있도록 하는 `lock`을 사용하는 것이다.
 여기서 `lock`은 스레드 간에 오버헤드 및 deadlock등의 문제를 유발할 수 있다.
 
-atomic type은 동기화에 대한 대체 접근 방식을 제공한다.
-`compare-and-swap`과 같은 원자적 작업을 사용하여 `lock` 없이 기술적으로만 공유 메모리의 변수 값을 atomically하게 업데이트한다.
-atomic operation은 변수가 atomically하게 업데이트되도록 보장한다.
+__atomic type은 동기화에 대한 대체 접근 방식을 제공한다.__
+그렇기에 atomic type은 스레드 간에 기본 공유 메모리 통신을 제공하며, 다른 concurrent types들의 building blocks이다.
+atomic type들은 `compare-and-swap`과 같은 atomic operation을 사용하여 `lock` 없이 기술적으로 공유 메모리의 변수 값을 업데이트한다.
+atomic operation은 변수가 atomically 업데이트되도록 보장한다.
 즉, 작업이 다른 스레드에 의해 중단될 수 없으므로 일관되고 올바른 데이터가 생성된다.
 
 아래는 concurrent programming 책을 보고 rust로 작동 방식을 보기 위해 구현해본 compare_and_swap이다.
 ```rust
 /// CAS(Compare and Swap)은 동기 처리 기능의 하나인 세마포어(semaphore), lock-free, wait-free한 데이터 구조를
 /// 구현하기 위해 이용하는 처리다.
-fn compare_and_swap(mut p: u64, val: u64, newval: u64) -> bool {
+fn compare_and_swap(mut p: u64, val: u64, new_val: u64) -> bool {
     if p != val {
         return false
-    } p = newval;
-true
+    } p = new_val;
+    true
 }
-// 이 프로그램은 아토믹하다고 할 수 없다. 실제로 2행의 p != val은 4행의 p = newval과 별도로 실행된다. 위 함수가
-// 컴파일되어 어셈블리 레벨에서도 여러 조작을 조합해 구현됨. rust에도 이와 같은 조작을 아토믹으로 처리하기 위한 내장함수인
+// 여기서 반환값은 compare_and_swap의 성공 여부이다. 현재 값이 예상 값과 일치할 경우에만 compare_and_swap을 시도한다.
+// 그렇지만 이 함수는 아토믹하다고 할 수 없다. 실제로 2행의 p != val은 4행의 p = new_val과 별도로 실행된다.
+// 위 함수는 컴파일되어 어셈블리 레벨에서도 여러 조작을 조합해 구현된다. rust에도 이와 같은 조작을 아토믹으로 처리하기 위한 내장함수인
 // compare_and_swap() 함수가 있다.
 ```
 
+```rust
+use std::sync::atomic::{AtomicU64, Ordering};
+
+fn compare_and_swap(p: &AtomicU64, val: u64, newval: u64) -> bool {
+    p.compare_and_swap(val, newval, Ordering::SeqCst) == val
+}
+```
+
+예를 들어 여러 스레드가 동일한 AtomicU64를 증가시키는 경우 각 스레드는 다른 스레드를 방해하지 않고 값을 원자적으로 증가시킨다.
+이렇게 하면 정수의 최종 값이 경쟁 조건이나 스레드 간섭으로 인한 임의의 값이 아니라 모든 증분의 합계가 된다.
+
+Rust는 atomic operation에 대한 ordering guarantees도 제공하는데, atomic operation이 다른 메모리 연산과 비교하여 실행되는 방법을 지정한다.
+사용 가능한 옵션은 Relaxed, Release, Acquire, Acquire + Release 및 Sequentially Consistent이다.
+- AtomicOrdering 
+  1. Relaxed: 순서를 보장하지 않음. data race 가능성 있음
+  2. Acquire: 현재 스레드가 현재 작업 이전에 다른 스레드가 수행한 모든 메모리 작업을 관찰할 수 있는지 확인. 즉, 다른 스레드 작업을 관찰하고 획득 하라는 것(다른 스레드가 '작업 중'일때 획득하지 말라는 것)
+     이는 스레드 간에 데이터를 동기화하여 현재 스레드가 가장 최신 버전의 데이터를 갖도록 하는 데 유용하다
+  3. Release: 현재 스레드가 수행한 작업 중일 때, 작업을 마친 이후에 다른 스레드에 의해 관찰되도록 함. (현재 스레드가 '작업 중'일 때 다른 스레드에서 관찰하여 획득할 수 없음) 이는 스레드 간에 데이터를 동기화해 현재 스레드가 데이터 수정을 완료한 후 다른 스레드가 일관된 데이터 보기를 볼 수 있도록 하는데 유용하다.
+  4. AcqRel: Acquire + Release 모두 제공
+  5. SeqCst: 모든 메모리 작업은 모든 스레드에서 동일한 순서로 관찰한다. 즉 모든 스레드에서, 스레드마다 작업이 수행한 이후 다음 스레드가 관찰되도록 하기 + 다른 스레드 작업을 관찰하고 획득하기 이렇게 하면 Queue에 들어있는 것처럼, 스레드마다 순서가 정해져있는 것처럼 작동돼 순차 일관성이 보장된다.
+
+`AtomicBool`과 `AtomicPtr`은 내부 필드에 값으로 UnsafeCell을 취한다. 내부 가변성을 제공하기 위함이다.
+앞서 설명했듯이 UnsafeCell은 Rust의 안전한 메모리 관리에 대한 일반적인 borrow rule이 이를 방지하는 경우에도 우회하여,
+콘텐츠를 변경하는 기능을 제공하는 type이다. atomic struct의 기본 값을 `UnsafeCell`로 래핑함으로써 내용이 변경될 수 있도록 하면서
+여러 스레드에서 데이터에 atomically 엑세스하고 수정할 수 있도록 한다.  
+즉, `UnsafeCell`에 atomic operation을 적용하여 데이터 경합을 일으키지 않고 내부 값이 여러 스레드에 의해 원자적으로 변경될 수 있다.
+
+즉 Atomic struct는 내부 가변성을 가진 Cell struct와 atomic operation 기능을 가진 struct라고 보면 되겠다. 
+cell type과 동일한 메서드인 get, get_mut 등의 메서드는 그 자체만으로는 atomic operation이 아니다
+
+```rust
+pub struct AtomicBool {
+    v: UnsafeCell<u8>,
+}
+
+impl AtomicBool {
+    pub const fn new(v: bool) -> AtomicBool {
+        AtomicBool { v: UnsafeCell::new(v as u8) }
+    }
+
+    pub fn get_mut(&mut self) -> &mut bool {
+        // SAFETY: the mutable reference guarantees unique ownership.
+        unsafe { &mut *(self.v.get() as *mut bool) }
+    }
+
+    pub fn from_mut(v: &mut bool) -> &mut Self {
+        // SAFETY: the mutable reference guarantees unique ownership, and
+        // alignment of both `bool` and `Self` is 1.
+        unsafe { &mut *(v as *mut bool as *mut Self) }
+    }
+
+    pub fn load(&self, order: Ordering) -> bool {
+        // SAFETY: any data races are prevented by atomic intrinsics and the raw
+        // pointer passed in is valid because we got it from a reference.
+        unsafe { atomic_load(self.v.get(), order) != 0 }
+    }
+
+    pub fn store(&self, val: bool, order: Ordering) {
+        // SAFETY: any data races are prevented by atomic intrinsics and the raw
+        // pointer passed in is valid because we got it from a reference.
+        unsafe {
+            atomic_store(self.v.get(), val as u8, order);
+        }
+    }
+
+    pub fn swap(&self, val: bool, order: Ordering) -> bool {
+        // SAFETY: data races are prevented by atomic intrinsics.
+        unsafe { atomic_swap(self.v.get(), val as u8, order) != 0 }
+    }
+
+    pub fn compare_and_swap(&self, current: bool, new: bool, order: Ordering) -> bool {
+        match self.compare_exchange(current, new, order, strongest_failure_ordering(order)) {
+            Ok(x) => x,
+            Err(x) => x,
+        }
+    }
+}
+
+pub struct AtomicPtr<T> {
+    p: UnsafeCell<*mut T>,
+}
+
+impl<T> AtomicPtr<T> {
+    pub const fn new(p: *mut T) -> AtomicPtr<T> {
+        AtomicPtr { p: UnsafeCell::new(p) }
+    }
+
+    pub fn get_mut(&mut self) -> &mut *mut T {
+        self.p.get_mut()
+    }
+
+    pub fn from_mut(v: &mut *mut T) -> &mut Self {
+        use crate::mem::align_of;
+        let [] = [(); align_of::<AtomicPtr<()>>() - align_of::<*mut ()>()];
+        // SAFETY:
+        //  - the mutable reference guarantees unique ownership.
+        //  - the alignment of `*mut T` and `Self` is the same on all platforms
+        //    supported by rust, as verified above.
+        unsafe { &mut *(v as *mut *mut T as *mut Self) }
+    }
+
+    pub fn get_mut_slice(this: &mut [Self]) -> &mut [*mut T] {
+        // SAFETY: the mutable reference guarantees unique ownership.
+        unsafe { &mut *(this as *mut [Self] as *mut [*mut T]) }
+    }
+
+    pub fn from_mut_slice(v: &mut [*mut T]) -> &mut [Self] {
+        // SAFETY:
+        //  - the mutable reference guarantees unique ownership.
+        //  - the alignment of `*mut T` and `Self` is the same on all platforms
+        //    supported by rust, as verified above.
+        unsafe { &mut *(v as *mut [*mut T] as *mut [Self]) }
+    }
+
+    pub fn load(&self, order: Ordering) -> *mut T {
+        // SAFETY: data races are prevented by atomic intrinsics.
+        unsafe { atomic_load(self.p.get(), order) }
+    }
+
+    pub fn store(&self, ptr: *mut T, order: Ordering) {
+        // SAFETY: data races are prevented by atomic intrinsics.
+        unsafe {
+            atomic_store(self.p.get(), ptr, order);
+        }
+    }
+
+    pub fn swap(&self, ptr: *mut T, order: Ordering) -> *mut T {
+        // SAFETY: data races are prevented by atomic intrinsics.
+        unsafe { atomic_swap(self.p.get(), ptr, order) }
+    }
+
+    pub fn compare_and_swap(&self, current: *mut T, new: *mut T, order: Ordering) -> *mut T {
+        match self.compare_exchange(current, new, order, strongest_failure_ordering(order)) {
+            Ok(x) => x,
+            Err(x) => x,
+        }
+    }
+}
+```
+
+이외의 atomic scalar types들은 struct가 아닌, const type으로 구현되어 있다.
+그 이유는 스칼라 타입을 유지하여, 사이즈드 된 값을 유지하고 bitwise 연산이 원활하게 수행되게 하기 위해서이다.
+const 값으로 정의함으로써 Rust compiler는 atomic scalar types들이 정확한 크기와 정렬을 갖도록 보장할 수 있고,
+그것들을 bitwise atomic operation에 적합하게 만든다.  
+
+Atomic 스칼라 types들에는 fetch_add, fetch_sub 등을 포함하여 공유 메모리에서 atomic operation을 수행하기 위한 여러 함수와 매크로를 제공한다.
+기본 atomic types에서 값을 원자적으로 더하거나 빼고 이전 값을 검색할 수 있다.
+```rust
+use std::sync::atomic::{AtomicI32, Ordering};
+
+let my_atomic_int = AtomicI32::new(5);
+
+let old_value = my_atomic_int.fetch_add(3, Ordering::SeqCst);
+
+assert_eq!(old_value, 5);
+assert_eq!(my_atomic_int.load(Ordering::SeqCst), 8);
+```
+이 예에서는 초기 값이 5인 새로운 AtomicI32를 생성한다.
+그런 다음 fetch_add(3, Ordering::SeqCst)를 호출하여 기본 정수에 원자적으로 3을 더하고 이전 값을 반환한다(이 경우 5).
+마지막으로 load(Ordering::SeqCst)를 사용하여 atomic integer의 새 값(이 경우 8)을 검색한다.
+
+fetch_sub는 fetch_add와 유사하게 작동하지만 atomic integer에서 주어진 값을 뺀다.
+
+fetch_add 및 fetch_sub 모두 작업에 대한 순서 보장을 결정하는 Ordering 인수를 사용한다.
+사용 가능한 옵션은 load 및 store와 같은 다른 atomic operation과 동일하다.
+
+atomic types 및 ordering guarantees을 사용하면 다중 스레드 프로그램에서 데이터 경합을 방지하고 메모리 안전을 보장하는 동시에,
+lock 및 기타 동기 프리미티브의 필요성을 줄여 오버헤드를 줄이고 성능을 향상시킬 수 있다.
 
 ### Arc: definition, how to use, and trade-offs
 
