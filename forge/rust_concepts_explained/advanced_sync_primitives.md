@@ -575,13 +575,48 @@ Rust의 std::cell 모듈은 Cell, RefCell 및 UnsafeCell을 제공하며 각각 
   UnsafeCell<T>를 사용한다. Cell type의 struct들은 기본적으로 내부에 UnsafeCell 필드를 가지고 있다.
 
 ## 3. Overview of Rust's standard synchronization primitives.
+Rust는 여러 스레드에서 공유 데이터에 대한 액세스를 조정하는 데 사용할 수 있는 다양한 동기화 프리미티브를 제공한다.
+이러한 프리미티브는 모두 std::sync 모듈의 일부이며 자세한 내용은 아래의 링크를 참고한다.  
+https://doc.rust-lang.org/core/sync/atomic/index.html
+
 ### std::sync: Atomic types and ordering guarantees
+여러 스레드가 공유 메모리 위치에 엑세스할 때 데이터가 일관되고 손상되지 않도록 동기화가 필요하다.
+동기화에 대한 한 가지 접근 방식은 한 번에 하나의 스레드만 데이터에 엑세스할 수 있도록 하는 `lock`을 사용하는 것이다.
+여기서 `lock`은 스레드 간에 오버헤드 및 deadlock등의 문제를 유발할 수 있다.
+
+atomic type은 동기화에 대한 대체 접근 방식을 제공한다.
+`compare-and-swap`과 같은 원자적 작업을 사용하여 `lock` 없이 기술적으로만 공유 메모리의 변수 값을 atomically하게 업데이트한다.
+atomic operation은 변수가 atomically하게 업데이트되도록 보장한다.
+즉, 작업이 다른 스레드에 의해 중단될 수 없으므로 일관되고 올바른 데이터가 생성된다.
+
+아래는 concurrent programming 책을 보고 rust로 작동 방식을 보기 위해 구현해본 compare_and_swap이다.
+```rust
+/// CAS(Compare and Swap)은 동기 처리 기능의 하나인 세마포어(semaphore), lock-free, wait-free한 데이터 구조를
+/// 구현하기 위해 이용하는 처리다.
+fn compare_and_swap(mut p: u64, val: u64, newval: u64) -> bool {
+    if p != val {
+        return false
+    } p = newval;
+true
+}
+// 이 프로그램은 아토믹하다고 할 수 없다. 실제로 2행의 p != val은 4행의 p = newval과 별도로 실행된다. 위 함수가
+// 컴파일되어 어셈블리 레벨에서도 여러 조작을 조합해 구현됨. rust에도 이와 같은 조작을 아토믹으로 처리하기 위한 내장함수인
+// compare_and_swap() 함수가 있다.
+```
+
+
 ### Arc: definition, how to use, and trade-offs
+
 ### Barrier: definition, how to use, and trade-offs
+
 ### Condvar: definition, how to use, and trade-offs
+
 ### mpsc: definition, how to use, and trade-offs
+
 ### Mutex: definition, how to use, and trade-offs
+
 ### Once: definition, how to use, and trade-offs
+
 ### RwLock: definition, how to use, and trade-offs
 
 ## 4. Introduction to crossbeam
