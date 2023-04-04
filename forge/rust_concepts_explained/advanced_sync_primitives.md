@@ -776,6 +776,277 @@ atomic types 및 ordering guarantees을 사용하면 다중 스레드 프로그�
 lock 및 기타 동기 프리미티브의 필요성을 줄여 오버헤드를 줄이고 성능을 향상시킬 수 있다.
 
 ### Arc: definition, how to use, and trade-offs
+Arc는 "Atomically Reference Counted"를 의미하며 스레드 간에 값의 소유권을 공유하는 스레드 안전 방식이다.
+여러 스레드가 값의 소유권을 공유할 수 있다는 점을 제외하면 Rc와 유사하다.
+Arc::new()로 생성된 인스턴스에 대해서 Arc::clone()으로 복제(새로운 인스턴스를 생성)하면, strong count를 fetch_add로 원자적으로 업데이트 하고
+새로 생성된 인스턴스는 원본 Arc의 ArcInner 값을 감싼 Null이 아님을 보증하는 가벼운 pointer인 NonNull 포인터와 phantom 필드를 가진 Arc 타입의 인스턴스를 반환한다.
+여기서 NonNull 포인터는 스마트포인터의 기능인 라이프타임 관리 기능이 없어, Arc struct에 따로 phantom 필드를 넣어, 원본 ArcInner 값과 라이프타임을 연동시킨다.
+
+Arc의 카운팅은 CAS와 spin lock(lock-free algorithms), AtomicOrdering등을 포함한 동기 primitives를 사용하여 원자적으로 업데이트 되기 때문에, lock 없이도 스레드 간 안전한 방식으로 분류된다. 
+
+자세한 정보는 https://doc.rust-lang.org/alloc/sync/struct.Arc.html 를 참조한다.
+```rust
+const MAX_REFCOUNT: usize = (isize::MAX) as usize;
+
+pub struct Arc<T: ?Sized> {
+    ptr: NonNull<ArcInner<T>>,
+    phantom: PhantomData<ArcInner<T>>,
+}
+
+#[repr(C)]
+struct ArcInner<T: ?Sized> {
+    strong: atomic::AtomicUsize,
+
+    // the value usize::MAX acts as a sentinel for temporarily "locking" the
+    // ability to upgrade weak pointers or downgrade strong ones; this is used
+    // to avoid races in `make_mut` and `get_mut`.
+    weak: atomic::AtomicUsize,
+
+    data: T,
+}
+
+impl<T> Arc<T> {
+    /// Constructs a new `Arc<T>`.
+    ///
+    /// # Examples
+    /// use std::sync::Arc;
+    /// let five = Arc::new(5);
+    pub fn new(data: T) -> Arc<T> {
+        // Start the weak pointer count as 1 which is the weak pointer that's
+        // held by all the strong pointers (kinda), see std/rc.rs for more info
+        let x: Box<_> = Box::new(ArcInner {
+            strong: atomic::AtomicUsize::new(1),
+            weak: atomic::AtomicUsize::new(1),
+            data,
+        });
+        unsafe { Self::from_inner(Box::leak(x).into()) }
+    }
+
+    pub fn downgrade(this: &Self) -> Weak<T> {
+        // This Relaxed is OK because we're checking the value in the CAS
+        // below.
+        let mut cur = this.inner().weak.load(Relaxed);
+
+        loop {
+            // check if the weak counter is currently "locked"; if so, spin.
+            if cur == usize::MAX {
+                hint::spin_loop();
+                cur = this.inner().weak.load(Relaxed);
+                continue;
+            }
+
+            // NOTE: this code currently ignores the possibility of overflow
+            // into usize::MAX; in general both Rc and Arc need to be adjusted
+            // to deal with overflow.
+
+            // Unlike with Clone(), we need this to be an Acquire read to
+            // synchronize with the write coming from `is_unique`, so that the
+            // events prior to that write happen before this read.
+            match this.inner().weak.compare_exchange_weak(cur, cur + 1, Acquire, Relaxed) {
+                Ok(_) => {
+                    // Make sure we do not create a dangling Weak
+                    debug_assert!(!is_dangling(this.ptr.as_ptr()));
+                    return Weak { ptr: this.ptr };
+                }
+                Err(old) => cur = old,
+            }
+        }
+    }
+
+    pub fn weak_count(this: &Self) -> usize {
+        let cnt = this.inner().weak.load(Acquire);
+        // If the weak count is currently locked, the value of the
+        // count was 0 just before taking the lock.
+        if cnt == usize::MAX { 0 } else { cnt - 1 }
+    }
+
+    pub fn strong_count(this: &Self) -> usize {
+        this.inner().strong.load(Acquire)
+    }
+
+    pub fn inner(&self) -> &ArcInner<T> {
+        // This unsafety is ok because while this arc is alive we're guaranteed
+        // that the inner pointer is valid. Furthermore, we know that the
+        // `ArcInner` structure itself is `Sync` because the inner data is
+        // `Sync` as well, so we're ok loaning out an immutable pointer to these
+        // contents.
+        unsafe { self.ptr.as_ref() }
+    }
+
+    pub fn get_mut(this: &mut Self) -> Option<&mut T> {
+        if this.is_unique() {
+            // This unsafety is ok because we're guaranteed that the pointer
+            // returned is the *only* pointer that will ever be returned to T. Our
+            // reference count is guaranteed to be 1 at this point, and we required
+            // the Arc itself to be `mut`, so we're returning the only possible
+            // reference to the inner data.
+            unsafe { Some(Arc::get_mut_unchecked(this)) }
+        } else {
+            None
+        }
+    }
+
+    fn is_unique(&mut self) -> bool {
+        // lock the weak pointer count if we appear to be the sole weak pointer
+        // holder.
+        //
+        // The acquire label here ensures a happens-before relationship with any
+        // writes to `strong` (in particular in `Weak::upgrade`) prior to decrements
+        // of the `weak` count (via `Weak::drop`, which uses release).  If the upgraded
+        // weak ref was never dropped, the CAS here will fail so we do not care to synchronize.
+        if self.inner().weak.compare_exchange(1, usize::MAX, Acquire, Relaxed).is_ok() {
+            // This needs to be an `Acquire` to synchronize with the decrement of the `strong`
+            // counter in `drop` -- the only access that happens when any but the last reference
+            // is being dropped.
+            let unique = self.inner().strong.load(Acquire) == 1;
+
+            // The release write here synchronizes with a read in `downgrade`,
+            // effectively preventing the above read of `strong` from happening
+            // after the write.
+            self.inner().weak.store(1, Release); // release the lock
+            unique
+        } else {
+            false
+        }
+    }
+}
+
+impl<T: ?Sized> Clone for Arc<T> {
+    fn clone(&self) -> Arc<T> {
+        let old_size = self.inner().strong.fetch_add(1, Relaxed);
+        if old_size > MAX_REFCOUNT {
+            abort();
+        }
+        unsafe { Self::from_inner(self.ptr) }
+    }
+}
+
+
+impl<T: Clone> Arc<T> {
+    /// Makes a mutable reference into the given `Arc`.
+    pub fn make_mut(this: &mut Self) -> &mut T {
+        // Note that we hold both a strong reference and a weak reference.
+        // Thus, releasing our strong reference only will not, by itself, cause
+        // the memory to be deallocated.
+        //
+        // Use Acquire to ensure that we see any writes to `weak` that happen
+        // before release writes (i.e., decrements) to `strong`. Since we hold a
+        // weak count, there's no chance the ArcInner itself could be
+        // deallocated.
+        if this.inner().strong.compare_exchange(1, 0, Acquire, Relaxed).is_err() {
+            // Another strong pointer exists, so we must clone.
+            // Pre-allocate memory to allow writing the cloned value directly.
+            let mut arc = Self::new_uninit();
+            unsafe {
+                let data = Arc::get_mut_unchecked(&mut arc);
+                (**this).write_clone_into_raw(data.as_mut_ptr());
+                *this = arc.assume_init();
+            }
+        } else if this.inner().weak.load(Relaxed) != 1 {
+            // Relaxed suffices in the above because this is fundamentally an
+            // optimization: we are always racing with weak pointers being
+            // dropped. Worst case, we end up allocated a new Arc unnecessarily.
+
+            // We removed the last strong ref, but there are additional weak
+            // refs remaining. We'll move the contents to a new Arc, and
+            // invalidate the other weak refs.
+
+            // Note that it is not possible for the read of `weak` to yield
+            // usize::MAX (i.e., locked), since the weak count can only be
+            // locked by a thread with a strong reference.
+
+            // Materialize our own implicit weak pointer, so that it can clean
+            // up the ArcInner as needed.
+            let _weak = Weak { ptr: this.ptr };
+
+            // Can just steal the data, all that's left is Weaks
+            let mut arc = Self::new_uninit();
+            unsafe {
+                let data = Arc::get_mut_unchecked(&mut arc);
+                data.as_mut_ptr().copy_from_nonoverlapping(&**this, 1);
+                ptr::write(this, arc.assume_init());
+            }
+        } else {
+            // We were the sole reference of either kind; bump back up the
+            // strong ref count.
+            this.inner().strong.store(1, Release);
+        }
+
+        // As with `get_mut()`, the unsafety is ok because our reference was
+        // either unique to begin with, or became one upon cloning the contents.
+        unsafe { Self::get_mut_unchecked(this) }
+    }
+    pub fn unwrap_or_clone(this: Self) -> T {
+        Arc::try_unwrap(this).unwrap_or_else(|arc| (*arc).clone())
+    }
+}
+
+impl<T: ?Sized> Weak<T> {
+    pub fn upgrade(&self) -> Option<Arc<T>> {
+        // We use a CAS loop to increment the strong count instead of a
+        // fetch_add as this function should never take the reference count
+        // from zero to one.
+        self.inner()?
+            .strong
+            // Relaxed is fine for the failure case because we don't have any expectations about the new state.
+            // Acquire is necessary for the success case to synchronise with `Arc::new_cyclic`, when the inner
+            // value can be initialized after `Weak` references have already been created. In that case, we
+            // expect to observe the fully initialized value.
+            .fetch_update(Acquire, Relaxed, |n| {
+                // Any write of 0 we can observe leaves the field in permanently zero state.
+                if n == 0 {
+                    return None;
+                }
+                // See comments in `Arc::clone` for why we do this (for `mem::forget`).
+                if n > MAX_REFCOUNT {
+                    abort();
+                }
+                Some(n + 1)
+            })
+            .ok()
+            // null checked above
+            .map(|_| unsafe { Arc::from_inner(self.ptr) })
+    }
+
+    pub fn strong_count(&self) -> usize {
+        if let Some(inner) = self.inner() { inner.strong.load(Acquire) } else { 0 }
+    }
+
+    pub fn weak_count(&self) -> usize {
+        self.inner()
+            .map(|inner| {
+                let weak = inner.weak.load(Acquire);
+                let strong = inner.strong.load(Acquire);
+                if strong == 0 {
+                    0
+                } else {
+                    // Since we observed that there was at least one strong pointer
+                    // after reading the weak count, we know that the implicit weak
+                    // reference (present whenever any strong references are alive)
+                    // was still around when we observed the weak count, and can
+                    // therefore safely subtract it.
+                    weak - 1
+                }
+            })
+            .unwrap_or(0)
+    }
+}
+```
+
+위의 메서드 중 get_mut은 lock-free 알고리즘인 CAS를 응용한 방식을 사용한다.
+is_unique 메서드는 `weak` 포인터 수와 함께 compare_exchange 메서드를 사용해, Arc 인스턴스가 고유한지 확인한다.
+현재 'Arc' 인스턴스가 `weak` 포인터의 유일한 소유자인 것처럼 보인다면 weak 포인터 수에 대한 lock을 획득하려고 시도한다.
+성공적으로 lock을 lock을 획득하면, strong pointer 수가 1인지 확인한다. 이 수가 1이면 Arc 인스턴스는 고유하며 메서드는 true를 반환한다.
+개수가 1보다 크면 메서드는 lock을 해제하고, false를 반환한다.
+
+여기에서 CAS 알고리즘을 사용하면 한 번에 하나의 스레드만 lock을 획득하고 'Weak' 포인터 수에 액세스할 수 있으므로 count의 동시 수정을 방지할 수 있다.
+이것은 lock 대신 atomic operation을 사용하여 스레드 간의 경합을 최소화하는 lock-free algorithms의 예다.
+
+Arc 사용의 단점 중 하나는 참조 카운팅 프로세스(lock free algorithms)에 오버헤드가 추가되어 프로그램 속도가 느려질 수 있다는 것이다.
+또한 스레드 간의 공유 값에 대한 작업 순서를 보장할 수 없다는 것이다. 공유 값에 대한 작업의 순서 지정에 사용되는 Ordering::Release 일관성 모델로 인해
+각 스레드가 이벤트의 다른 순서를 관찰할 수 있기 때문이다.
+프로그램의 정확성을 위해 작업 순서가 중요한 경우 미묘한 버그가 발생할 수 있다.
+
 
 ### Barrier: definition, how to use, and trade-offs
 
