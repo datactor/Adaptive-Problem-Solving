@@ -488,7 +488,7 @@ RefCell<T>에는 다음과 같은 특징이 있다.
 
 1. 참조형이므로 런타임 오버헤드가 적고 복사할 수 없다.
    `RefCell<T>` type은 참조 type으로 구현되며, 이는 실제 데이터를 포함하는 메모리 위치에 대한 pointer임을 의미한다. 여기에는 몇 가지 의미가 있다.
-   - 참조 type은 함수에 전달되거나 변수에 할당될 때 값이 복사되지 않기 때문에 런타임 오버헤드가 낮다. 대신 데이터의 메모리 주소만 전달됩니다.
+   - 참조 type은 함수에 전달되거나 변수에 할당될 때 값이 복사되지 않기 때문에 런타임 오버헤드가 낮다. 대신 데이터의 메모리 주소만 전달된다.
      이는 성능 측면에서 RefCell<T>를 효율적으로 사용할 수 있도록 한다.(여기서 말하는 '복사되지 않는다'의 의미는 값에 대한 deep copy(clone())를 하지 않으며,
      값의 pointer에 대한 swallow copy(pointer copy)는 수행한다.)
    - RefCell<T>은 참조 type이므로 값을 복사할 수 없다. 즉, RefCell<T>을 다른 변수에 할당하거나 함수에 전달할 때,
@@ -778,9 +778,9 @@ lock 및 기타 동기 프리미티브의 필요성을 줄여 오버헤드를 �
 ### Arc: definition, how to use, and trade-offs
 Arc는 "Atomically Reference Counted"를 의미하며 스레드 간에 값의 소유권을 공유하는 스레드 안전 방식이다.
 여러 스레드가 값의 소유권을 공유할 수 있다는 점을 제외하면 Rc와 유사하다.
-Arc::new()로 생성된 인스턴스에 대해서 Arc::clone()으로 복제(새로운 인스턴스를 생성)하면, strong count를 fetch_add로 원자적으로 업데이트 하고
+Arc::new()로 생성된 인스턴스에 대해서 Arc::clone()으로 복제(새로운 인스턴스를 생성)하면, strong count를 fetch_add로 원자적으로 업데이트 하고,
 새로 생성된 인스턴스는 원본 Arc의 ArcInner 값을 감싼 Null이 아님을 보증하는 가벼운 pointer인 NonNull 포인터와 phantom 필드를 가진 Arc 타입의 인스턴스를 반환한다.
-여기서 NonNull 포인터는 스마트포인터의 기능인 라이프타임 관리 기능이 없어, Arc struct에 따로 phantom 필드를 넣어, 원본 ArcInner 값과 라이프타임을 연동시킨다.
+여기서 NonNull 포인터는 스마트포인터의 기능인 라이프타임 관리 기능이 없어, Arc struct에 따로 phantom 필드를 넣어 원본 ArcInner 값과 라이프타임을 연동시킨다.
 
 Arc의 카운팅은 CAS와 spin lock(lock-free algorithms), AtomicOrdering등을 포함한 동기 primitives를 사용하여 원자적으로 업데이트 되기 때문에, lock 없이도 스레드 간 안전한 방식으로 분류된다. 
 
@@ -1033,20 +1033,63 @@ impl<T: ?Sized> Weak<T> {
 }
 ```
 
-위의 메서드 중 get_mut은 lock-free 알고리즘인 CAS를 응용한 방식을 사용한다.
-is_unique 메서드는 `weak` 포인터 수와 함께 compare_exchange 메서드를 사용해, Arc 인스턴스가 고유한지 확인한다.
+위의 메서드 중 get_mut은 lock-free 알고리즘인 CAS를 응용한 방식을 사용한다.  
+`is_unique` 메서드는 `weak` 포인터 수와 함께 compare_exchange 메서드를 사용해, Arc 인스턴스가 고유한지 확인한다.  
 현재 'Arc' 인스턴스가 `weak` 포인터의 유일한 소유자인 것처럼 보인다면 weak 포인터 수에 대한 lock을 획득하려고 시도한다.
-성공적으로 lock을 lock을 획득하면, strong pointer 수가 1인지 확인한다. 이 수가 1이면 Arc 인스턴스는 고유하며 메서드는 true를 반환한다.
-개수가 1보다 크면 메서드는 lock을 해제하고, false를 반환한다.
+```rust
+if self.inner().weak.compare_exchange(1, usize::MAX, Acquire, Relaxed).is_ok() {
+```
+위의 if 분기문 현재의 `weak` count 값이 1이면, usize::MAX로 설정하여
+다른 스레드가 weak count를 더이상 획득하지 못한다는 점에서 일종의 lock 역할을 한다.
+현재의 weak count가 1이면 성공적으로 획득한다. 
 
-여기에서 CAS 알고리즘을 사용하면 한 번에 하나의 스레드만 lock을 획득하고 'Weak' 포인터 수에 액세스할 수 있으므로 count의 동시 수정을 방지할 수 있다.
+```rust
+let unique = self.inner().strong.load(Acquire) == 1;
+```
+그렇게 되면, strong pointer 수가 1인지 확인하며 이것을 bool값으로 저장해 둔다(unique 변수).
+
+```rust
+self.inner().weak.store(1, Release);
+```
+unique를 저장했으면, lock을 해제(1로 store)하고 bool 값을 반환한다.
+
+여기에서 CAS 알고리즘을 사용하면 한 번에 하나의 스레드만 획득하고 'Weak' count에 액세스할 수 있으므로 count의 동시 수정을 방지할 수 있다.
 이것은 lock 대신 atomic operation을 사용하여 스레드 간의 경합을 최소화하는 lock-free algorithms의 예다.
+여기서 말한 lock은 기술적인 analogy로 lock이라고 표기했지만, 실제로는 lock이 아니라 atomic primitives를 말한다.
+
+다음은 compare_exchange()에 대한 구현이다.
+```rust
+pub fn compare_exchange(
+    &self,
+    current: usize,
+    new: usize,
+    success: Ordering,
+    failure: Ordering,
+) -> Result<usize, usize> {
+    // Convert the success ordering to a memory order
+    let success_order = success.into();
+    // Convert the failure ordering to a memory order
+    let failure_order = failure.into();
+    
+    // Use a compiler intrinsic to perform the compare-and-swap operation
+    let result = unsafe {
+        atomic_compare_exchange(self.ptr, current, new, success_order, failure_order)
+    };
+    
+    // If the operation succeeded, return the old value
+    if result == current {
+        Ok(result)
+    } else {
+        // Otherwise, return the current value and the new value was not stored
+        Err(result)
+    }
+}
+```
 
 Arc 사용의 단점 중 하나는 참조 카운팅 프로세스(lock free algorithms)에 오버헤드가 추가되어 프로그램 속도가 느려질 수 있다는 것이다.
 또한 스레드 간의 공유 값에 대한 작업 순서를 보장할 수 없다는 것이다. 공유 값에 대한 작업의 순서 지정에 사용되는 Ordering::Release 일관성 모델로 인해
 각 스레드가 이벤트의 다른 순서를 관찰할 수 있기 때문이다.
 프로그램의 정확성을 위해 작업 순서가 중요한 경우 미묘한 버그가 발생할 수 있다.
-
 
 ### Barrier: definition, how to use, and trade-offs
 
