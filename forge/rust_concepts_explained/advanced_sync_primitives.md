@@ -2,28 +2,28 @@
 
 ## 1. Introduction
 ### Definition of synchronization primitives
-동시 프로그래밍에서 동기화 프리미티브는 공유 리소스에 대한 액세스를 조정하거나
+동시 프로그래밍에서 동기 프리미티브는 공유 리소스에 대한 액세스를 조정하거나
 한 번에 하나의 스레드만 특정 리소스에 액세스할 수 있도록 하는 데 사용되는 메커니즘이다.
-동기화 프리미티브의 예로는 lock, semaphores 및 atomic operations 등이 있다.
+동기 프리미티브의 예로는 lock, semaphores 및 atomic operations 등이 있다.
 
 ### Importance of synchronization primitives in concurrent programming
 동시성은 최신 컴퓨팅의 필수 요소이지만 고유한 문제가 있다.
 가장 큰 과제 중 하나는 여러 스레드가 안전하고 효율적인 방식으로 공유 리소스에 액세스할 수 있도록 하는 것이다.
-동기화 프리미티브는 공유 리소스에 대한 액세스를 조정하고 race condition, deadlocks 및 기타 동시성 버그를 방지하는 방법을 제공하기 때문에 중요하다.
+동기 프리미티브는 공유 리소스에 대한 액세스를 조정하고 race condition, deadlocks 및 기타 동시성 버그를 방지하는 방법을 제공하기 때문에 중요하다.
 
 ### Overview of what will be covered in the article
 이 기사에서는 크로스빔 크레이트에서 제공하는 고급 동기화 기본 기능, std 라이브러리의 cell과 sync mudule에 중점을 두고
 Rust의 동기화 기본 기능에 대한 포괄적인 이해를 돕는 것이 목적이다.
 
-이러한 고급 동기화 프리미티브를 완전히 이해하려면 이전에 다룬 [Rc<RefCell< T >>](https://github.com/datactor/rust-problem-solving/blob/main/forge/rust_concepts_explained/rcRefcell_and_refCycle.md),
+이러한 고급 동기 프리미티브를 완전히 이해하려면 이전에 다룬 [Rc<RefCell< T >>](https://github.com/datactor/rust-problem-solving/blob/main/forge/rust_concepts_explained/rcRefcell_and_refCycle.md),
 [Arc<Mutex< T >>](https://github.com/datactor/rust-problem-solving/blob/main/forge/rust_concepts_explained/arc_mutex.md),
 [lazy_vs_eager](https://github.com/datactor/rust-problem-solving/blob/main/forge/rust_concepts_explained/lazy_vs_eager.md) 및
 [async/await](https://github.com/datactor/rust-problem-solving/blob/main/forge/rust_concepts_explained/async_await.md)
 과 같은 Rust의 기본 동시성 개념을 먼저 이해하는 것이 좋다.
 
 crossbeam's channel, atomic types 및 work stealing API에 대해 살펴보기 전에
-Rust의 cell과 sync를 포함한 Rust의 표준 동기화 프리미티브에 대한 개요부터 알아볼 것이다.
-기사가 끝날 때쯤이면 이러한 동기화 프리미티브를 사용하여 안전하고 효율적인 동시 Rust 프로그램을 작성하는 방법에 대한 이해도가 높아져 있을 것이다.
+Rust의 cell과 sync를 포함한 Rust의 표준 동기 프리미티브에 대한 개요부터 알아볼 것이다.
+기사가 끝날 때쯤이면 이러한 동기 프리미티브를 사용하여 안전하고 효율적인 동시 Rust 프로그램을 작성하는 방법에 대한 이해도가 높아져 있을 것이다.
 
 ## 2. Overview of Rust's standard shareable mutable containers.
 Rust의 표준 라이브러리는 안전하고 효율적인 동시 프로그래밍을 가능하게 하는 여러 공유 shareable mutable containers들을 제공한다.
@@ -556,7 +556,7 @@ RefCell<T>에는 다음과 같은 특징이 있다.
 ### UnsafeCell: definition, how to use, and trade-offs
 UnsafeCell<T>는 Rust에서 공유 가능한 가장 낮은 수준의 mutable 컨테이너이다.
 스레드 간에 공유할 수 있고 런타임 안전 보장을 제공하지 않는 값 T에 대한 raw pointer이다.
-UnsafeCell<T>는 자체 동기화 프리미티브 또는 데이터 구조를 구현해야 하거나
+UnsafeCell<T>는 자체 동기 프리미티브 또는 데이터 구조를 구현해야 하거나
 내부 가변성이 필요한 낮은 수준의 안전하지 않은 작업을 수행해야 할 때 사용된다.
 UnsafeCell<T>에는 다음과 같은 특징이 있다.
 
@@ -575,7 +575,7 @@ Rust의 std::cell 모듈은 Cell, RefCell 및 UnsafeCell을 제공하며 각각 
   UnsafeCell<T>를 사용한다. Cell type의 struct들은 기본적으로 내부에 UnsafeCell 필드를 가지고 있다.
 
 ## 3. Overview of Rust's standard synchronization primitives.
-Rust는 여러 스레드에서 공유 데이터에 대한 액세스를 조정하는 데 사용할 수 있는 다양한 동기화 프리미티브를 제공한다.
+Rust는 여러 스레드에서 공유 데이터에 대한 액세스를 조정하는 데 사용할 수 있는 다양한 동기 프리미티브를 제공한다.
 이러한 프리미티브는 모두 std::sync 모듈의 일부이며 자세한 내용은 아래의 링크를 참고한다.  
 https://doc.rust-lang.org/core/sync/atomic/index.html
 
@@ -1092,21 +1092,402 @@ Arc 사용의 단점 중 하나는 참조 카운팅 프로세스(lock free algor
 프로그램의 정확성을 위해 작업 순서가 중요한 경우 미묘한 버그가 발생할 수 있다.
 
 ### Barrier: definition, how to use, and trade-offs
-배리어는 여러 스레드가 서로 실행의 특정 지점에 도달할 때까지 기다릴 수 있도록 하는 동기화 프리미티브입니다. 병렬 계산과 같이 어떤 방식으로 실행을 조정해야 하는 여러 스레드가 있을 때 유용합니다.
+다음은 concurrent programming (다카노 유키)에서 구현한 배리어 동기이다.
 
+단체 생활의 이동을 생각해 보자. 이동은 반드시 클래스 전체가 모였는지 확인한 후 진행한다.
+이렇게 모두 모인 후에 실행 동기를 구현하는 것이 barrier synchronization이다.  
+다음은 spin-lock 기반의 barrier synchronization이다.
+```rust
+fn barrier(cnt: &mut AtomicUsize, max: &mut AtomicUsize) { // 1
+    cnt.fetch_add(1, Ordering::SeqCst); // 2
+    while cnt.load(Ordering::SeqCst) < max.load(Ordering::SeqCst) {}; // 3
+}
+```
+1) 공유 변수에 대한 값 cnt와 최대값 max를 인자로 받는다.
+2) 공유 변수 cnt를 아토믹하게 증가시킨다.
+3) cnt가 가리키는 값이 max가 될 때까지 대기한다.
 
-Barrier를 사용하려면 먼저 new() 메서드를 사용하여 Barrier를 사용할 스레드 수를 전달하여 새 Barrier를 만듭니다. 그런 다음 wait() 메서드를 사용하여 실행을 계속하기 전에 모든 스레드가 Barrier에 도달할 때까지 기다립니다. 모든 스레드가 장벽에 도달하면 모두 계속 실행됩니다.
+위와 같이 spin-lock을 이용한 배리어 동기에서는 루프 처리를 수행하므로 불필요하게 cpu 리소스를 점유한다.
+그러므로 Pthreads의 조건 변수(Condvar) 또는 세마포어와 같은 보다 정교한 동기 메커니즘을 사용해 barrier를 구현해야 한다.
 
+배리어 동기는 여러 실행 스레드의 실행을 동기화하기 위해 parallel 컴퓨팅에서 사용되는 기술이다.
+barrier는 프로그램에서 모든 스레드가 중지되고 스레드가 진행되기 전에 다른 모든 스레드가 동일한 지점에 도달할 때까지 기다려야 하는 지점이다.
 
-Barrier 사용의 한 가지 단점은 쓰레드가 서로가 Barrier에 도달할 때까지 기다려야 하므로 프로그램에 오버헤드를 추가할 수 있다는 것입니다. 또한 Barrier를 생성할 때 전달하는 스레드 수를 미리 알고 있어야 하므로 스레드 수가 동적으로 변할 수 있는 상황에는 적합하지 않을 수 있습니다.
+배리어 동기는 모든 스레드가 다음 단계로 이동하기 전에 특정 계산 단계를 완료했는지 확인하는 데 사용된다.
+예를 들어 parallel sorting algorithm에서 각 스레드는 데이터의 일부를 독립적으로 정렬할 수 있으며 배리어를 사용하여
+정렬된 부분을 다시 병합하기 전에 모든 스레드가 해당 부분을 완료했는지 확인할 수 있다.
+
+배리어 동기는 다음의 parallel algorithms에 유용 할 수 있다.
+parallel algorithms that require multiple stages of computation, where each stage depends on the results of the previous stage.
+배리어 동기의 또 다른 예는 parallel matrix multiplication algorithm이다. 각 스레드에는 계산할 행렬의 일부가 할당될 수 있으며
+배리어를 사용하여 곱셈의 다음 단계로 이동하기 전에 모든 스레드가 해당 부분을 완료했는지 확인할 수 있다.
+
+다음은 parallel algorithm의 배리어 동기의 예이다.
+```rust
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
+
+fn barrier(cnt: &AtomicUsize, max: &AtomicUsize) {
+    cnt.fetch_add(1, Ordering::SeqCst);
+    while cnt.load(Ordering::SeqCst) < max.load(Ordering::SeqCst) {}
+}
+
+fn main() {
+    let mut handles = vec![];
+    let num_threads = 5;
+
+    let cnt = Arc::new(AtomicUsize::new(0));
+    let max = Arc::new(AtomicUsize::new(num_threads));
+
+    for i in 0..num_threads {
+        let cnt = cnt.clone();
+        let max = max.clone();
+
+        let handle = thread::spawn(move || {
+            println!("Thread {} started", i);
+            // do some computation
+            barrier(&cnt, &max);
+            println!("Thread {} finished", i);
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+}
+```
+이 예제에서는 num_threads 스레드의 벡터를 생성한다.
+각 스레드는 약간의 계산(do something)을 수행한 다음 다른 스레드가 barrier 기능을 사용하여 따라잡을 때까지 기다린다.
+즉, 모든 스레드가 barrier를 호출할 때까지 각 스레드들을 blocking한다. 모든 스레드가 barrier를 호출하면 그때 blocking을 해제하고
+스케줄러가 각 스레드들을 순환하면서 finished를 print 한다.
+
+cnt 및 max 변수는 clone 메서드를 사용하여 모든 스레드 간에 공유되어 각 스레드에 대한 새 인스턴스를 생성한다.
+모든 스레드가 완료된 후 프로그램을 종료하기 전에 스레드가 완료될 때까지 대기하기 위해 각 스레드의 handle에서 join 메소드가 호출된다.
+
+일반적으로 barrier 동기는 여러 스레드가 스레드 간의 조정 또는 통신이 필요한 문제에 대해 작업하는 모든 상황에서 유용하다.
+모든 스레드가 조정된 방식으로 함께 작동하는지 확인하고 경합 상태 및 기타 동기화 문제를 방지하는 데 도움이 될 수 있다.
+
+그러나 배리어 동기화는 오버헤드를 유발할 수 있으며 주의해서 사용하지 않으면 비효율적일 수 있다는 점에 유의해야 한다.
+경우에 따라 해결하려는 문제의 세부 사항에 따라 lock 또는 세마포어와 같은 다른 동기화 기술을 사용하는 것이 더 나을 수 있다.
+
+위의 경우, spin-lock을 통해 구현한 배리어 동기는 루프 처리를 수행하므로 불필요하게 cpu 리소스를 점유한다.
+
+Rust에서는 Condvar를 사용하여 배리어 동기를 구현했다.
+```rust
+pub struct Barrier {
+    lock: Mutex<BarrierState>,
+    cvar: Condvar,
+    num_threads: usize,
+}
+
+// The inner state of a double barrier
+struct BarrierState {
+    count: usize,
+    generation_id: usize,
+}
+
+impl Barrier {
+    pub fn new(n: usize) -> Barrier {
+        Barrier {
+            lock: Mutex::new(BarrierState { count: 0, generation_id: 0 }),
+            cvar: Condvar::new(),
+            num_threads: n,
+        }
+    }
+
+    pub fn wait(&self) -> BarrierWaitResult {
+        let mut lock = self.lock.lock().unwrap();
+        let local_gen = lock.generation_id;
+        lock.count += 1;
+        if lock.count < self.num_threads {
+            // We need a while loop to guard against spurious wakeups.
+            // https://en.wikipedia.org/wiki/Spurious_wakeup
+            while local_gen == lock.generation_id {
+                lock = self.cvar.wait(lock).unwrap();
+            }
+            BarrierWaitResult(false)
+        } else {
+            lock.count = 0;
+            lock.generation_id = lock.generation_id.wrapping_add(1);
+            self.cvar.notify_all();
+            BarrierWaitResult(true)
+        }
+    }
+}
+```
+Rust의 표준 라이브러리는 루프를 돌릴 필요 없이 효율적인 barrier 동기를 허용하는 Barrier type을 제공한다.
+Barrier 구현은 내부적으로 Condvar 및 Mutex를 사용하여 스레드를 조정한다.
+```rust
+use std::sync::{Arc, Barrier};
+use std::thread;
+
+fn main() {
+    let mut handles = vec![];
+    let num_threads = 5;
+
+    let barrier = Arc::new(Barrier::new(num_threads));
+
+    for i in 0..num_threads {
+        let barrier = barrier.clone();
+
+        let handle = thread::spawn(move || {
+            println!("Thread {} started", i);
+            // do some computation
+            barrier.wait();
+            println!("Thread {} finished", i);
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+}
+
+pub struct BarrierWaitResult(bool);
+
+impl BarrierWaitResult {
+    pub fn is_leader(&self) -> bool {
+        self.0
+    }
+}
+```
+이 구현에서 `Barrier`는 `num_threads` 개수로 생성되며, 이는 해제되기 전에 barrier에 도달해야 하는 스레드 수를 나타낸다.
+각 스레드는 계산을 완료한 후 Barrier에서 wait()를 호출하며 모든 num_threads 스레드가 wait()를 호출할 때까지 스레드를 blocking한다.
+모든 스레드가 wait()를 호출하면 barrier가 released되고 모든 스레드가 실행을 계속합니다.
+`Barrier`의 구현은 `Condvar`를 사용하여 barrier에서 대기 중인 스레드를 blocking하고 깨우고, `Mutex`를 사용하여 barrier의 내부 상태를 보호한다.
+이를 통해 spinning loop(spin-lock)나 busy-waiting 없이 효율적인 동기화가 가능하다.
+
+요약하면 Rust의 `Barrier` struct는 `Condvar`와 `Mutex`의 조합을 사용하여 스레드를 조정하고 불필요한 spinning loop를 방지함으로써
+spin-lock 기반 barrier 동기화에 대한 보다 효율적이고 확장 가능한 대안을 제공한다.
+
+Barrier 사용의 한 가지 단점은 쓰레드가 서로가 Barrier에 도달할 때까지 기다려야 하므로 프로그램에 오버헤드를 추가할 수 있다는 것이다.
+또한 Barrier를 생성할 때 전달하는 스레드 수를 미리 알고 있어야 하므로 스레드 수가 동적으로 변할 수 있는 상황에는 적합하지 않을 수 있다.
+
 ### Condvar: definition, how to use, and trade-offs
-Condvar 또는 조건 변수는 스레드가 실행을 계속하기 전에 특정 조건이 참이 될 때까지 대기할 수 있도록 하는 동기화 프리미티브입니다. 일반적으로 Mutex 또는 RwLock과 함께 사용되며 여기서 Mutex 또는 RwLock은 공유 값에 대한 액세스를 조정하는 데 사용되고 Condvar는 해당 값의 변경을 기다리는 데 사용됩니다.
+`Condvar`(조건 변수)는 스레드가 실행을 계속하기 전에 특정 조건이 참이 될 때까지 대기할 수 있도록 하는 동기 프리미티브이다.
+일반적으로 `Mutex` 또는 `RwLock`과 함께 사용되며 여기서 `Mutex` 또는 `RwLock`은 공유 값에 대한 액세스를 조정하는 데 사용되고,
+`Condvar`는 해당 값의 변경(공유 상태의 변경)을 기다리는데(notified) 사용된다.
+
+```rust
+pub struct Condvar {
+    inner: sys::Condvar,
+}
+
+impl Condvar {
+    pub const fn new() -> Condvar {
+        Condvar { inner: sys::Condvar::new() }
+    }
+
+    pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> LockResult<MutexGuard<'a, T>> {
+        let poisoned = unsafe {
+            let lock = mutex::guard_lock(&guard);
+            self.inner.wait(lock);
+            mutex::guard_poison(&guard).get()
+        };
+        if poisoned { Err(PoisonError::new(guard)) } else { Ok(guard) }
+    }
+
+    pub fn wait_while<'a, T, F>(
+        &self,
+        mut guard: MutexGuard<'a, T>,
+        mut condition: F,
+    ) -> LockResult<MutexGuard<'a, T>>
+        where
+            F: FnMut(&mut T) -> bool,
+    {
+        while condition(&mut *guard) {
+            guard = self.wait(guard)?;
+        }
+        Ok(guard)
+    }
+
+    pub fn wait_timeout<'a, T>(
+        &self,
+        guard: MutexGuard<'a, T>,
+        dur: Duration,
+    ) -> LockResult<(MutexGuard<'a, T>, WaitTimeoutResult)> {
+        let (poisoned, result) = unsafe {
+            let lock = mutex::guard_lock(&guard);
+            let success = self.inner.wait_timeout(lock, dur);
+            (mutex::guard_poison(&guard).get(), WaitTimeoutResult(!success))
+        };
+        if poisoned { Err(PoisonError::new((guard, result))) } else { Ok((guard, result)) }
+    }
+
+    pub fn wait_timeout_while<'a, T, F>(
+        &self,
+        mut guard: MutexGuard<'a, T>,
+        dur: Duration,
+        mut condition: F,
+    ) -> LockResult<(MutexGuard<'a, T>, WaitTimeoutResult)>
+        where
+            F: FnMut(&mut T) -> bool,
+    {
+        let start = Instant::now();
+        loop {
+            if !condition(&mut *guard) {
+                return Ok((guard, WaitTimeoutResult(false)));
+            }
+            let timeout = match dur.checked_sub(start.elapsed()) {
+                Some(timeout) => timeout,
+                None => return Ok((guard, WaitTimeoutResult(true))),
+            };
+            guard = self.wait_timeout(guard, timeout)?.0;
+        }
+    }
+
+    pub fn notify_one(&self) {
+        self.inner.notify_one()
+    }
+
+    pub fn notify_all(&self) {
+        self.inner.notify_all()
+    }
+}
 
 
-Condvar를 사용하려면 먼저 new() 메서드를 사용하여 새 Condvar를 만든 다음 wait() 메서드를 사용하여 조건이 true가 될 때까지 기다립니다. Condvar에서 대기 중인 스레드를 깨우기 위해 notify_one() 또는 notify_all() 메서드를 사용할 수도 있습니다.
+pub struct SysCondvar {
+    // The value of this atomic is simply incremented on every notification.
+    // This is used by `.wait()` to not miss any notifications after
+    // unlocking the mutex and before waiting for notifications.
+    futex: AtomicU32,
+}
 
+impl SysCondvar {
+    #[inline]
+    pub const fn new() -> Self {
+        Self { futex: AtomicU32::new(0) }
+    }
 
-Condvar 사용의 한 가지 단점은 스레드가 실행을 계속하기 전에 조건이 참이 될 때까지 기다려야 하므로 프로그램에 오버헤드를 추가할 수 있다는 것입니다. 또한 Condvar를 올바르게 사용하지 않으면 잠재적인 경합 상태가 발생할 수 있으므로 사용 시 주의해야 합니다.
+    // All the memory orderings here are `Relaxed`,
+    // because synchronization is done by unlocking and locking the mutex.
+
+    pub fn notify_one(&self) {
+        self.futex.fetch_add(1, Relaxed);
+        futex_wake(&self.futex);
+    }
+
+    pub fn notify_all(&self) {
+        self.futex.fetch_add(1, Relaxed);
+        futex_wake_all(&self.futex);
+    }
+
+    pub unsafe fn wait(&self, mutex: &Mutex) {
+        self.wait_optional_timeout(mutex, None);
+    }
+
+    pub unsafe fn wait_timeout(&self, mutex: &Mutex, timeout: Duration) -> bool {
+        self.wait_optional_timeout(mutex, Some(timeout))
+    }
+
+    unsafe fn wait_optional_timeout(&self, mutex: &Mutex, timeout: Option<Duration>) -> bool {
+        // Examine the notification counter _before_ we unlock the mutex.
+        let futex_value = self.futex.load(Relaxed);
+
+        // Unlock the mutex before going to sleep.
+        mutex.unlock();
+
+        // Wait, but only if there hasn't been any
+        // notification since we unlocked the mutex.
+        let r = futex_wait(&self.futex, futex_value, timeout);
+
+        // Lock the mutex again.
+        mutex.lock();
+
+        r
+    }
+}
+```
+스레드가 Condvar에서 wait 메소드를 호출하면 연관된 Mutex 또는 RwLock을 원자적으로 해제하고 스레드를 blocking하며 조건이 충족되었다는 알림(notified 메서드)을 기다린다.
+wait 메서드는 연결된 `Mutex` 또는`RwLock`을 유지하는 동안 호출해야 한다. 그렇지 않으면 panic!이 발생한다.
+다른 스레드가 공유 리소스를 수정하고 notify 메서드를 호출하여 Condvar를 깨우면, 대기 중인 스레드가 깨어나 관련 `Mutex` 또는 `RwLock`을 다시 획득한다.
+
+`Condvar`를 사용하려면 먼저 new() 메서드를 사용하여 새 Condvar를 만든 다음 wait() 메서드를 사용하여 조건이 true가 될 때까지 기다린다.
+Condvar에서 대기 중인 스레드를 깨우기 위해 notify_one() 또는 notify_all() 메서드를 사용한다.
+
+다음은 간단한 blocking Queue을 구현하기 위해 `Mutex`와 함께 `Condvar`를 사용하는 예이다.
+```rust
+use std::sync::{Arc, Mutex, Condvar};
+use std::thread;
+
+struct Queue<T> {
+    data: Mutex<Vec<T>>,
+    not_empty: Condvar,
+}
+
+impl<T> Queue<T> {
+    fn new() -> Self {
+        Self {
+            data: Mutex::new(Vec::new()),
+            not_empty: Condvar::new(),
+        }
+    }
+
+    fn push(&self, item: T) {
+        let mut data = self.data.lock().unwrap();
+        data.push(item);
+        self.not_empty.notify_one();
+    }
+
+    fn pop(&self) -> T {
+        let mut data = self.data.lock().unwrap();
+        while data.is_empty() {
+            data = self.not_empty.wait(data).unwrap();
+        }
+        data.remove(0)
+    }
+}
+
+fn main() {
+    let queue = Arc::new(Queue::new());
+
+    let producer = {
+        let queue = queue.clone();
+        thread::spawn(move || {
+            for i in 0..10 {
+                queue.push(i);
+            }
+        })
+    };
+
+    let consumer = {
+        let queue = queue.clone();
+        thread::spawn(move || {
+            for _ in 0..10 {
+                let item = queue.pop();
+                println!("Consumer got {}", item);
+            }
+        })
+    };
+
+    producer.join().unwrap();
+    consumer.join().unwrap();
+}
+```
+이 예에서 Queue struct에는 기본 데이터 벡터를 보호하는 Mutex와 Queue가 비어 있지 않을 때 신호를 보내는 데 사용되는 `Condvar`가 포함되어 있다.
+push 메소드는 단순히 데이터 벡터에 항목을 추가하고 하나의 대기 중인 스레드에 알리는 반면,
+pop 메소드는 데이터 벡터가 비어 있지 않을 때까지 blocking한 다음 첫 번째 항목을 제거하고 반환한다.
+
+pop 메서드가 not_empty 조건이 충족되기를 기다리기 위해 단순한 if 문이 아니라 while 루프를 사용하는 방법에 유의해야한다.
+이는 `Condvar`의 신호 이외의 이유로 스레드가 깨어날 수 있는 [가짜 깨우기 또는 의사 각성: Spurious wakeup](https://en.wikipedia.org/wiki/Spurious_wakeup) 을 처리하는 데 필요하다.
+
+주의해야할 다른 중요한 점은 `Condvar`가 대기 중인 스레드가 깨어나는 순서에 대한 어떠한 보장도 제공하지 않는다는 것이다(not deterministic).
+여러 스레드가 한 번에 깨어나거나 스레드가 차단된 순서와 다른 순서로 깨어날 수 있다.
+(Executor와 Eventloop의 Queue의 오더링 순서를 정하더라도, 도움이 될 순 있지만 보장하지는 못한다.
+러스트에서는 스레드의 스케줄링은 궁극적으로 OS 스케줄러의 권한이기 때문이다.)
+
+따라서 특정 스레드 wakeup 순서에 의존하지 않는 방식으로 동기화 논리를 설계하는 것이 중요하다.
+추가적인 오버헤드에 비해 효과는 미미하기 때문이다.
+그렇기 때문에 wakeup 순서의 변동을 처리할 수 있을 만큼 충분히 유연하고 스레드 스케줄링에 대한 특정 가정에 의존하지 않는 동기화 메커니즘을 설계하는 것이 가장 좋다.
+
+Condvar 사용의 한 가지 단점은 스레드가 실행을 계속하기 전에 조건이 참이 될 때까지 기다려야 하므로 프로그램에 오버헤드를 추가한다는 것이다.
+또한 Condvar를 올바르게 사용하지 않으면 잠재적인 경합 상태가 발생할 수 있으므로 사용 시 주의해야 한다.
+
 ### mpsc: definition, how to use, and trade-offs
 
 ### Mutex: definition, how to use, and trade-offs
