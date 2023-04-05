@@ -1175,7 +1175,14 @@ cnt 및 max 변수는 clone 메서드를 사용하여 모든 스레드 간에 �
 
 위의 경우, spin-lock을 통해 구현한 배리어 동기는 루프 처리를 수행하므로 불필요하게 cpu 리소스를 점유한다.
 
-Rust에서는 Condvar를 사용하여 배리어 동기를 구현했다.
+Rust에서는 여전히 spin-lock을 사용하지만, Condvar와 Mutex를 사용하여 배리어 동기를 최적화했다.
+다른 스레드가 Barrier에 도달하기를 기다리는 동안 CPU 사용량을 줄인다.
+이것은 Condvar와 Mutex를 통해, Condvar 내부의 sys Condvar는 futex를 사용하여 스레드를 차단하고 깨우는 방식이다.
+wait() 메서드는 async/await의 await 키워드와 상당히 유사하지만, 유의미한 차이점들이 있다.  
+`async/await`은 `Future`를 통해 명시적으로 현재의 코드를 이벤트 루프(executor)에 저장하여 다음 이벤트로 넘긴다.  
+그렇지만 `Barrier`는 `Condvar`와 `Mutex`를 통해 완전히 시스템 호출에 의존하여 스레드를 blocking하고 깨운다.  
+즉, `async/await`은 비동기 처리이지만, `Barrier`는 이벤트 루프에 명시적으로 현재 상태를 넘기는 구현이 없고,
+비동기처리 메커니즘은 아니다. 그렇지만 Busy Waiting을 방지하는 동작이며 async/await에 비해 OS 의존도가 더 크고 전적으로 OS 스케줄러에 맡긴다.
 ```rust
 pub struct Barrier {
     lock: Mutex<BarrierState>,
@@ -1218,7 +1225,7 @@ impl Barrier {
     }
 }
 ```
-Rust의 표준 라이브러리는 루프를 돌릴 필요 없이 효율적인 barrier 동기를 허용하는 Barrier type을 제공한다.
+Rust의 표준 라이브러리는 더 효율적인 barrier 동기를 허용하는 Barrier type을 제공한다.
 Barrier 구현은 내부적으로 Condvar 및 Mutex를 사용하여 스레드를 조정한다.
 ```rust
 use std::sync::{Arc, Barrier};
@@ -1476,10 +1483,10 @@ pop 메소드는 데이터 벡터가 비어 있지 않을 때까지 blocking한 
 pop 메서드가 not_empty 조건이 충족되기를 기다리기 위해 단순한 if 문이 아니라 while 루프를 사용하는 방법에 유의해야한다.
 이는 `Condvar`의 신호 이외의 이유로 스레드가 깨어날 수 있는 [가짜 깨우기 또는 의사 각성: Spurious wakeup](https://en.wikipedia.org/wiki/Spurious_wakeup) 을 처리하는 데 필요하다.
 
-주의해야할 다른 중요한 점은 `Condvar`가 대기 중인 스레드가 깨어나는 순서에 대한 어떠한 보장도 제공하지 않는다는 것이다(not deterministic).
+또 다른 중요한 주의점은 `Condvar`가 대기 중인 스레드가 깨어나는 순서에 대한 어떠한 보장도 제공하지 않는다는 것이다(not deterministic).
 여러 스레드가 한 번에 깨어나거나 스레드가 차단된 순서와 다른 순서로 깨어날 수 있다.
 (Executor와 Eventloop의 Queue의 오더링 순서를 정하더라도, 도움이 될 순 있지만 보장하지는 못한다.
-러스트에서는 스레드의 스케줄링은 궁극적으로 OS 스케줄러의 권한이기 때문이다.)
+Rust에서는 스레드의 스케줄링은 궁극적으로 OS 스케줄러의 권한이기 때문이다.)
 
 따라서 특정 스레드 wakeup 순서에 의존하지 않는 방식으로 동기화 논리를 설계하는 것이 중요하다.
 추가적인 오버헤드에 비해 효과는 미미하기 때문이다.
