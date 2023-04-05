@@ -19,6 +19,8 @@ fn main() -> io::Result<()> {
     }
 
     k -= 5;
+    let mut max_count = 0;
+    let mut visited = [false; 26];
     let mut words = Vec::new();
     for _ in 0..n {
         let line = line();
@@ -34,8 +36,6 @@ fn main() -> io::Result<()> {
         words.push(new_word);
     }
 
-    let mut max_count = 0;
-    let mut visited = [false; 26];
     visited[b'a' as usize - 97] = true;
     visited[b'n' as usize - 97] = true;
     visited[b't' as usize - 97] = true;
