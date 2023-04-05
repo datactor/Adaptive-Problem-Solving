@@ -1092,9 +1092,21 @@ Arc 사용의 단점 중 하나는 참조 카운팅 프로세스(lock free algor
 프로그램의 정확성을 위해 작업 순서가 중요한 경우 미묘한 버그가 발생할 수 있다.
 
 ### Barrier: definition, how to use, and trade-offs
+배리어는 여러 스레드가 서로 실행의 특정 지점에 도달할 때까지 기다릴 수 있도록 하는 동기화 프리미티브입니다. 병렬 계산과 같이 어떤 방식으로 실행을 조정해야 하는 여러 스레드가 있을 때 유용합니다.
 
+
+Barrier를 사용하려면 먼저 new() 메서드를 사용하여 Barrier를 사용할 스레드 수를 전달하여 새 Barrier를 만듭니다. 그런 다음 wait() 메서드를 사용하여 실행을 계속하기 전에 모든 스레드가 Barrier에 도달할 때까지 기다립니다. 모든 스레드가 장벽에 도달하면 모두 계속 실행됩니다.
+
+
+Barrier 사용의 한 가지 단점은 쓰레드가 서로가 Barrier에 도달할 때까지 기다려야 하므로 프로그램에 오버헤드를 추가할 수 있다는 것입니다. 또한 Barrier를 생성할 때 전달하는 스레드 수를 미리 알고 있어야 하므로 스레드 수가 동적으로 변할 수 있는 상황에는 적합하지 않을 수 있습니다.
 ### Condvar: definition, how to use, and trade-offs
+Condvar 또는 조건 변수는 스레드가 실행을 계속하기 전에 특정 조건이 참이 될 때까지 대기할 수 있도록 하는 동기화 프리미티브입니다. 일반적으로 Mutex 또는 RwLock과 함께 사용되며 여기서 Mutex 또는 RwLock은 공유 값에 대한 액세스를 조정하는 데 사용되고 Condvar는 해당 값의 변경을 기다리는 데 사용됩니다.
 
+
+Condvar를 사용하려면 먼저 new() 메서드를 사용하여 새 Condvar를 만든 다음 wait() 메서드를 사용하여 조건이 true가 될 때까지 기다립니다. Condvar에서 대기 중인 스레드를 깨우기 위해 notify_one() 또는 notify_all() 메서드를 사용할 수도 있습니다.
+
+
+Condvar 사용의 한 가지 단점은 스레드가 실행을 계속하기 전에 조건이 참이 될 때까지 기다려야 하므로 프로그램에 오버헤드를 추가할 수 있다는 것입니다. 또한 Condvar를 올바르게 사용하지 않으면 잠재적인 경합 상태가 발생할 수 있으므로 사용 시 주의해야 합니다.
 ### mpsc: definition, how to use, and trade-offs
 
 ### Mutex: definition, how to use, and trade-offs
