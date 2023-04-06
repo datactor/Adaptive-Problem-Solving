@@ -646,3 +646,7 @@ path = "geometry/boj_s1_2527.rs"
 [[example]]
 name = "boj_1062"
 path = "bitmask/boj_g4_1062_bitmask_bruteforce_dfs.rs"
+
+[[example]]
+name = "boj_1485"
+path = "geometry/boj_s3_1485.rs"
