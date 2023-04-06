@@ -1607,7 +1607,7 @@ Sender 및 Receiver가 있으면 이를 사용하여 스레드 간에 메시지�
 채널에서는 고전적인 producer-consumer 문제가 발생한다.
 예를 들어 고정 크기 버퍼와 생산자 프로세스, 소비자 프로세스가 있다고 가정해보자.
 생산자 프로세스는 항목을 생성하고 공유 버퍼에 추가한다. 소비자 프로세스는 공유 버퍼에서 항목을 가져와 "소비"한다.
-![prod_cons_problem](../../img/prodcons.png)
+![prod_cons_problem](../../img/prodcons.png)  
 일관된 데이터 동기화를 위해서는 생산자와 소비자 프로세스가 특정 조건을 충족해야 한다.
 1. 공유 버퍼가 가득 찬 경우 생산자 프로세스는 항목을 생성하지 않아야 합니다.
 2. 소비자 프로세스는 공유 버퍼가 비어 있는 경우 항목을 소비해서는 안된다.
@@ -1728,7 +1728,7 @@ impl<C> Receiver<C> {
 고전적인 producer-consumer 문제를 해결하기 위해, 이 구현에서는 다수의 생산자 스레드가 mpsc 채널을 통해 데이터를 전송하고,
 소비자 스레드가 채널에서 데이터를 받는다.
 이를 위해 Counter 구조체의 내부 채널(chan)은 여러 생산자 및 소비자 스레드에 의해 공유된다.
-Counter struct는 mpsc 채널에서 send와 recv 작업의 안전한 동시성을 보장하기 위한 세마포어 역할을 한다.
+Counter struct는 mpsc 채널에서 send와 recv 작업의 안전한 동시성을 보장하기 위한 `semaphore` 역할을 한다.
 
 생산자 스레드는 데이터를 mpsc 채널에 전송할 때, Counter struct 내부의 senders atomic 변수를 증가시킨다.
 이러한 변수는 현재 채널에 연결된 생산자 스레드 수를 추적한다.
@@ -1738,6 +1738,20 @@ Counter struct는 mpsc 채널에서 send와 recv 작업의 안전한 동시성�
 이 변수는 현재 채널에 연결된 소비자 스레드 수를 추적한다.
 소비자 스레드가 데이터를 받을 때, senders 변수와 마찬가지로 atomic 변수를 사용하여 다른 소비자 스레드가 데이터를 받을 수 있도록 안전하게 지시한다.
 
+Sender 및 Receiver 카운터 외에도 Counter struct에는 마지막 Sender 또는 Receiver 참조가 채널 할당을 해제할 때 true로 설정되는 destroy atomic bool도 포함된다.
+
+이 구현에서는 Mutex나 Condvar 대신에 Counter struct 내부에 있는 원자 변수들을 조작하여 경합 조건을 피하도록 한다.
+
+Queue에 대한 동시 액세스가 동기화되고 데이터 경합을 방지하기 위해 원자성 작업을 사용한다.
+구현에서는 "Sender" 카운터와 "Receiver" 카운터를 사용하여 각각 보내고 받은 메시지 수를 추적한다.
+"Sender" 및 "Receiver" 카운터는 각 스레드에 의해 원자적으로 업데이트되며 Queue는 이러한 카운터 값을 기반으로 액세스된다.
+이를 통해 lock 또는 blocking 메커니즘 없이 Queue에 대한 동시 액세스가 가능하다.
+
+생산자와 소비자 스레드 사이의 공유 버퍼 또는 대기열에 대한 액세스를 동기화하는 오버헤드가 고전적인 producer-consumer를
+해결한 방식(해결하기 위해 Mutex와 Condvar를 사용한 방식)들의 또 다른 문제이며,
+Rust의 mpsc 채널은 lock-free 알고리즘을 통해 해결한다.
+즉, Rust의 mpsc는 고전적인 producer-consumer 문제를 해결하기 위해 Mutex와 Condvar를 해결하는 일반적인 방식의 단점인
+오버헤드를 lock-free알고리즘으로 해결한 한층 더 원초적이고 기술적인 방식이다.
 
 ### Mutex: definition, how to use, and trade-offs
 
