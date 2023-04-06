@@ -1495,7 +1495,249 @@ Rust에서는 스레드의 스케줄링은 궁극적으로 OS 스케줄러의 �
 Condvar 사용의 한 가지 단점은 스레드가 실행을 계속하기 전에 조건이 참이 될 때까지 기다려야 하므로 프로그램에 오버헤드를 추가한다는 것이다.
 또한 Condvar를 올바르게 사용하지 않으면 잠재적인 경합 상태가 발생할 수 있으므로 사용 시 주의해야 한다.
 
+Rust의 std 라이브러리에 구현된 Barrier는 spin-lock을 이용하여 Condvar의 상태를 기다리는 Barrier 뿐이지만,
+동기화에 Condvar를 사용하는 것 외에도 대안으로 사용할 수 있는 `Tree-Barrier` 및 `Tournament-Barrier`가 있다.
+
+트리 배리어와 토너먼트 배리어는 특정 상황에서 스핀 배리어보다 더 효과적이다.
+트리 배리어는 이름에서 알 수 있듯이 참여 스레드 간에 트리 구조를 형성하고 각 스레드는 진행하기 전에 부모와 자식이 barrier에 도착하기를 기다린다.
+이는 spin barrier에 비해 더 나은 캐시 활용과 경합 감소로 이어질 수 있다.
+
+토너먼트 배리어는 스레드를 쌍으로 만들고 각 쌍이 진행하기 전에 다른 쌍이 배리어에 도착할 때까지 기다리도록 하는 방식으로 작동한다.
+각 라운드의 승자는 스레드가 하나만 남을 때까지 다시 짝을 이룬다.
+이를 통해 스핀 배리어에 비해 로드 밸런싱이 향상되고 경합이 감소할 수 있다.
+
+다음은 tree-barrier의 구현의 예이다.
+```rust
+use std::sync::{Arc, Barrier};
+use std::thread;
+
+fn tree_barrier(num_threads: usize) {
+    let mut leaves = num_threads.next_power_of_two() / 2;
+    let mut nodes = leaves;
+
+    let mut threads = Vec::with_capacity(num_threads);
+
+    while nodes > 0 {
+        for i in 0..nodes {
+            let mut children = Vec::with_capacity(2);
+
+            if i * 2 + 1 < leaves {
+                children.push(i * 2 + 1);
+                children.push(i * 2 + 2);
+            }
+
+            let mut waiting_threads = Vec::with_capacity(children.len());
+            for child in children {
+                let index = i * leaves + child;
+                waiting_threads.push(threads[index].clone());
+            }
+
+            if !waiting_threads.is_empty() {
+                let barrier = Arc::new(Barrier::new(waiting_threads.len() + 1));
+                for waiting_thread in waiting_threads {
+                    let barrier_clone = barrier.clone();
+                    thread::spawn(move || {
+                        waiting_thread.wait();
+                        barrier_clone.wait();
+                    });
+                }
+                barrier.wait();
+            }
+        }
+
+        leaves /= 2;
+        nodes /= 2;
+    }
+}
+
+fn main() {
+    let num_threads = 8;
+    let mut handles = Vec::with_capacity(num_threads);
+
+    for i in 0..num_threads {
+        let handle = thread::spawn(move || {
+            println!("Thread {} started", i);
+            // do some computation
+        });
+        handles.push(handle);
+    }
+
+    tree_barrier(num_threads);
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+}
+```
+이 구현은 이진 트리 구조를 사용하여 스레드를 동기화한다.
+여기서 각 내부 노드는 계속하기 전에 자식 노드가 완료될 때까지 기다리는 barrier를 나타낸다.
+이 알고리즘은 log 시간 복잡도를 가지며 특정 상황에서 loop barrier보다 더 효율적일 수 있다.
+
+유사하게 토너먼트 배리어는 단일 승자가 결정될 때까지 스레드가 쌍으로 경쟁한 다음 모든 스레드가 완료될 때까지 다음 라운드로 계속 진행되는
+바이너리 토너먼트 구조를 사용하여 구현할 수 있다.
+
+(todo! merkle-tree 해싱 연산을 수행할 때 tree-barrier를 사용하면 어떨까?)
+
 ### mpsc: definition, how to use, and trade-offs
+`mpsc`는 "multi-producer, single-consumer"를 의미하며 스레드 간 통신을 위한 채널을 제공하는 Rust 표준 라이브러리 모듈이다.
+말그대로 채널에는 여러 sender(producer)가 있을 수 있지만, reciever(consumer)는 하나만 있을 수 있다.
+
+```rust
+use std::thread;
+use std::sync::mpsc::channel;
+
+// Create a simple streaming channel
+let (tx, rx) = channel();
+thread::spawn(move|| {
+    tx.send(10).unwrap();
+});
+assert_eq!(rx.recv().unwrap(), 10);
+```
+
+mpsc를 사용하려면 mpsc::channel()으로 채널을 생성해야 한다.
+이 함수는 채널의 두 끝인 Sender와 Receiver를 포함하는 튜플을 반환한다. `Sender`는 `Receiver`로 메시지를 보내는 데 사용된다.
+Sender에서 전송된 모든 데이터는 전송된 순서대로 Receiver에서 사용할 수 있게 되며,  이 채널은 버퍼 제한에 도달 한 후 차단되는 `sync_channel`과 달리
+어떤 전송도 호출 스레드를 차단하지 않는다. 즉 무한 버퍼이다. recv는 하나 이상의 발신자가 살아 있는 동안(클론 포함) 메시지를 사용할 수 있을 때까지 차단된다.
+
+Sender 및 Receiver가 있으면 이를 사용하여 스레드 간에 메시지를 보내고 받을 수 있다.
+메시지를 보내는 것은 Sender에서 send() 메소드를 호출하여 이루어지며,
+메시지 수신은 Receiver에서 recv() 메소드를 호출하여 수행된다.
+이 두 가지 방법 모두 작업이 완료될 때까지 스레드를 차단한다.
+
+채널에서는 고전적인 producer-consumer 문제가 발생한다.
+예를 들어 고정 크기 버퍼와 생산자 프로세스, 소비자 프로세스가 있다고 가정해보자.
+생산자 프로세스는 항목을 생성하고 공유 버퍼에 추가한다. 소비자 프로세스는 공유 버퍼에서 항목을 가져와 "소비"한다.
+![prod_cons_problem](../../img/prodcons.png)
+일관된 데이터 동기화를 위해서는 생산자와 소비자 프로세스가 특정 조건을 충족해야 한다.
+1. 공유 버퍼가 가득 찬 경우 생산자 프로세스는 항목을 생성하지 않아야 합니다.
+2. 소비자 프로세스는 공유 버퍼가 비어 있는 경우 항목을 소비해서는 안된다.
+3. 공유 버퍼에 대한 액세스는 상호 배타적 이어야 한다. 즉, 주어진 인스턴스에서 하나의 프로세스만 공유 버퍼에 액세스하고 변경할 수 있어야 한다.
+
+다음은 producer-consumer 문제에 대한 해결책이다.
+일반적으로 세마포어, Mutex 등으로 상호 배타적인 엑세스를 통해서 해결하지만, Rust의 mpsc는 이러한 솔루션 대신 lock-free 알고리즘으로 해결했다.
+Rust의 mpsc 채널 구현은 Condvar 또는 Mutex를 사용하지 않고 lock-free 알고리즘을 사용한다.  
+다음은 Rust의 mpsc의 Sender와 Receiver의 내부 구현이다.
+```rust
+struct Counter<C> {
+    /// The number of senders associated with the channel.
+    senders: AtomicUsize,
+
+    /// The number of receivers associated with the channel.
+    receivers: AtomicUsize,
+
+    /// Set to `true` if the last sender or the last receiver reference deallocates the channel.
+    destroy: AtomicBool,
+
+    /// The internal channel.
+    chan: C,
+}
+
+/// Wraps a channel into the reference counter.
+pub(crate) fn new<C>(chan: C) -> (Sender<C>, Receiver<C>) {
+    let counter = Box::into_raw(Box::new(Counter {
+        senders: AtomicUsize::new(1),
+        receivers: AtomicUsize::new(1),
+        destroy: AtomicBool::new(false),
+        chan,
+    }));
+    let s = Sender { counter };
+    let r = Receiver { counter };
+    (s, r)
+}
+
+/// The sending side.
+pub(crate) struct Sender<C> {
+    counter: *mut Counter<C>,
+}
+
+impl<C> Sender<C> {
+    /// Returns the internal `Counter`.
+    fn counter(&self) -> &Counter<C> {
+        unsafe { &*self.counter }
+    }
+
+    /// Acquires another sender reference.
+    pub(crate) fn acquire(&self) -> Sender<C> {
+        let count = self.counter().senders.fetch_add(1, Ordering::Relaxed);
+        
+        if count > isize::MAX as usize {
+            process::abort();
+        }
+
+        Sender { counter: self.counter }
+    }
+    
+    pub(crate) unsafe fn release<F: FnOnce(&C) -> bool>(&self, disconnect: F) {
+        if self.counter().senders.fetch_sub(1, Ordering::AcqRel) == 1 {
+            disconnect(&self.counter().chan);
+
+            if self.counter().destroy.swap(true, Ordering::AcqRel) {
+                drop(Box::from_raw(self.counter));
+            }
+        }
+    }
+}
+
+impl<C> ops::Deref for Sender<C> {
+    type Target = C;
+
+    fn deref(&self) -> &C {
+        &self.counter().chan
+    }
+}
+
+impl<C> PartialEq for Sender<C> {
+    fn eq(&self, other: &Sender<C>) -> bool {
+        self.counter == other.counter
+    }
+}
+
+/// The receiving side.
+pub(crate) struct Receiver<C> {
+    counter: *mut Counter<C>,
+}
+
+impl<C> Receiver<C> {
+    /// Returns the internal `Counter`.
+    fn counter(&self) -> &Counter<C> {
+        unsafe { &*self.counter }
+    }
+
+    /// Acquires another receiver reference.
+    pub(crate) fn acquire(&self) -> Receiver<C> {
+        let count = self.counter().receivers.fetch_add(1, Ordering::Relaxed);
+        if count > isize::MAX as usize {
+            process::abort();
+        }
+
+        Receiver { counter: self.counter }
+    }
+    pub(crate) unsafe fn release<F: FnOnce(&C) -> bool>(&self, disconnect: F) {
+        if self.counter().receivers.fetch_sub(1, Ordering::AcqRel) == 1 {
+            disconnect(&self.counter().chan);
+
+            if self.counter().destroy.swap(true, Ordering::AcqRel) {
+                drop(Box::from_raw(self.counter));
+            }
+        }
+    }
+}
+```
+이 구현에서는 mpsc 채널에서 Condvar와 Mutex 대신 원자 연산을 사용하여 경합 조건을 피한다.
+
+고전적인 producer-consumer 문제를 해결하기 위해, 이 구현에서는 다수의 생산자 스레드가 mpsc 채널을 통해 데이터를 전송하고,
+소비자 스레드가 채널에서 데이터를 받는다.
+이를 위해 Counter 구조체의 내부 채널(chan)은 여러 생산자 및 소비자 스레드에 의해 공유된다.
+Counter struct는 mpsc 채널에서 send와 recv 작업의 안전한 동시성을 보장하기 위한 세마포어 역할을 한다.
+
+생산자 스레드는 데이터를 mpsc 채널에 전송할 때, Counter struct 내부의 senders atomic 변수를 증가시킨다.
+이러한 변수는 현재 채널에 연결된 생산자 스레드 수를 추적한다.
+생산자 스레드가 데이터를 전송하면, 소비자 스레드가 데이터를 받도록 안전하게 지시할 수 있도록 Counter struct 내부의 atomic 변수를 사용한다.
+
+반대로, 소비자 스레드는 데이터를 받기 전에 Counter struct 내부의 receivers 원자 변수를 증가시킨다.
+이 변수는 현재 채널에 연결된 소비자 스레드 수를 추적한다.
+소비자 스레드가 데이터를 받을 때, senders 변수와 마찬가지로 atomic 변수를 사용하여 다른 소비자 스레드가 데이터를 받을 수 있도록 안전하게 지시한다.
+
 
 ### Mutex: definition, how to use, and trade-offs
 
