@@ -1,8 +1,9 @@
 # Comprehensive Problem Solving and Dive to Rust Concepts
 
-This repository contains solutions to algorithmic problems,
-as well as conceptual explanations of Rust.
-The PS stands for the acquisition of technological skills for problem-solving in the broad sense.
+Rustic Data Solving: Algorithm Solutions and Rust Concepts Exploration
+This repository contains solutions to algorithmic problems and conceptual explanations of Rust,
+including data processing and distributed systems.
+The goal is to acquire technical skills for problem-solving in a broad sense using Rust.
 
 ## Folder structure
 
