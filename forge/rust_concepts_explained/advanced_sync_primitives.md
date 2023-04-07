@@ -1091,6 +1091,120 @@ Arc 사용의 단점 중 하나는 참조 카운팅 프로세스(lock free algor
 각 스레드가 이벤트의 다른 순서를 관찰할 수 있기 때문이다.
 프로그램의 정확성을 위해 작업 순서가 중요한 경우 미묘한 버그가 발생할 수 있다.
 
+### Semaphore: definition, how to use, and trade-offs
+Rust의 표준 라이브러리는 아쉽게도 `Semaphore`의 built-in 구현을 제공하지 않는다.
+그러나 `Mutex` 및 `Condvar`와 같은 동기 primitives를 사용하거나,
+더 원초적인 구현으로 `Atomic types`들을 사용해서 lock-free 알고리즘으로 custom 구현할 수 있다.
+
+Rust에서 직접적으로 built-in type의 semaphore를 제공하지 않는 이유를 몇가지 추론할 수 있다.
+기본적으로 Rust는 type 시스템을 통해 소유권과 스레드 안전성을 강조하는 언어로 설계되었다.
+
+Rust에서 ownership 및 borrowing 모델은 각 리소스가 주어진 시간에 고유한 소유자를 가지며 소유자가 data race 및 기타 스레드 안전 문제를
+피하는 방식으로 리소스를 빌릴 수 있도록 한다.
+이 모델은 '동일한 crystal ownership 및 borrowing sementics'를 갖지 않는 Semaphore 같은, 일반적인 동기 프리미티브에 적용하기 어려울 수 있다.
+
+예를 들어 Semaphore는 여러 스레드 간에 공유 리소스에 대한 액세스를 조정하는 데 사용할 수 있지만 해당 리소스의 ownership 또는 borrowing에 대한
+어떠한 보장도 제공하지 않는다.
+이것은 여러 스레드가 적절한 동기화 없이 동시에 동일한 리소스에 액세스하도록 허용함으로써 세마포어가 잠재적으로 Rust의 안전 보장을 위반할 수 있음을 의미한다.
+
+또한 세마포어는 보편적으로 적용할 수 없다. 세마포어는 특정 상황에서 유용하지만 모든 상황에서 유용하지는 않을 수 있다.
+가능한 동기 프리미티브의 하위 집합만 제공함으로써 Rust는 개발자가 특정 사용 사례에 적합한 메커니즘을 신중하게 생각하도록 권장한다.
+세마포어는 복잡성이 커지고 유지 관리 오버헤드가 있다. 세마포어는 특히 기본 세마포어 개념의 변형 및 확장이 많기 때문에 구현 및 유지 관리가 복잡할 수 있다.
+세마포어 구현을 external crate에 맡김으로써 Rust는 표준 라이브러리에서 복잡하고 잠재적으로 깨지기 쉬운 코드를 유지할 필요가 없다.
+디자인에 따라서 trade-offs가 존재한다. 효율적이고 사용하기 쉬운 Semaphore 구현을 디자인하는 것은 어려울 수 있다.
+external crate가 다양한 디자인과 trade-offs를 실험할 수 있도록 허용함으로써 Rust는 세마포어 구현의 더 큰 생태계에서 이익을 얻고
+다른 사람들의 경험에서 배울 수 있다.
+
+따라서 표준 라이브러리는 `Mutex` 및 `RwLock`등의 기본 types들을 사용하여 빌드된 스레드로부터 안전한 추상화를 제공하는 데 중점을 둔다.
+
+Atomic operation 및 spin-lock과 같은 low-level의 동기 primitives들을 사용하여 Rust에서 세마포어를 구현하는 것은 확실히 가능하지만,
+Rust 프로그램에서 세마포어를 안전하고 효과적으로 사용할 수 있도록 ownership 및 borrowing 모델에 주의를 기울여야 한다.
+
+다음은 Atomic operation에 기반한 lock-free 알고리즘을 사용하여 Rust에서 세마포어를 custom build하는 방법이다.
+Atomic integer를 사용하여 사용 가능한 리소스의 수를 나타내고 atomic compare_and_swap을 사용하여 리소스를 acquire하고 release할 때
+각각 카운트를 감소 및 증가시킬 수 있다.
+
+다음은 구현 예이다.
+```rust
+use std::sync::atomic::{AtomicI32, Ordering};
+
+pub struct Semaphore {
+    count: AtomicI32,
+}
+
+impl Semaphore {
+    pub fn new(count: i32) -> Semaphore {
+        Semaphore { count: AtomicI32::new(count) }
+    }
+
+    pub fn acquire(&self) {
+        loop {
+            let old_count = self.count.load(Ordering::SeqCst);
+            if old_count <= 0 {
+                // No resources available, so spin and retry.
+                // Alternatively, a yield or park operation could be used.
+                continue;
+            }
+            let new_count = old_count - 1;
+            match self.count.compare_exchange(old_count, new_count, Ordering::SeqCst, Ordering::SeqCst) {
+                Ok(_) => break,
+                Err(_) => continue,
+            }
+        }
+    }
+
+    pub fn release(&self) {
+        self.count.fetch_add(1, Ordering::SeqCst);
+    }
+}
+```
+이 구현에서 Semaphore struct에는 사용 가능한 리소스 수를 나타내는 atomic integer가 포함된다.
+'acquire' 메서드는 compare_and_swap 작업을 사용하여 카운트를 원자적으로 감소시키려고 시도하고
+카운트가 이미 0인 경우 리소스를 사용할 수 있을 때까지 반복하고 다시 시도한다.
+release 메서드는 atomic fetch_add 작업을 사용하여 카운트를 원자적으로 증가시킨다.
+
+이 구현은 현재 사용 가능한 리소스가 없는 경우 spin-loop를 사용하여 리소스 획득을 재시도한다.
+사용 사례에 따라 회전을 방지하고 CPU 사용량을 줄이기 위해 park 또는 yield 작업을 사용하는 것이 더 효율적일 수 있다.
+또한 이 구현은 blocking 또는 timeouts를 지원하지 않으므로 구현을 보강하여 사용하는 것이 좋다.
+
+Mutex와 Condvar를 사용한 custom Semaphore 구현
+```rust
+use std::sync::{Arc, Mutex, Condvar};
+
+pub struct Semaphore {
+    count: Mutex<usize>,
+    cvar: Condvar,
+}
+
+impl Semaphore {
+    pub fn new(count: usize) -> Self {
+        Self {
+            count: Mutex::new(count),
+            cvar: Condvar::new(),
+        }
+    }
+
+    pub fn acquire(&self) {
+        let mut count = self.count.lock().unwrap();
+        // Prevent spurious wakeups by using a while loop instead of an if statement
+        while *count == 0 {
+            count = self.cvar.wait(count).unwrap();
+        }
+        *count -= 1;
+    }
+
+    pub fn release(&self) {
+        let mut count = self.count.lock().unwrap();
+        *count += 1;
+        self.cvar.notify_one();
+    }
+}
+```
+이 구현에서는 `Mutex`를 사용하여 세마포어의 수를 보호하고 `Condvar`를 사용하여 세마포어를 사용할 수 있을 때 대기 중인 스레드에 알린다.
+`acquire` 메서드는 세마포어를 사용할 수 있을 때까지 스레드를 차단하고 `release` 메서드는 대기 중인 스레드에 알리고 세마포어 수를 증가시킨다.
+
+이 구현들은 예시일 뿐이며 모든 사용 사례에 적합하지 않을 수 있다.
+
 ### Barrier: definition, how to use, and trade-offs
 다음은 concurrent programming (다카노 유키)에서 구현한 배리어 동기이다.
 
@@ -1613,6 +1727,7 @@ Sender 및 Receiver가 있으면 이를 사용하여 스레드 간에 메시지�
 2. 소비자 프로세스는 공유 버퍼가 비어 있는 경우 항목을 소비해서는 안된다.
 3. 공유 버퍼에 대한 액세스는 상호 배타적 이어야 한다. 즉, 주어진 인스턴스에서 하나의 프로세스만 공유 버퍼에 액세스하고 변경할 수 있어야 한다.
 
+#### Solving the classic "producer-consumer" in a more primitive way
 다음은 producer-consumer 문제에 대한 해결책이다.
 일반적으로 세마포어, Mutex 등으로 상호 배타적인 엑세스를 통해서 해결하지만, Rust의 mpsc는 이러한 솔루션 대신 lock-free 알고리즘으로 해결했다.
 Rust의 mpsc 채널 구현은 Condvar 또는 Mutex를 사용하지 않고 lock-free 알고리즘을 사용한다.  
@@ -1749,11 +1864,193 @@ Queue에 대한 동시 액세스가 동기화되고 데이터 경합을 방지�
 
 생산자와 소비자 스레드 사이의 공유 버퍼 또는 대기열에 대한 액세스를 동기화하는 오버헤드가 고전적인 producer-consumer를
 해결한 방식(해결하기 위해 Mutex와 Condvar를 사용한 방식)들의 또 다른 문제이며,
-Rust의 mpsc 채널은 lock-free 알고리즘을 통해 해결한다.
+Rust의 mpsc 채널은 lock-free 알고리즘을 통해 해결한다.  
 즉, Rust의 mpsc는 고전적인 producer-consumer 문제를 해결하기 위해 Mutex와 Condvar를 해결하는 일반적인 방식의 단점인
 오버헤드를 lock-free알고리즘으로 해결한 한층 더 원초적이고 기술적인 방식이다.
 
 ### Mutex: definition, how to use, and trade-offs
+Mutex는(상호 배제)는 대표적인 locking 메카니즘으로 여러 실행 스레드 간에 공유 리소스에 대한 액세스를 제어하는데 사용되는 동기 프리미티브이다.
+lock을 통해 주어진 시간에 하나의 스레드만 공유 리소스에 액세스할 수 있도록 하는 메커니즘을 제공하여 경합 상태를 방지하고 스레드 안전성을 보장한다.
+
+다음은 Rust의 표준 라이브러리의 Mutex의 구현 중 일부이다.
+```rust
+pub struct Mutex<T: ?Sized> {
+    inner: sys::Mutex,
+    poison: poison::Flag,
+    data: UnsafeCell<T>,
+}
+
+pub struct MutexGuard<'a, T: ?Sized + 'a> {
+    lock: &'a Mutex<T>,
+    poison: poison::Guard,
+}
+
+impl<T> Mutex<T> {
+    pub const fn new(t: T) -> Mutex<T> {
+        Mutex { inner: sys::Mutex::new(), poison: poison::Flag::new(), data: UnsafeCell::new(t) }
+    }
+}
+
+impl<T: ?Sized> Mutex<T> {
+    pub fn lock(&self) -> LockResult<MutexGuard<'_, T>> {
+        unsafe {
+            self.inner.lock();
+            MutexGuard::new(self)
+        }
+    }
+
+    pub fn unlock(guard: MutexGuard<'_, T>) {
+        drop(guard);
+    }
+    
+    pub fn get_mut(&mut self) -> LockResult<&mut T> {
+        let data = self.data.get_mut();
+        poison::map_result(self.poison.borrow(), |()| data)
+    }
+}
+
+pub struct SysMutex {
+    /// 0: unlocked
+    /// 1: locked, no other threads waiting
+    /// 2: locked, and other threads waiting (contended)
+    futex: AtomicU32,
+}
+
+impl SysMutex {
+    pub const fn new() -> Self {
+        Self { futex: AtomicU32::new(0) }
+    }
+    
+    pub fn lock(&self) {
+        if self.futex.compare_exchange(0, 1, Acquire, Relaxed).is_err() {
+            self.lock_contended();
+        }
+    }
+
+    fn lock_contended(&self) {
+        // Spin first to speed things up if the lock is released quickly.
+        let mut state = self.spin();
+
+        // If it's unlocked now, attempt to take the lock
+        // without marking it as contended.
+        if state == 0 {
+            match self.futex.compare_exchange(0, 1, Acquire, Relaxed) {
+                Ok(_) => return, // Locked!
+                Err(s) => state = s,
+            }
+        }
+
+        loop {
+            // Put the lock in contended state.
+            // We avoid an unnecessary write if it as already set to 2,
+            // to be friendlier for the caches.
+            if state != 2 && self.futex.swap(2, Acquire) == 0 {
+                // We changed it from 0 to 2, so we just successfully locked it.
+                return;
+            }
+
+            // Wait for the futex to change state, assuming it is still 2.
+            futex_wait(&self.futex, 2, None);
+
+            // Spin again after waking up.
+            state = self.spin();
+        }
+    }
+
+    fn spin(&self) -> u32 {
+        let mut spin = 100;
+        loop {
+            // We only use `load` (and not `swap` or `compare_exchange`)
+            // while spinning, to be easier on the caches.
+            let state = self.futex.load(Relaxed);
+
+            // We stop spinning when the mutex is unlocked (0),
+            // but also when it's contended (2).
+            if state != 1 || spin == 0 {
+                return state;
+            }
+
+            crate::hint::spin_loop();
+            spin -= 1;
+        }
+    }
+    
+    pub unsafe fn unlock(&self) {
+        if self.futex.swap(0, Release) == 2 {
+            // We only wake up one thread. When that thread locks the mutex, it
+            // will mark the mutex as contended (2) (see lock_contended above),
+            // which makes sure that any other waiting threads will also be
+            // woken up eventually.
+            self.wake();
+        }
+    }
+    
+    fn wake(&self) {
+        futex_wake(&self.futex);
+    }
+}
+```
+Mutex는 inner, poison 및 data의 세 가지 필드가 있는 struct로 정의된다.
+`inner`는 시스템 종속 Mutex(리눅스에서는 futex)이고,
+`poison`은 패닉으로 인해 Mutex가 오염되었는지 여부를 나타내는 데 사용되며,
+`data`는 Mutex에 의해 보호되는 공유 데이터를 보유하는 `UnsafeCell`이다.
+
+`lock()` 메서드는 Mutex lock을 획득하는 데 사용되며 `MutexGuard` 객체를 반환한다.
+`MutexGuard`는 공유 데이터에 액세스하는 데 사용되며 범위를 벗어나면 자동으로 잠금을 해제한다.
+
+`unlock()` 메서드는 Mutex lock을 해제하는 데 사용되며 `MutexGuard` 객체를 매개 변수로 사용한다.
+
+`get_mut()` 메서드는 다른 스레드가 lock(Mutexguard)을 보유하지 않은 경우 공유 데이터에 대한 mutable reference를 반환하고,
+그렇지 않으면 lock을 유지하는 동안 다른 스레드가 패닉에 빠졌음을 나타내는 PoisonError를 반환한다.
+
+SysMutex는 Mutex 구조체의 inner 필드를 구현하는 데 사용되는 OS level의 Mutex이다.
+lock을 수행하기 전에 Mutex가 사용 가능해질 때까지 기다리는 spin-lock algorithm을 구현하기 위해 atomic `futex` 필드를 사용한다.
+
+전반적으로 `Mutex`는 여러 스레드 간에 공유 데이터를 보호하기 위해 안전하고 사용하기 쉬운 동기 프리미티브를 제공한다.
+그러나 lock을 사용하면 경합이 발생하고 spin-lock을 사용하면 불필요한 CPU점유율을 높일 수 있으며, 병렬 처리가 줄어들 수 있으므로
+특정 상황에서는 `RwLock` 및 `Atomic` types(더 원초적인 기술인 lock-free algorithms)와 같은 다른 동기화 프리미티브가 더 적합할 수 있다.
+
+- Mutex의 위험성 또는 단점?  
+  Mutex 사용의 주요 위험 중 하나는 lcok을 제대로 획득하고 해제하지 않으면 교착(deadlock) 상태가 발생할 가능성이 있다는 것이다.
+  특히 여러 스레드가 서로 lock을 해제하기를 기다리는 경우 deadlock 상태가 발생할 수 있다.
+  이로 인해 프로그램이 무기한 중단될 수 있으며 이는 디버그하기 어려운 문제이다.
+  - deadlock?  
+    deadlock은 두 개 이상의 스레드가 서로가 상대방의 Task가 끝나기만을 기다리고 있기 때문에 어느 스레드도 진행할 수 없는 상태이다.  
+    Rust에는 `lock ordering` 및 `deadlock avoidance` algorithms 같은 기술 사용을 포함하여 deadlock 상태를 방지하는 여러 가지 방법이 있다.
+
+    deadlock을 방지하려면 lock을 항상 동일한 순서로 획득 및 해제하고 필요 이상으로 lock을 유지하지 않도록 하는 등
+    Mutex를 사용할 때 모범 사례를 따르는 것이 중요하다.
+
+  Mutex의 또 다른 문제는 스레드가 다른 스레드가 보유하고 있는 lock을 기다리는 경우 CPU 사용량이 높아질 수 있다는 것이다.
+  이것은 스레드가 타이트한 loop에서 lock의 가용성을 반복적으로 확인하는 spin-lock으로 알려져 있다.
+  이는 스레드 수가 많거나 사용 가능한 CPU 수가 제한된 시스템에서 특히 문제가 될 수 있다.
+
+  이 문제를 해결하기 위해 많은 Mutex 구현에서는 spin-lock을 blocking 또는 sleep과 같은 다른 기술과 결합하는 하이브리드 접근 방식을 사용한다.
+  예를 들어 Rust 표준 라이브러리의 Mutex 구현은 초기에 spin-lock 접근 방식을 사용하지만 스레드가 lock을 너무 오래 기다리면 blocking으로 돌아간다.
+
+  전반적으로 Mutex는 스레드 안전을 보장하고 경합 상태를 방지하는 데 강력한 동기 프리미티브이다.
+  그러나 올바르게 사용하고 사용과 관련된 잠재적 위험 및 문제를 인식하는 것이 중요하다.
+
+- spin-lock을 대체할 lock mechanisms?  
+  spin-lock 외에 Rust에서 사용할 수 있는 다른 lock 메커니즘이 있다. 다음은 몇 가지 예이다.
+
+  1. OS primitive 기반의 Mutex type: Rust의 일부 Mutex type은 blocking 및 효율적인 스레드 동기화를 허용할 수 있는
+     세마포어와 같은 운영 체제 프리미티브를 기반으로 한다.
+     예를 들어 외부 crate인 parking_lot::Mutex는 낮은 경합을 위해 설계되었으며 스레드를 차단하기 위한 효율적인 파킹 및 언파킹 메커니즘을 가지고 있다.  
+     리눅스에서는 std::sync::Mutex인 표준 라이브러리의 Mutex만 사용하더라도, 과도한 idle CPU 점유에 대한 방지책은 구현되어 있다.
+     리눅스의 futex는 spin-lock 대기 중에 timeout이 된다면 해당 Task를 blocking하여 과도한 CPU 점유를 방지한다. 
+     이러한 구현은 deadlock 또는 과도한 CPU 점유를 방지하는 데 확실히 도움이 될 수 있지만 여전히 낭비되는 리소스로 인한 오버헤드가 존재한다.
+     순환 종속성을 방지하고 리소스의 효율적 사용은 궁극적으로 프로그래머에게 달려있다.
+  2. `RwLock`: Rust는 또한 Read-Write lock을 제공하여 여러 독자가 리소스에 동시에 액세스할 수 있지만 쓰기에는 exclusive 액세스가 필요하다.
+     std::sync::RwLock은 공유 및 배타적 잠금 모드를 모두 제공하는 일반적으로 사용되는 구현이다.
+  3. `semaphore`: 세마포어는 여러 스레드가 공유 리소스에 대한 액세스를 제어할 수 있게 해주는 동기 메커니즘이다.
+     Rust는 std::sync::Semaphore 구현을 제공하며, 이는 주어진 시간에 리소스에 액세스하는 스레드 수를 제한하는 데 사용할 수 있다.
+  4. `Condvar`: Rust는 std::sync::Condvar type을 제공한다.
+     이는 스레드 신호 및 차단에 사용되는 조건 변수이다.
+     리소스를 사용할 수 있을 때와 같이 특정 조건이 충족될 때 대기 중인 스레드를 깨우는 데 사용할 수 있다.
+
+이것은 spin-lock을 넘어 Rust에서 사용할 수 있는 동기 primitives의 몇 가지 예이다.
+사용할 메커니즘의 선택은 특정 사용 사례 및 성능 요구 사항에 따라 달라진다.
 
 ### Once: definition, how to use, and trade-offs
 
