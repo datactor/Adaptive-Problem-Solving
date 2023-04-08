@@ -1,4 +1,4 @@
-# Unlocking the Crossbeam: Dive into Rust's Advanced Synchronization Primitives
+# Dive into Rust's Advanced Synchronization Primitives
 
 ## 1. Introduction
 ### Definition of synchronization primitives
@@ -2783,13 +2783,3 @@ RwLocks는 동시성과 성능 간에 적절한 균형을 제공하지만 RwLock
 
 위처럼 RwLock은 데이터 경합이나 deadlock 상태를 일으키지 않고 여러 reader 또는 단일 writer가 동시에 공유 데이터에 액세스할 수 있도록 특별히 설계되었다.
 따라서 RwLock을 사용하는 것이 Mutex 및 Condvar로 기능을 구현하는 것보다 일반적으로 더 효율적이고 관리하기 쉬운 선택이다.
-
-## 4. Introduction to crossbeam
-
-## 5. Crossbeam channels
-
-## 6. Crossbeam atomic types
-
-## 7. Work stealing with crossbeam and Rayon
-
-## 8. Conclusion
