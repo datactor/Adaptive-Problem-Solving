@@ -1,5 +1,5 @@
 # Unlocking the Crossbeam
-Previous article: [advanced_sync_primitives1](https://github.com/datactor/Rustic-data-solving/blob/main/forge/rust_concepts_explained/advanced_sync_primitives.md),
+Previous article: [advanced_sync_primitives1](https://github.com/datactor/Rustic-data-solving/blob/main/forge/rust_concepts_explained/advanced_sync_primitives1.md),
 
 이전 article에서는 동기 데이터를 보호하는 근본적인 struct들인 Cell 라이브러리의 Cell, RefCell, UnsafeCell struct들과,
 여러 동기 primitives들로 구성된 sync 라이브러리의 Atomic types, Semaphore, Condvar, Barrier, mpsc, Once, Mutex, RwLock를 포함하여 Rust의 고급 동기 primitives들에 알아보았다.
