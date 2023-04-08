@@ -2770,16 +2770,16 @@ RwLocks는 동시성과 성능 간에 적절한 균형을 제공하지만 RwLock
 또한 RwLocks 특정 경합 상태에 취약할 수 있으며 이로 인해 예기치 않은 동작이나 데이터 손상이 발생할 수 있다.
 
 - deadlock과 datarace를 방지하는데 도움이 되는 메카니즘  
-RwLock은 여러 reader가 동시에 lock을 유지하도록 허용하고 reader나 writer가 lock을 보유하고 있지 않은 경우에만 writer가 잠금을 획득할 수 있도록 하여
-deadlock 상태를 방지하는 데 도움이 된다. 이렇게 하면 스레드가 절대 해제되지 않을 lock을 무한정 대기하면서 차단되어 영원히 깨어나지 않는 동작을 할 가능성이 줄어든다.
+  RwLock은 여러 reader가 동시에 lock을 유지하도록 허용하고 reader나 writer가 lock을 보유하고 있지 않은 경우에만 writer가 잠금을 획득할 수 있도록 하여
+  deadlock 상태를 방지하는 데 도움이 된다. 이렇게 하면 스레드가 절대 해제되지 않을 lock을 무한정 대기하면서 차단되어 영원히 깨어나지 않는 동작을 할 가능성이 줄어든다.
 
-`wake_writer_or_readers()` 메서드는 대기 중인 reader와 writer를 특정 순서로 깨워 deadlock을 방지하는 역할을 한다.
-공유 데이터에 대한 독점 액세스 권한이 있고 가능한 한 빨리 lock을 획득해야 할 수 있으므로 먼저 대기 중인 writer를 깨운다.
-대기 중인 writer가 없으면 대기 중인 모든 reader를 깨우고 동시에 공유 데이터에 액세스할 수 있다.
-writer를 깨우는 이 전략은 writer starvation 상태를 방지하는 데 도움이 된다.
-writer가 공유 데이터에 액세스하는 것을 허용하지 않고 reader가 계속 lock을 획득하고 해제하기 때문에 writer 스레드가 lock을 기다리며 무기한 차단되는
-writer starvation 상태를 방지하는 데 도움이 된다.
-writer의 우선 순위를 지정하여 구현 시 writer가 lock을 획득하고 공유 데이터에 액세스할 공정한 기회를 갖도록 보장한다.
+  `wake_writer_or_readers()` 메서드는 대기 중인 reader와 writer를 특정 순서로 깨워 deadlock을 방지하는 역할을 한다.
+  공유 데이터에 대한 독점 액세스 권한이 있고 가능한 한 빨리 lock을 획득해야 할 수 있으므로 먼저 대기 중인 writer를 깨운다.
+  대기 중인 writer가 없으면 대기 중인 모든 reader를 깨우고 동시에 공유 데이터에 액세스할 수 있다.
+  writer를 깨우는 이 전략은 writer starvation 상태를 방지하는 데 도움이 된다.
+  writer가 공유 데이터에 액세스하는 것을 허용하지 않고 reader가 계속 lock을 획득하고 해제하기 때문에 writer 스레드가 lock을 기다리며 무기한 차단되는
+  writer starvation 상태를 방지하는 데 도움이 된다.
+  writer의 우선 순위를 지정하여 구현 시 writer가 lock을 획득하고 공유 데이터에 액세스할 공정한 기회를 갖도록 보장한다.
 
 위처럼 RwLock은 데이터 경합이나 deadlock 상태를 일으키지 않고 여러 reader 또는 단일 writer가 동시에 공유 데이터에 액세스할 수 있도록 특별히 설계되었다.
 따라서 RwLock을 사용하는 것이 Mutex 및 Condvar로 기능을 구현하는 것보다 일반적으로 더 효율적이고 관리하기 쉬운 선택이다.
