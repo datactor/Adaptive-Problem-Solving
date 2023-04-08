@@ -2052,9 +2052,665 @@ lock을 수행하기 전에 Mutex가 사용 가능해질 때까지 기다리는 
 이것은 spin-lock을 넘어 Rust에서 사용할 수 있는 동기 primitives의 몇 가지 예이다.
 사용할 메커니즘의 선택은 특정 사용 사례 및 성능 요구 사항에 따라 달라진다.
 
+
 ### Once: definition, how to use, and trade-offs
+Once는 Rust의 표준 라이브러리에 있는 동기화 프리미티브로, 실행 중인 스레드 수에 관계없이 Task를 단 한 번만 실행할 수 있다.
+따라서 액세스하는 스레드 수에 관계없이 초기화 또는 설정 코드를 정확히 한 번 실행해야 하는 상황에 유용하다.
+
+std::sync에 구현된 Once이다.
+```rust
+pub struct Once {
+    inner: sys::Once,
+}
+
+pub struct OnceState {
+    pub(crate) inner: sys::OnceState,
+}
+
+pub const ONCE_INIT: Once = Once::new();
+
+impl Once {
+    pub const fn new() -> Once {
+        Once { inner: sys::Once::new() }
+    }
+
+    pub fn call_once<F>(&self, f: F)
+        where
+            F: FnOnce(),
+    {
+        // Fast path check
+        if self.inner.is_completed() {
+            return;
+        }
+
+        let mut f = Some(f);
+        self.inner.call(false, &mut |_| f.take().unwrap()());
+    }
+
+    pub fn call_once_force<F>(&self, f: F)
+        where
+            F: FnOnce(&OnceState),
+    {
+        // Fast path check
+        if self.inner.is_completed() {
+            return;
+        }
+
+        let mut f = Some(f);
+        self.inner.call(true, &mut |p| f.take().unwrap()(p));
+    }
+
+    pub fn is_completed(&self) -> bool {
+        self.inner.is_completed()
+    }
+}
+
+impl OnceState {
+    pub fn is_poisoned(&self) -> bool {
+        self.inner.is_poisoned()
+    }
+
+    /// Poison the associated [`Once`] without explicitly panicking.
+    // NOTE: This is currently only exposed for `OnceLock`.
+    pub(crate) fn poison(&self) {
+        self.inner.poison();
+    }
+}
+```
+
+다음은 linux에서의 Once 내부의 sys::Once의 구현이다.
+```rust
+const INCOMPLETE: u32 = 0;
+const POISONED: u32 = 1;
+const RUNNING: u32 = 2;
+const QUEUED: u32 = 3;
+const COMPLETE: u32 = 4;
+
+pub struct OnceState {
+    poisoned: bool,
+    set_state_to: Cell<u32>,
+}
+
+impl OnceState {
+    #[inline]
+    pub fn is_poisoned(&self) -> bool {
+        self.poisoned
+    }
+
+    #[inline]
+    pub fn poison(&self) {
+        self.set_state_to.set(POISONED);
+    }
+}
+
+struct CompletionGuard<'a> {
+    state: &'a AtomicU32,
+    set_state_on_drop_to: u32,
+}
+
+impl<'a> Drop for CompletionGuard<'a> {
+    fn drop(&mut self) {
+        // Use release ordering to propagate changes to all threads checking
+        // up on the Once. `futex_wake_all` does its own synchronization, hence
+        // we do not need `AcqRel`.
+        if self.state.swap(self.set_state_on_drop_to, Release) == QUEUED {
+            futex_wake_all(&self.state);
+        }
+    }
+}
+
+pub struct Once {
+    state: AtomicU32,
+}
+
+impl Once {
+    #[inline]
+    pub const fn new() -> Once {
+        Once { state: AtomicU32::new(INCOMPLETE) }
+    }
+
+    #[inline]
+    pub fn is_completed(&self) -> bool {
+        // Use acquire ordering to make all initialization changes visible to the
+        // current thread.
+        self.state.load(Acquire) == COMPLETE
+    }
+
+    // This uses FnMut to match the API of the generic implementation. As this
+    // implementation is quite light-weight, it is generic over the closure and
+    // so avoids the cost of dynamic dispatch.
+    #[cold]
+    #[track_caller]
+    pub fn call(&self, ignore_poisoning: bool, f: &mut impl FnMut(&public::OnceState)) {
+        let mut state = self.state.load(Acquire);
+        loop {
+            match state {
+                POISONED if !ignore_poisoning => {
+                    // Panic to propagate the poison.
+                    panic!("Once instance has previously been poisoned");
+                }
+                INCOMPLETE | POISONED => {
+                    // Try to register the current thread as the one running.
+                    if let Err(new) =
+                        self.state.compare_exchange_weak(state, RUNNING, Acquire, Acquire)
+                    {
+                        state = new;
+                        continue;
+                    }
+                    // `waiter_queue` will manage other waiting threads, and
+                    // wake them up on drop.
+                    let mut waiter_queue =
+                        CompletionGuard { state: &self.state, set_state_on_drop_to: POISONED };
+                    // Run the function, letting it know if we're poisoned or not.
+                    let f_state = public::OnceState {
+                        inner: OnceState {
+                            poisoned: state == POISONED,
+                            set_state_to: Cell::new(COMPLETE),
+                        },
+                    };
+                    f(&f_state);
+                    waiter_queue.set_state_on_drop_to = f_state.inner.set_state_to.get();
+                    return;
+                }
+                RUNNING | QUEUED => {
+                    // Set the state to QUEUED if it is not already.
+                    if state == RUNNING
+                        && let Err(new) = self.state.compare_exchange_weak(RUNNING, QUEUED, Relaxed, Acquire)
+                    {
+                        state = new;
+                        continue;
+                    }
+
+                    futex_wait(&self.state, QUEUED, None);
+                    state = self.state.load(Acquire);
+                }
+                COMPLETE => return,
+                _ => unreachable!("state is never set to invalid values"),
+            }
+        }
+    }
+}
+```
+
+`Once` 구조체는 여러 스레드에서 호출되는 경우에도 비용이 많이 드는 초기화 루틴이나 정확한 1번을 보장하는 작업을 한 번만 실행할 수 있도록 하는 동기화 프리미티브이다.
+초기화 상태를 추적하기 위해 atomic integer를 사용하고 초기화가 완료되기를 기다리는 스레드를 차단하기 위해 futex(리눅스 전용 빠른 사용자 공간 뮤텍스)를 사용하여 구현된다.
+
+Once 구조체에는 세 가지 메서드가 있다.
+
+1. `new()`: 초기 상태가 `incomplete`로 설정된 새로운 Once 인스턴스를 반환하는 생성자 메서드이다.
+2. `call_once()`: 이 메서드는 클로저 F를 인수로 사용하며 호출 횟수에 관계없이 한 번만 실행한다. 이는 원자적 compare-and-swap 작업을 사용하여
+   클로저가 call_once()를 호출하는 첫 번째 스레드에 의해서만 실행되도록 하고 클로저가 완료될 때까지 다른 모든 스레드를 차단한다.
+3. `is_completed()`: 이 메서드는 call_once()에 전달된 클로저가 이미 실행된 경우 true를 반환하고 그렇지 않으면 false를 반환한다.
+
+이러한 메서드 외에도 초기화 상태를 추적하는 데 사용되는 내부 OnceState 구조체와 퓨텍스에 저수준 인터페이스를 제공하는 내부 sys::Once 구조체가 있다.
+
+call() 메서드는 Once 구현의 핵심이다. bool flag는 ignore_poisoning과 mutable 클로저 f를 인수로 사용한다.
+클로저는 call()이 몇 번 호출되든 한 번만 실행되며 call()을 호출하는 모든 스레드는 클로저가 완료될 때까지 차단된다.
+ignore_poisoning 플래그가 true로 설정되면 Once 인스턴스가 poisoned된 경우에도 클로저가 실행된다.
+플래그가 false로 설정되면 패닉이 트리거된다.
+
+'call()' 메서드는 compare-and-swap 작업을 사용하여 한 번에 하나의 스레드만 클로저를 실행할 수 있도록 한다.
+compare-and-swap 작업이 실패하면 다른 스레드가 이미 클로저를 실행 중이고 현재 스레드가 futex를 사용하여 차단되었음을 의미한다.
+클로저가 완료되면 초기화 상태를 완료로 설정하고 퓨텍스를 사용하여 대기 중인 스레드를 깨운다.
+
+Once 구조체는 const struct로 구현된다. 즉, 컴파일 타임에 초기화할 수 있고 런타임에 변경할 수 없다.
+이렇게 하면 초기화 상태가 정의되지 않은 동작을 유발할 수 있는 사용자 코드에 의해 실수로 수정되는 것을 방지할 수 있다.
+여기서 주의할 점은 const로 인스턴스를 생성한다고 해도, 외부에서의 immutable만 보장한다. 즉, 변수를 직접 재할당하거나 변경할 수 없다.
+그렇지만 내부의 상태는 이를 수정하기 위해 정의된 메서드 또는 작업을 통해 여전히 변경될 수 있다. 즉, 내부 가변성은 막지 못한다.
+
+다음은 Once를 사용하는 예이다.
+
+```rust
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
+fn expensive_setup() {
+    // Expensive initialization code here
+}
+
+fn main() {
+    INIT.call_once(|| {
+        expensive_setup();
+    });
+
+    // Rest of the program
+}
+```
+이 예제에서는 'INIT'라는 이름의 Once 구조체의 전역 인스턴스를 만든다.
+그런 다음 INIT에서 call_once 메서드를 호출하여 비용이 많이 드는 초기화 코드가 포함된 클로저를 전달한다.
+클로저는 call_once를 호출하는 스레드 수에 관계없이 한 번만 실행된다.
+
+다음은 Bank::load 관련 코드의 단순화된 버전이다.
+```rust
+pub struct Bank {
+    // ...
+    loaded: Once,
+    // ...
+}
+
+impl Bank {
+    // ...
+
+    pub fn load(&self, genesis_config: &GenesisConfig) -> Result<(), BankError> {
+        // Make sure the load operation is only performed once
+        self.loaded.call_once(|| {
+            // Perform the actual load operation here
+            // ...
+        });
+
+        // Wait until the load operation is complete
+        self.loaded.wait();
+
+        // ...
+    }
+
+    // ...
+}
+```
+디스크에서 뱅크 상태를 로드하는 'Bank::load' 메서드는 한 번을 사용하여 여러 스레드가 동시에 뱅크를 로드하려고 시도하더라도 로드 작업이 한 번만 수행되도록 한다.
+load는 call_once를 사용하여 로드 작업이 한 번만 수행되도록 보장한다. 그런 다음 'wait' 메서드는 반환하기 전에 로드 작업이 완료될 때까지 기다리는 데 사용된다.
+이렇게 하면 'load'에 대한 후속 호출이 뱅크를 다시 로드하려고 시도하지 않고 즉시 반환된다.
+
+Once 사용의 장단점 및 잠재적 위험
+Once 사용의 잠재적 위험 중 하나는 초기화 코드에서 오류가 발생할 수 있다는 것이다.
+call_once에 전달된 클로저가 패닉 상태가 되면 call_once에 대한 후속 호출은 클로저를 다시 실행하지 않으므로 프로그램이 일관성 없는 상태가 될 수 있다.
 
 ### RwLock: definition, how to use, and trade-offs
+RwLock은 multiple Reader 또는 single Writer가 동시에 공유 리소스에 액세스할 수 있도록 하는 동기화 프리미티브이다.
+다중 스레드가 환경에서 공유 데이터에 안전하게 액세스할 수 있는 방법을 제공한다.
+RwLock은 Reader는 많지만 Writer는 적고 동시성과 성능 간에 적절한 균형을 유지하는 것이 중요한 상황에서 자주 사용된다(readOption/writeOption).
+
+다음은 Rust의 표준 라이브러리에 구현된 RwLock이다.
+```rust
+pub struct RwLock<T: ?Sized> {
+    inner: sys::RwLock,
+    poison: poison::Flag,
+    data: UnsafeCell<T>,
+}
+
+pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
+    data: NonNull<T>,
+    inner_lock: &'a sys::RwLock,
+}
+
+pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
+    lock: &'a RwLock<T>,
+    poison: poison::Guard,
+}
+
+impl<T> RwLock<T> {
+    pub const fn new(t: T) -> RwLock<T> {
+        RwLock { inner: sys::RwLock::new(), poison: poison::Flag::new(), data: UnsafeCell::new(t) }
+    }
+}
+
+impl<T: ?Sized> RwLock<T> {
+    pub fn read(&self) -> LockResult<RwLockReadGuard<'_, T>> {
+        unsafe {
+            self.inner.read();
+            RwLockReadGuard::new(self)
+        }
+    }
+
+    pub fn try_read(&self) -> TryLockResult<RwLockReadGuard<'_, T>> {
+        unsafe {
+            if self.inner.try_read() {
+                Ok(RwLockReadGuard::new(self)?)
+            } else {
+                Err(TryLockError::WouldBlock)
+            }
+        }
+    }
+
+    pub fn write(&self) -> LockResult<RwLockWriteGuard<'_, T>> {
+        unsafe {
+            self.inner.write();
+            RwLockWriteGuard::new(self)
+        }
+    }
+
+    pub fn try_write(&self) -> TryLockResult<RwLockWriteGuard<'_, T>> {
+        unsafe {
+            if self.inner.try_write() {
+                Ok(RwLockWriteGuard::new(self)?)
+            } else {
+                Err(TryLockError::WouldBlock)
+            }
+        }
+    }
+
+    pub fn is_poisoned(&self) -> bool {
+        self.poison.get()
+    }
+
+    pub fn clear_poison(&self) {
+        self.poison.clear();
+    }
+
+    pub fn into_inner(self) -> LockResult<T>
+        where
+            T: Sized,
+    {
+        let data = self.data.into_inner();
+        poison::map_result(self.poison.borrow(), |()| data)
+    }
+
+    pub fn get_mut(&mut self) -> LockResult<&mut T> {
+        let data = self.data.get_mut();
+        poison::map_result(self.poison.borrow(), |()| data)
+    }
+}
+
+impl<'rwlock, T: ?Sized> RwLockReadGuard<'rwlock, T> {
+    unsafe fn new(lock: &'rwlock RwLock<T>) -> LockResult<RwLockReadGuard<'rwlock, T>> {
+        poison::map_result(lock.poison.borrow(), |()| RwLockReadGuard {
+            data: NonNull::new_unchecked(lock.data.get()),
+            inner_lock: &lock.inner,
+        })
+    }
+}
+
+impl<'rwlock, T: ?Sized> RwLockWriteGuard<'rwlock, T> {
+    unsafe fn new(lock: &'rwlock RwLock<T>) -> LockResult<RwLockWriteGuard<'rwlock, T>> {
+        poison::map_result(lock.poison.guard(), |guard| RwLockWriteGuard { lock, poison: guard })
+    }
+}
+```
+`RwLock` struct는 동시 읽기를 허용하지만 배타적인 쓰기를 허용하는 reader-writer lock이다.
+구현은 `RwLock`, `RwLockReadGuard` 및 `RwLockWriteGuard`의 세 가지 struct로 구성된다.
+
+RwLock은 3개의 필드로 구성된다.
+1. `inner`: 동기화를 구현하는 데 사용되는 시스템 수준 Reader-Writer lock.
+2. `poison`: 잠금이 오염되었는지 여부를 나타내는 flag.
+3. `data`: 보호된 데이터를 보유하는 데 사용되는 `UnsafeCell<T>`.
+
+`RwLockReadGuard` struct는 `RwLock`에 의해 보호되는 공유 데이터의 읽기 전용 보기를 나타내는 데 사용된다.
+두 개의 필드로 구성된다.
+
+1. `data`: 보호된 데이터에 대한 NonNull 포인터.
+2. `inner_lock`: RwLock 내부의 futex로 구현된 sys::RwLock에 대한 참조로 가드 드롭 시 잠금을 해제하는 데 사용된다.
+
+`RwLockWriteGuard` struct는 RwLock에 의해 보호되는 데이터의 독점적이고 쓰기 가능한 보기를 나타내는 데 사용된다.
+두 개의 필드로 구성된다.
+
+1. `lock`: 외부의 RwLock에 대한 참조.
+2. `poison`: 오염되었는지 여부를 추적하는 데 사용되는 Guard.
+
+`RwLock` struct의 읽기 및 쓰기 lock을 획득하고 해제하는 방법은 다음과 같다.
+
+`read()`: RwLock에서 공유된 읽기 전용 잠금을 획득한다. `LockResult<RwLockReadGuard>`를 반환한다.  
+`try_read()`: RwLock에서 공유된 읽기 전용 잠금을 획득하려고 시도한다. `TryLockResult<RwLockReadGuard>`를 반환한다.  
+`write()`: RwLock에서 쓰기 가능한 배타적 잠금을 획득한다. `LockResult<RwLockWriteGuard>`를 반환한다.  
+`try_write()`: RwLock에 대한 독점적이고 쓰기 가능한 잠금을 획득하려고 시도한다. `TryLockResult<RwLockWriteGuard>`를 반환한다.  
+
+'RwLock' struct에는 lock이 오염되었는지 확인하고(`is_poisoned`), poison flag를 지우고(`clear_poison`),
+보호된 데이터에 대한 mutable reference를 가져오고(cell type의 공통 메서드 `get_mut`), 'RwLock'을 보호된 데이터 자체로 변환하는 메서드도 있다(`into_inner`).
+
+RwLockReadGuard 및 RwLockWriteGuard struct에는는 각각 unsafe 메소드인 new 및 guard를 사용하여 구성된다.
+이러한 메서드는 lock의 안전 보장을 시행하고 포이즌 플래그를 관리하는 데 사용된다.
+
+리눅스에서는 RwLock의 inner 필드의 RwLock(sys::RwLock)은 futex로 구현되어 있다. 
+```rust
+pub struct RwLock {
+    state: AtomicU32,
+    writer_notify: AtomicU32,
+}
+
+const READ_LOCKED: u32 = 1;
+const MASK: u32 = (1 << 30) - 1;
+const WRITE_LOCKED: u32 = MASK;
+const MAX_READERS: u32 = MASK - 1;
+const READERS_WAITING: u32 = 1 << 30;
+const WRITERS_WAITING: u32 = 1 << 31;
+
+fn is_unlocked(state: u32) -> bool {
+    state & MASK == 0
+}
+
+fn is_write_locked(state: u32) -> bool {
+    state & MASK == WRITE_LOCKED
+}
+
+fn has_readers_waiting(state: u32) -> bool {
+    state & READERS_WAITING != 0
+}
+
+fn has_writers_waiting(state: u32) -> bool {
+    state & WRITERS_WAITING != 0
+}
+
+fn is_read_lockable(state: u32) -> bool {
+    state & MASK < MAX_READERS && !has_readers_waiting(state) && !has_writers_waiting(state)
+}
+
+fn has_reached_max_readers(state: u32) -> bool {
+    state & MASK == MAX_READERS
+}
+
+impl RwLock {
+    pub const fn new() -> Self {
+        Self { state: AtomicU32::new(0), writer_notify: AtomicU32::new(0) }
+    }
+
+    pub fn read(&self) {
+        let state = self.state.load(Relaxed);
+        if !is_read_lockable(state)
+            || self
+            .state
+            .compare_exchange_weak(state, state + READ_LOCKED, Acquire, Relaxed)
+            .is_err()
+        {
+            self.read_contended();
+        }
+    }
+
+    pub unsafe fn read_unlock(&self) {
+        let state = self.state.fetch_sub(READ_LOCKED, Release) - READ_LOCKED;
+
+        // It's impossible for a reader to be waiting on a read-locked RwLock,
+        // except if there is also a writer waiting.
+        debug_assert!(!has_readers_waiting(state) || has_writers_waiting(state));
+
+        // Wake up a writer if we were the last reader and there's a writer waiting.
+        if is_unlocked(state) && has_writers_waiting(state) {
+            self.wake_writer_or_readers(state);
+        }
+    }
+
+    fn read_contended(&self) {
+        let mut state = self.spin_read();
+
+        loop {
+            // If we can lock it, lock it.
+            if is_read_lockable(state) {
+                match self.state.compare_exchange_weak(state, state + READ_LOCKED, Acquire, Relaxed)
+                {
+                    Ok(_) => return, // Locked!
+                    Err(s) => {
+                        state = s;
+                        continue;
+                    }
+                }
+            }
+
+            // Check for overflow.
+            if has_reached_max_readers(state) {
+                panic!("too many active read locks on RwLock");
+            }
+
+            // Make sure the readers waiting bit is set before we go to sleep.
+            if !has_readers_waiting(state) {
+                if let Err(s) =
+                self.state.compare_exchange(state, state | READERS_WAITING, Relaxed, Relaxed)
+                {
+                    state = s;
+                    continue;
+                }
+            }
+
+            // Wait for the state to change.
+            futex_wait(&self.state, state | READERS_WAITING, None);
+
+            // Spin again after waking up.
+            state = self.spin_read();
+        }
+    }
+
+    pub fn write(&self) {
+        if self.state.compare_exchange_weak(0, WRITE_LOCKED, Acquire, Relaxed).is_err() {
+            self.write_contended();
+        }
+    }
+
+    pub unsafe fn write_unlock(&self) {
+        let state = self.state.fetch_sub(WRITE_LOCKED, Release) - WRITE_LOCKED;
+
+        debug_assert!(is_unlocked(state));
+
+        if has_writers_waiting(state) || has_readers_waiting(state) {
+            self.wake_writer_or_readers(state);
+        }
+    }
+
+    fn write_contended(&self) {
+        let mut state = self.spin_write();
+
+        let mut other_writers_waiting = 0;
+
+        loop {
+            // If it's unlocked, we try to lock it.
+            if is_unlocked(state) {
+                match self.state.compare_exchange_weak(
+                    state,
+                    state | WRITE_LOCKED | other_writers_waiting,
+                    Acquire,
+                    Relaxed,
+                ) {
+                    Ok(_) => return, // Locked!
+                    Err(s) => {
+                        state = s;
+                        continue;
+                    }
+                }
+            }
+
+            // Set the waiting bit indicating that we're waiting on it.
+            if !has_writers_waiting(state) {
+                if let Err(s) =
+                self.state.compare_exchange(state, state | WRITERS_WAITING, Relaxed, Relaxed)
+                {
+                    state = s;
+                    continue;
+                }
+            }
+
+            // Other writers might be waiting now too, so we should make sure
+            // we keep that bit on once we manage lock it.
+            other_writers_waiting = WRITERS_WAITING;
+
+            // Examine the notification counter before we check if `state` has changed,
+            // to make sure we don't miss any notifications.
+            let seq = self.writer_notify.load(Acquire);
+
+            // Don't go to sleep if the lock has become available,
+            // or if the writers waiting bit is no longer set.
+            state = self.state.load(Relaxed);
+            if is_unlocked(state) || !has_writers_waiting(state) {
+                continue;
+            }
+
+            // Wait for the state to change.
+            futex_wait(&self.writer_notify, seq, None);
+
+            // Spin again after waking up.
+            state = self.spin_write();
+        }
+    }
+
+    fn wake_writer_or_readers(&self, mut state: u32) {
+        assert!(is_unlocked(state));
+
+        // The readers waiting bit might be turned on at any point now,
+        // since readers will block when there's anything waiting.
+        // Writers will just lock the lock though, regardless of the waiting bits,
+        // so we don't have to worry about the writer waiting bit.
+        //
+        // If the lock gets locked in the meantime, we don't have to do
+        // anything, because then the thread that locked the lock will take
+        // care of waking up waiters when it unlocks.
+
+        // If only writers are waiting, wake one of them up.
+        if state == WRITERS_WAITING {
+            match self.state.compare_exchange(state, 0, Relaxed, Relaxed) {
+                Ok(_) => {
+                    self.wake_writer();
+                    return;
+                }
+                Err(s) => {
+                    // Maybe some readers are now waiting too. So, continue to the next `if`.
+                    state = s;
+                }
+            }
+        }
+
+        // If both writers and readers are waiting, leave the readers waiting
+        // and only wake up one writer.
+        if state == READERS_WAITING + WRITERS_WAITING {
+            if self.state.compare_exchange(state, READERS_WAITING, Relaxed, Relaxed).is_err() {
+                // The lock got locked. Not our problem anymore.
+                return;
+            }
+            if self.wake_writer() {
+                return;
+            }
+            // No writers were actually blocked on futex_wait, so we continue
+            // to wake up readers instead, since we can't be sure if we notified a writer.
+            state = READERS_WAITING;
+        }
+
+        // If readers are waiting, wake them all up.
+        if state == READERS_WAITING {
+            if self.state.compare_exchange(state, 0, Relaxed, Relaxed).is_ok() {
+                futex_wake_all(&self.state);
+            }
+        }
+    }
+
+    fn wake_writer(&self) -> bool {
+        self.writer_notify.fetch_add(1, Release);
+        futex_wake(&self.writer_notify)
+        // Note that FreeBSD and DragonFlyBSD don't tell us whether they woke
+        // up any threads or not, and always return `false` here. That still
+        // results in correct behaviour: it just means readers get woken up as
+        // well in case both readers and writers were waiting.
+    }
+
+    fn spin_until(&self, f: impl Fn(u32) -> bool) -> u32 {
+        let mut spin = 100; // Chosen by fair dice roll.
+        loop {
+            let state = self.state.load(Relaxed);
+            if f(state) || spin == 0 {
+                return state;
+            }
+            crate::hint::spin_loop();
+            spin -= 1;
+        }
+    }
+
+    fn spin_write(&self) -> u32 {
+        // Stop spinning when it's unlocked or when there's waiting writers, to keep things somewhat fair.
+        self.spin_until(|state| is_unlocked(state) || has_writers_waiting(state))
+    }
+
+    fn spin_read(&self) -> u32 {
+        // Stop spinning when it's unlocked or read locked, or when there's waiting threads.
+        self.spin_until(|state| {
+            !is_write_locked(state) || has_readers_waiting(state) || has_writers_waiting(state)
+        })
+    }
+}
+```
 
 ## 4. Introduction to crossbeam
 
