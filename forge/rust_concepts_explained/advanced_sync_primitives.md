@@ -2450,6 +2450,19 @@ RwLock은 3개의 필드로 구성된다.
 RwLockReadGuard 및 RwLockWriteGuard struct에는는 각각 unsafe 메소드인 new 및 guard를 사용하여 구성된다.
 이러한 메서드는 lock의 안전 보장을 시행하고 포이즌 플래그를 관리하는 데 사용된다.
 
+`RwLockReadGuard`는 상호 배타적인 독점적 lock 메카니즘이 아니다.
+Rust의 immutable reference와 비슷한 논리로 작동하며, 활성 `RwLockWriteGuard`가 없는 한 여러 스레드가 동시에
+`RwLockReadGuard` 인스턴스를 얻을 수 있다. 다른 스레드가 읽기 lock을 획득하는 것을 막지 않기 때문에 이전 lock을 해제할 필요가 없다.  
+immutable reference와 읽기 lock의 주요 차이점은 immutable ref는 Rust 프로그래밍 언어에서 제공하는 language level의 구성인 반면
+읽기 lock은 OS에서 제공하는 sync lock 메커니즘의 구현이다. 또한 Rust의 불변 참조는 컴파일 시간에 데이터 경합이 없도록 보장하는 컴파일 시간 기능이며,
+읽기 lock 구현에는 lock 및 lock release의 수동 관리가 필요하다
+(대부분의 경우 drop trait 및 move sementic으로 자동화 -> 여기서 move sementic은 RwLockReadGuard에 직접적으로 적용되지 않고, 이후에 drop이 호출 될 경우 drop된다.).
+그렇기 때문에 여러 스레드가 공유 데이터를 동시에 읽을 수 있으므로 특정 시나리오에서 성능을 향상시킬 수 있다.  
+
+반면에 `RwLockWriteGuard`는 상호 배타적인 독점적인 lock이다. 어떠한 `RwLockReadGuard`이든 `RwLockWriteGuard` 한가지라도 존재하면
+같은 데이터에 대해서 lock을 얻을 수 없고 데이터에 접근할 수 없다. 이것 역시 Rust의 mutable reference와 비슷한 논리로 작동한다.
+데이터 경합 및 기타 동시성 문제를 방지하는 데 도움이 되는 Rust ownership 및 borrow rule을 통해 컴파일 타임에 배타적 액세스가 시행된다.
+
 리눅스에서는 RwLock의 inner 필드의 RwLock(sys::RwLock)은 futex로 구현되어 있다. 
 ```rust
 pub struct RwLock {
@@ -2711,6 +2724,65 @@ impl RwLock {
     }
 }
 ```
+제공된 RwLock 구현은 atomic 32-bit unsigned integer를 사용하여 lock의 상태를 나타낸다.
+상태는 두 부분으로 나뉜다. 하위 30비트는 활성 readers의 수를 나타내는 데 사용되고 상위 2비트는 lock의 상태를 나타내는 데 사용된다.
+
+const 변수인 `READ_LOCKED`, `MASK`, `WRITE_LOCKED`, `MAX_READERS`, `READERS_WAITING` 및 `WRITERS_WAITING`는 lock 상태를 조작하는 데 사용된다.
+`READ_LOCKED` 및 `WRITE_LOCKED`은 각각 읽기 및 쓰기 lock의 잠긴 상태를 나타낸다.
+`MASK`는 동시에 lock을 획득할 수 있는 최대 readers 수를 나타낸다.
+`MAX_READERS`는 lock이 경합되기 전에 lock을 획득할 수 있는 최대 reader 수이다.
+`READERS_WAITING` 및 `WRITERS_WAITING`은 lock을 획득하기 위해 대기 중인 reader 또는 writer가 있는지 여부를 나타내는 데 사용된다.
+
+lock acquisition 및 release operations은 atomic var의 CAS 작업을 사용하여 구현된다.
+`read()` 메서드는 경합 없이 lock을 획득할 수 있는지 먼저 확인하여 읽기 lock을 획득하려고 시도한다.
+lock을 획득할 수 없는 경우 메서드는 경합을 처리하기 위해 `read_contended()`를 호출한다.
+`read_contended()` 메서드는 먼저 짧은 시간 동안 loop하여 lockable한지 확인한다.
+여전히 lock을 사용할 수 없는 경우 메서드는 `READERS_WAITING` 비트를 설정하고 `futex_wait()` 시스템 호출을 호출하여
+lock을 사용할 수 있을 때까지 기다린다.
+lockable할 수 있게 되면, 잠금이 획득되면 메서드는 `READ_LOCKED` 비트를 원자적으로 증가시킨다.
+잠금을 해제할 수 잇는 경우 read_unlock() 메서드는 `READ_LOCKED` 비트의 상태를 원자적으로 감소시킨다.
+이는 lock이 사용가능하다는 것을 대기 중인 reader 또는 writer에게 알리고, 그에 따라 wake_writer_or_reader()가 대기 중인 스레드를 깨운다.
+
+`write()` 메서드는 현재 상태가 0인 경우 상태를 원자적으로 `WRITE_LOCKED`로 설정하는 CAS 작업을 호출하여 write lock을 획득하려고 시도한다.
+lock을 획득할 수 없는 경우 메서드는 write lock을 처리하기 위해 `write_contended()`를 호출한다.
+`write_contended()` 메서드는 먼저 lock을 사용할 수 있는지 확인하기 위해 looping한다.
+여전히 잠금을 사용할 수 없는 경우 메서드는 `WRITERS_WAITING` 비트를 설정하고 `futex_wait()` 시스템 호출을 호출하여 lock을 사용할 수 있을 때까지 기다린다.
+이 시스템 호출은 lock 상태가 변경되어 lock을 사용 가능해질 때까지 호출 스레드를 휴면 상태로 둔다. lock을 사용할 수 있게 되면
+`write()`메서드는 lock 상태에서 `WRITE_LOCKED` 비트를 지운다. 이는 현재 스레드가 lock을 획득했음을 나타낸다.
+
+`wake_writer_or_readers()`는 lock 상태를 확인하여 대기 중인 reader 또는 writer를 깨워야 하는지 결정한다.
+대기 중인 writer가 있다고 상태에 표시되면 메서드가 writer를 깨운다. 대기 중인 reader가 있고 대기 중인 writer가 없는 경우
+메서드는 대기 중인 모든 reader를 깨운다. 이렇게 하면 대기 중인 모든 스레드가 공정하고 효율적인 방식으로 lock을 획득할 수 있다.
+
+`read_unlock()` 및 `write_unlock()` 메서드는 각각 읽기 및 쓰기 lock을 해제한다.
+이러한 메서드는 `fetch_sub()` 작업을 사용하여 적절한 양만큼 상태를 원자적으로 감소시키고 lock을 해제할 수 있는지 확인한다.
+lock을 해제할 수 있는 경우 메서드는 `wake_writer_or_readers()`를 호출하여 대기 중인 writer 또는 모든 readers를 깨운다.
+
+`wake_writer_or_readers()` 메서드는 CAS 작업을 사용하여 lock 상태를 조작하고 대기 중인 writer 또는 reader를 깨운다.
+대기 중인 writer가 있다고 상태에 표시되면 메서드가 writer를 깨운다.
+대기 중인 reader가 있고 대기 중인 writer가 없는 경우 메서드는 대기 중인 모든 reader를 깨운다.
+
+이 RwLock의 내부 구현은 spin-lock을 사용하여 lock이 사용 가능해질 때까지 대기하고 futex를 사용하여 대기 중인 스레드를 절전 모드로 전환한다.
+또한 atomic intger와 CAS 작업을 사용하여 동시성을 처리하고 정확성을 보장한다.
+
+RwLocks는 동시성과 성능 간에 적절한 균형을 제공하지만 RwLock 사용과 관련된 몇 가지 상충 관계 및 잠재적 위험이 있다.
+예를 들어, reader와 writer 간의 과도한 경합은 성능 저하로 이어질 수 있으며, writer가 많은 상황에서 RwLock을 사용하면 확장성이 떨어질 수 있다.
+또한 RwLocks 특정 경합 상태에 취약할 수 있으며 이로 인해 예기치 않은 동작이나 데이터 손상이 발생할 수 있다.
+
+- deadlock과 datarace를 방지하는데 도움이 되는 메카니즘  
+RwLock은 여러 reader가 동시에 lock을 유지하도록 허용하고 reader나 writer가 lock을 보유하고 있지 않은 경우에만 writer가 잠금을 획득할 수 있도록 하여
+deadlock 상태를 방지하는 데 도움이 된다. 이렇게 하면 스레드가 절대 해제되지 않을 lock을 무한정 대기하면서 차단되어 영원히 깨어나지 않는 동작을 할 가능성이 줄어든다.
+
+`wake_writer_or_readers()` 메서드는 대기 중인 reader와 writer를 특정 순서로 깨워 deadlock을 방지하는 역할을 한다.
+공유 데이터에 대한 독점 액세스 권한이 있고 가능한 한 빨리 lock을 획득해야 할 수 있으므로 먼저 대기 중인 writer를 깨운다.
+대기 중인 writer가 없으면 대기 중인 모든 reader를 깨우고 동시에 공유 데이터에 액세스할 수 있다.
+writer를 깨우는 이 전략은 writer starvation 상태를 방지하는 데 도움이 된다.
+writer가 공유 데이터에 액세스하는 것을 허용하지 않고 reader가 계속 lock을 획득하고 해제하기 때문에 writer 스레드가 lock을 기다리며 무기한 차단되는
+writer starvation 상태를 방지하는 데 도움이 된다.
+writer의 우선 순위를 지정하여 구현 시 writer가 lock을 획득하고 공유 데이터에 액세스할 공정한 기회를 갖도록 보장한다.
+
+위처럼 RwLock은 데이터 경합이나 deadlock 상태를 일으키지 않고 여러 reader 또는 단일 writer가 동시에 공유 데이터에 액세스할 수 있도록 특별히 설계되었다.
+따라서 RwLock을 사용하는 것이 Mutex 및 Condvar로 기능을 구현하는 것보다 일반적으로 더 효율적이고 관리하기 쉬운 선택이다.
 
 ## 4. Introduction to crossbeam
 
