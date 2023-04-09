@@ -1,4 +1,5 @@
 // https://www.acmicpc.net/problem/11662
+// log(1/1e-8)/log(3)
 
 use std::io::{self, prelude::*, BufWriter};
 
