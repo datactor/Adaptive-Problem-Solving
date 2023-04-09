@@ -12,7 +12,7 @@
 동기 프리미티브는 공유 리소스에 대한 액세스를 조정하고 race condition, deadlocks 및 기타 동시성 버그를 방지하는 방법을 제공하기 때문에 중요하다.
 
 ### Overview of what will be covered in the article
-이 기사에서는 크로스빔 크레이트에서 제공하는 고급 동기화 기본 기능, std 라이브러리의 cell과 sync mudule에 중점을 두고
+이 기사에서는 크로스빔 크레이트에서 제공하는 고급 동기화 기본 기능, std 라이브러리의 cell과 sync module에 중점을 두고
 Rust의 동기화 기본 기능에 대한 포괄적인 이해를 돕는 것이 목적이다.
 
 이러한 고급 동기 프리미티브를 완전히 이해하려면 이전에 다룬 [Rc<RefCell< T >>](https://github.com/datactor/rust-problem-solving/blob/main/forge/rust_concepts_explained/rcRefcell_and_refCycle.md),
@@ -168,8 +168,8 @@ Cell<T>에는 다음과 같은 특징이 있다.
     UnsafeCell을 사용하는 type에 대해서는 이를 시행할 수 없다. `Cell`의 경우 value type이기 때문에, 값에 대해 mut을 명시해야 하고,
     mut이 명시된 값을 Cell type으로 wrapping하여 borrow checker는 mutable reference가 한 번에 하나만
     존재할 수 있음을 보장하게 함과 동시에 내부 가변성을 제공한다.  
-    이 보장은 value type이 아닌 RefCell에 대해서는 통하지 않는다.
-    RefCell은 value type이 아니며, 값에 대해 외부에 mut keyword를 명시할 필요가 없기 때문에
+    이 보장은 RefCell을 내부 메서드를 사용할 때에 대해서는 통하지 않는다.
+    RefCell은 value type을 가지고 있지만 참조 필드를 사용하여 내부 가변성을 보장하며, 이 경우 값에 대해 외부에 mut keyword를 명시할 필요가 없기 때문에
     borrow checker의 검사를 우회하며 안전성의 보장은 프로그래머의 책임으로 귀속 된다.
   - 정리하면 Cell type은 mut keyword를 명시한 sized type을 Cell type으로 wrapping하는 과정을 포함하며, 여기의 mut keyword에 의해
     borrow checker가 하나의 가변참조를 보장하도록 검사할 수 있게 한다.  
@@ -484,7 +484,10 @@ impl<T: ?Sized> RefCell<T> {
 }
 ```
 
-RefCell<T>에는 다음과 같은 특징이 있다.
+RefCell<T>에는 다음과 같은 특징이 있다.  
+RefCell의 struct는 내부에 값과 참조 필드를 보유하는 struct로
+사용할때 외부의 mut 키워드를 통한 외부 가변성이 아니라 내부 메서드인 borrow또는 borrow_mut을 통해서
+외부에서는 불변 변수로 컴파일 되더라도 해당 값의 내부 가변성을 보장하기 때문에 static borrow checker를 우회할 수 있다.
 
 1. 참조형이므로 런타임 오버헤드가 적고 복사할 수 없다.
    `RefCell<T>` type은 참조 type으로 구현되며, 이는 실제 데이터를 포함하는 메모리 위치에 대한 pointer임을 의미한다. 여기에는 몇 가지 의미가 있다.
