@@ -657,13 +657,298 @@ worker의 deque가 비어 있으면 task를 찾거나 task queue가 비워질 �
 task가 없고 task queue가 비어 있으면 worker loop가 종료된다.
 
 ## 6. Crossbeam atomic types
+Crossbeam atomic types들은 Rust의 atomic types와 유사하지만 atomic instructions를 사용할 수 없거나 효율적이지 않은 경우 global lock을 사용한다.
+이 섹션에서는 그것들이 어떻게 작동하는지, Rust의 atomic types와 비교하여 차이와 장단점을 알아보고 사용법을 살펴보자.
+
 ### Explanation of Crossbeam atomic types
+Crossbeam의 atomic types는 mutable memory location에서 스레드로부터 안전하고 lock-free operation을 제공하는 set of atomic primitives이다.
+Rust의 atomic types와 유사하게 설계되었지만 atomic instructions를 사용할 수 없거나 효율적이지 않을 때 global lock을 사용하는 flexibility가 추가되었다.
+Crossbeam의 AtomicCell 객체를 만들어서 사용할때, 이것은 기본적으로 Atomic 연산으로 lock-free, wait-free 메카니즘으로 작동하지만,
+is_lock_free 메서드가 false로 나온다면(atomic operation을 사용할 수 없거나, 주어진 type에 대해 효율적이지 않다),
+그 상황에서는 fetch_add등의 메서드를 통해 그 내부의 구현으로 전역 lock을 사용한다.
+여기의 fetch_add 등의 메서드 내부의 global lock은 `SeqLock`의 일부 구현이다. 유저가 직접 lock을 명시할 필요는 없다.
+
+Crossbeam의 atomic library에서 중요한 module 중 하나는 Rust의 Cell type의 thread safe 버전을 제공하는 `AtomicCell` module이다.
+Cell과 마찬가지로 AtomicCell은 여러 스레드에서 동시에 액세스하고 수정할 수 있는 변경 가능한 메모리 위치를 제공한다. 게다가 std 라이브러리의
+Atomic types들과 마찬가지로 `load` 메서드는 `Acquire` Ordering, `store` 메서드는 `Release` Ordering 순서를 사용한다. 
+그러나 Cell과 달리 AtomicCell은 기본 하드웨어의 기능에 따라 스레드 안전을 보장하기 위해 atomic instructions 또는 global lock을 사용한다.
+```rust
+pub struct AtomicCell<T> {
+    value: UnsafeCell<MaybeUninit<T>>,
+}
+
+pub union MaybeUninit<T> {
+    uninit: (),
+    value: ManuallyDrop<T>,
+}
+
+pub struct ManuallyDrop<T: ?Sized> {
+    value: T,
+}
+
+impl<T> ManuallyDrop<T> {
+    pub const fn new(value: T) -> ManuallyDrop<T> {
+        ManuallyDrop { value }
+    }
+
+    pub const fn into_inner(slot: ManuallyDrop<T>) -> T {
+        slot.value
+    }
+
+    pub unsafe fn take(slot: &mut ManuallyDrop<T>) -> T {
+        // SAFETY: we are reading from a reference, which is guaranteed
+        // to be valid for reads.
+        unsafe { ptr::read(&slot.value) }
+    }
+
+    pub unsafe fn drop(slot: &mut ManuallyDrop<T>) {
+        unsafe { ptr::drop_in_place(&mut slot.value) }
+    }
+}
+
+impl<T> MaybeUninit<T> {
+    pub const fn new(val: T) -> MaybeUninit<T> {
+        MaybeUninit { value: ManuallyDrop::new(val) }
+    }
+
+    pub const fn uninit() -> MaybeUninit<T> {
+        MaybeUninit { uninit: () }
+    }
+
+    pub const fn uninit_array<const N: usize>() -> [Self; N] {
+        // SAFETY: An uninitialized `[MaybeUninit<_>; LEN]` is valid.
+        unsafe { MaybeUninit::<[MaybeUninit<T>; N]>::uninit().assume_init() }
+    }
+
+    pub const fn zeroed() -> MaybeUninit<T> {
+        let mut u = MaybeUninit::<T>::uninit();
+        // SAFETY: `u.as_mut_ptr()` points to allocated memory.
+        unsafe {
+            u.as_mut_ptr().write_bytes(0u8, 1);
+        }
+        u
+    }
+
+    pub const fn as_ptr(&self) -> *const T {
+        // `MaybeUninit` and `ManuallyDrop` are both `repr(transparent)` so we can cast the pointer.
+        self as *const _ as *const T
+    }
+}
+```
+AtomicCell은 Rust의 std라이브러리 내의 Atomic struct와 비슷하게 UnsafeCell로 값을 저장하지만,
+UnsafeCell내부의 타입에 MaybeUninit이라는 struct로 한층 더 래핑하여 커스텀된 타입을 사용한다.
+MaybeUninit은 효율성과 안전성을 위한 기능을 제공한다. 예를 들어 MaybeUninit 내부의 타입이 array라면 효율적인 transpose 메서드도 제공한다.  
+MaybeUninit의 목적은 유저에게 노출되지 않고 대신 라이브러리의 구현에 의해 내부적으로 사용되는 uninitialized memory position의 생성을 허용하는 것이다.
+이렇게 하면 라이브러리에서 구현된 기능이 메모리 위치를 자동으로 초기화하는 컴파일러에 의존하지 않고 안전할 때 수동으로 메모리 위치를 초기화할 수 있다.
+
+Rust는 `MaybeUninit`을 사용하여 유저에게 노출되기 전에 메모리 위치가 완전히 초기화되도록 할 수 있으므로 초기화되지 않은 메모리에서 읽거나 쓸 때
+발생할 수 있는 정의되지 않은 동작을 피할 수 있다.
+
+여기서 컴파일러가 자동으로 객체를 메모리에서 관리하지 못하게 하기 위해, MaybeUninit struct는 ManuallyDrop<T>를 값으로 갖는다.
+이 struct는 zero-sized type으로 ManuallyDrop<T>는 T와 동일한 레이아웃을 갖도록 보장된다. 즉 T와 동일한 레이아웃 최적화가 적용된다.  
+결과적으로 compiler가 메모리 위치의 내용에 대해 잘못된 가정을 하여 초기화하지 않도록 하여
+초기화되지 않은 메모리로 작업하는 안전하고 효율적인 방법을 제공한다.
+
+Crossbeam atomic library의 또 다른 중요한 module은 `Consume` memory ordering을 사용하여 primitive atomic type에서 읽을 수 있는 방법을 제공하는 `Consume` module이다.
+이 순서는 Rust의 atomic type이 제공하는 `Acquire` order와 유사하지만 load 결과에 '의존하는' 작업의 순서만 보장한다.
+이 Ordering은 load 메서드에서 사용하는 `Acquire` odrder보다 강력하지만 fetch_* 메서드에서 사용하는 `SeqCst` Order보다 약하다.
+그럼에도 memory fence instructions가 필요하지 않기 때문에 weak memory architectures에서 `Acquire` Ordering보다 빠를 수 있다.  
+`Consume` Ordering은 읽기 전에 발생하는 모든 메모리 읽기가 그보다 먼저 정렬되도록 보장하고, `Consume` 읽기가 후속 읽기 또는 쓰기로 재정렬될 수 없도록 한다.
+따라서 서로 의존하는 여러 메모리 위치를 읽는 데 유용한 순서가 된다.  
+Consume module은 안전하고 일관된 방식으로 여러 AtomicCell에서 값을 읽는 데 사용되는 `ConsumeGuard`라는 type을 제공한다.
+이는 AtomicCell의 슬라이스에서 consume 메서드를 호출하여 얻으며 모든 읽기가 consume 순서로 발생하도록 한다.  
+다음은 Consume 모듈의 사용 예이다.
+```rust
+use crossbeam::atomic::AtomicCell;
+use crossbeam::atomic::Consume;
+
+let a = AtomicCell::new(1);
+let b = AtomicCell::new(2);
+let c = AtomicCell::new(3);
+
+let values = Consume::consume(&[&a, &b, &c]);
+
+let value_a = values[0].get();
+let value_b = values[1].get();
+let value_c = values[2].get();
+
+println!("a = {}, b = {}, c = {}", value_a, value_b, value_c);
+```
+이 예제에서는 세 개의 AtomicCell을 만들고 Consume 모듈을 사용하여 해당 값을 읽는다.
+`consume` 메서드는 읽기가 `Consume` order로 정렬되도록 하는 `ConsumeGuard`를 반환한다.
+그런 다음 각 ConsumeGuard에서 get 메서드를 사용하여 AtomicCell의 값에 액세스한다.
+
+전반적으로 Crossbeam의 atomic types는 Rust의 atomic types와 유사하지만 atomic instructions를 사용할 수 없거나 효율적이지 않을 때
+global lock을 사용하는 유연성이 추가되었다. 이를 통해 atomic instructions를 지원하지 않는 하드웨어에서도 변경 가능한 메모리 위치에서
+고성능 스레드 안전 작업을 제공할 수 있다. 그러나 global lock을 사용하는 것이 atomic instructions를 사용하는 것보다 느릴 수 있으므로
+사용 사례에 적합한 atomic types를 선택하는 것이 중요하다.
+
 ### Comparison with Rust's Atomic types
+Rust의 표준 라이브러리는 변경 가능한 메모리 위치에 대한 안전하고 동시적인 액세스를 허용하는 여러 atomic types들을 제공한다.
+Crossbeam의 atomic types는 Rust의 atomic types들과 유사하도록 설계되었지만 몇 가지 중요한 차이점이 있다.
+
+Rust의 Atomic types들에는  AtomicBool, AtomicIsize, AtomicUsize, AtomicPtr 등이 있으며,
+Atomic load, store, exchange, CAS, fetch-and-add등의 기능이 있다.
+
+아래는 주요 차이점이다.
+- Crossbeam AtomicCell은 atomic instructions를 사용할 수 없거나 효율적이지 않을 때 global lock을 사용하는 반면,
+  Rust의 atomic types들은 항상 하드웨어 기반 atomic instructions를 사용한다.
+- Crossbeam AtomicCell은 경우에 따라 더 나은 성능을 제공하기 위해 시퀀스 잠금을 사용하는 기능(SeqLock)과 같은 추가 기능을 제공한다.
+
+다음은 Crossbeam AtomicCell의 사용이 더 나은 선택일 수 있는 사례이다
+- 하드웨어 기반 atomic instructions를 사용할 수 없거나 효율적이지 않은 경우.
+- SeqLock을 사용하면 하드웨어 기반 atomic instructions보다 더 나은 성능을 제공할 수도 있다.
+- Crossbeam AtomicCell은 하드웨어 기반 atomic instructions가 효율적이지 않은 특정한 경우에 더 많은 유연성과 더 나은 성능을 제공한다.
+  그러나 Crossbeam AtomicCell을 사용하면 global lock 사용으로 인해 오버헤드가 추가될 수 있으며 Rust의 atomic types만큼 광범위하게 테스트되거나 신뢰성을 보장하지는 않을 수 있다.
+
+일반적으로 애플리케이션이 Rust의 atomic types들을 사용할 수 있다면 그것을 사용하는 것이 권장되는 구현이다.
+그러나 특정한 경우에 더 많은 유연성이나 더 나은 성능이 필요한 경우 Crossbeam AtomicCell이 좋은 선택일 수 있다.
 ### Examples of using Crossbeam atomic types
+다음은 Rust 프로그램에서 Crossbeam atomic types들을 사용하는 방법에 대한 몇 가지 예이다.
+
+예 1: 스레드 간에 변경 가능한 값을 공유.
+```rust
+use crossbeam::atomic::AtomicCell;
+
+let cell = AtomicCell::new(42);
+
+// Spawn a thread to increment the value.
+crossbeam::scope(|s| {
+    s.spawn(|_| {
+        let val = cell.fetch_add(1);
+        println!("incremented value: {}", val + 1);
+    });
+}).unwrap();
+
+// Wait for the thread to finish and print the final value.
+let final_val = cell.into_inner();
+println!("final value: {}", final_val);
+```
+AtomicCell은 여러 스레드에서 변경 가능한 값에 액세스할 수 있는 스레드 안전하고 lock-free 방법을 제공한다.
+이 예제에서는 초기 값이 42인 AtomicCell을 생성하고 새 스레드를 생성하여 값을 증가시키고 증가된 값을 print한다.
+스레드가 끝나면 AtomicCell의 최종 값을 print한다.
+
+예 2: global lock과 함께 AtomicCell을 사용하여 Queue 구현
+queue에는 push 및 pop 작업이 모두 필요하므로 atomic instructions만 사용하는 것으로는 충분하지 않다.
+대신 queue 수정 중에 상호 배제를 보장하기 위해 global lock을 사용한다.
+```rust
+use crossbeam::atomic::AtomicCell;
+use std::sync::Arc;
+
+struct Queue<T> {
+    head: AtomicCell<*mut Node<T>>,
+    tail: AtomicCell<*mut Node<T>>,
+}
+
+struct Node<T> {
+    value: T,
+    next: AtomicCell<*mut Node<T>>,
+}
+
+impl<T> Queue<T> {
+    fn new() -> Self {
+        let sentinel = Arc::new(Node {
+            value: Default::default(),
+            next: AtomicCell::new(std::ptr::null_mut()),
+        });
+
+        Queue {
+            head: AtomicCell::new(Arc::into_raw(sentinel.clone())),
+            tail: AtomicCell::new(Arc::into_raw(sentinel)),
+        }
+    }
+
+    fn push(&self, value: T) {
+        let mut sentinel = self.tail.load();
+        let new_node = Arc::new(Node {
+            value,
+            next: AtomicCell::new(std::ptr::null_mut()),
+        });
+        loop {
+            let next = unsafe { &mut *sentinel }.next.load();
+            if next.is_null() {
+                if unsafe { &mut *sentinel }.next.compare_and_swap(
+                    std::ptr::null_mut(),
+                    Arc::into_raw(new_node.clone()) as *mut _,
+                    crossbeam_utils::atomic::Ordering::Release,
+                ).is_ok() {
+                    self.tail.store(Arc::into_raw(new_node) as *mut _, crossbeam_utils::atomic::Ordering::Release);
+                    break;
+                }
+            } else {
+                self.tail.store(next, crossbeam_utils::atomic::Ordering::Release);
+                sentinel = next;
+            }
+        }
+    }
+
+    fn pop(&self) -> Option<T> {
+        let mut sentinel = self.head.load(crossbeam_utils::atomic::Ordering::Acquire);
+        loop {
+            let next = unsafe { &mut *sentinel }.next.load();
+            if next.is_null() {
+                return None;
+            }
+            let value = unsafe { Arc::from_raw(next) }.value;
+            if self.head.compare_and_swap(
+                sentinel,
+                next,
+                crossbeam_utils::atomic::Ordering::Release,
+            ).is_ok() {
+                return Some(value);
+            }
+            sentinel = self.head.load(crossbeam_utils::atomic::Ordering::Acquire);
+        }
+    }
+}
+```
+push 메소드에서 먼저 queue의 현재 tail을 load한다.
+그런 다음 제공된 값으로 새 노드를 만들고 현재 tail 노드의 next 필드를 새 노드로 설정하여 queue에 추가하려고 시도한다.
+이 작업이 성공하면 tail pointer가 새 노드를 가리키도록 업데이트한다.
+compare_and_swap 작업이 실패하면 loop를 돌고 다시 시도한다.
+
+pop 메소드에서 먼저 queue의 현재 head를 load한다.
+그런 다음 head pointer를 현재 head 노드의 'next' 필드로 설정하여 queue의 다음 노드로 이동하려고 시도한다.
+이 작업이 성공하면 제거된 노드의 값을 반환한다.
+compare_and_swap 작업이 실패하면 loop를 돌고 다시 시도한다.
+
+pop 메서드 후에 이전 head 노드가 대기열의 마지막 노드인지 확인한다.
+그렇다면 queue가 이제 비어 있음을 알고 head 및 tail pointer를 모두 null로 업데이트해야 한다.
+이전 head 노드가 queue의 마지막 노드가 아니면 단순히 제거된 노드의 값을 반환한다.
+
+마지막으로 push 및 pop 메서드 모두에서 compare_and_swap 작업이 너무 많이 실패하면 global lock을 사용한다.
+이는 하드웨어가 효율적인 atomic operations를 제공하지 않는 경우에도 계속 진행할 수 있도록 하는 fallback 메커니즘이다.
+
+이러한 각 예제에서 Crossbeam AtomicCell을 사용하여 변경 가능한 메모리 위치에서 스레드로부터 안전하고 lock-free 작업을 구현하는 방법을 보여준다.
 
 ## 7. Work stealing with crossbeam and Rayon
 ### Explanation of work stealing algorithm
+Crossbeam이 제공하는 기능 중 하나는 다중 스레드 시스템에서 로드 밸런싱을 위한 기술인 work stealing이다.
+다중 스레드 시스템에서 task는 일반적으로 더 작은 하위 task로 분할되고 실행을 위해 사용 가능한 스레드 간에 분산된다.
+그러나 task의 특성이나 스레드 속도의 차이로 인해 일부 스레드는 다른 스레드보다 일찍 task를 완료하고 다른 스레드가 여전히 사용 중인 동안 유휴 상태가 될 수 있다.
+이러한 상황은 리소스 활용도를 저하시키고 전체 시스템 성능을 저하시킬 수 있다.
+
+이 문제를 해결하기 위해 work stealing을 사용하여 사용 가능한 스레드 간에 워크로드를 동적으로 재분배한다.
+Crossbeam에서 work stealing은 `work stealing deque`라는 데이터 구조를 사용하여 구현된다.
+deque(double-ended queue)는 양쪽 끝에서 요소를 추가하거나 제거할 수 있는 데이터 구조이다.
+work stealing deque는 우리가 아는 deque와 같이 다음의 두 가지 작업을 지원한다.
+
+- push(): deque의 맨 위에 task를 추가한다.
+- pop(): deque의 맨 아래에서 task를 제거하고 반환한다.
+
+시스템의 각 스레드에는 자체 work stealing deque가 있다.
+스레드에 task가 부족하면 다른 스레드의 deque 맨 아래에서 task를 `Steal`하려고 시도한다.
+이렇게 하면 더 많은 task를 가진 스레드가 더 많은 task를 수행하는 반면 더 적은 task를 가진 스레드는 task를 훔쳐 바쁘게 일할 수 있다.
+
+Crossbeam에서 work stealing deque는 fixed size의 array를 사용하여 구현된다.
+각 스레드에는 자체 deque가 있으며 스레드에 task가 부족하면 훔칠 다른 deque를 무작위로 선택한다.
+스레드가 다른 스레드의 deque에서 훔치고 있는 경우 가장 최근에 추가된 task이므로 cache-hot일 가능성이 더 높기 때문에 먼저 deque의 맨 위에서 훔치려고 시도한다.
+
+전반적으로 Crossbeam의 work stealing은 다중 스레드 시스템의 스레드 간에 워크로드의 균형을 맞추는 효과적인 방법을 제공하여
+리소스 활용률을 높이고 성능을 향상시킬 수 있다.
+
 ### Using Crossbeam and Rayon to implement work stealing
+
 ### Example of work stealing in action
 
 ## 8. Conclusion
