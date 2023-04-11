@@ -660,6 +660,10 @@ name = "boj_10216"
 path = "geometry/boj_g4_10216_stack_dfs.rs"
 
 [[example]]
+name = "boj_25308"
+path = "geometry/boj_g4_25308_ccw_dfs.rs"
+
+[[example]]
 name = "boj_11662"
 path = "geometry/boj_g4_11662_ternary_search.rs"
 
