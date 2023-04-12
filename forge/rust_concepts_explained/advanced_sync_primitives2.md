@@ -930,7 +930,296 @@ load 메서드에서 `AtomicConsume` Ordering을 사용하면 현재 로드에�
 
 이러한 각 예제에서 Crossbeam AtomicCell을 사용하여 변경 가능한 메모리 위치에서 스레드로부터 안전하고 lock-free 작업을 구현하는 방법을 보여준다.
 
-## 7. Work stealing with crossbeam and Rayon
+## 7. parking_lot
+### Overview
+parking_lot은 성능과 확장성에 중점을 둔 lock, condvar 및 barrier와 같은 다양한 동기 primitives들을 제공하는 external crate이다.
+std::sync module에 대한 대체재로 설계되었지만 더 효율적이고 확장 가능한 구현들이 있다.
+```rust
+pub struct RwLock<R, T: ?Sized> {
+    raw: R,
+    data: UnsafeCell<T>,
+}
+```
+위의 구현은 lock_api 모듈의 RwLock의 구현이다.
+data는 역시 UnsafeCell<T>로 구현되어 있고, raw의 R은 RawRwLock이라는 struct이며 내부는 atomic 연산으로 동작하는 state로 구현되어 있다.
+```rust
+pub struct RawRwLock {
+    state: AtomicUsize,
+}
+```
+```rust
+impl<R: RawRwLock, T: ?Sized> RwLock<R, T> {
+    pub fn new(val: T) -> RwLock<R, T> {
+        RwLock {
+            data: UnsafeCell::new(val),
+            raw: R::INIT,
+        }
+    }
+    
+    pub fn read(&self) -> RwLockReadGuard<'_, R, T> {
+        self.raw.lock_shared();
+        // SAFETY: The lock is held, as required.
+        unsafe { self.read_guard() }
+    }
+    
+    pub fn write(&self) -> RwLockWriteGuard<'_, R, T> {
+        self.raw.lock_exclusive();
+        // SAFETY: The lock is held, as required.
+        unsafe { self.write_guard() }
+    }
+}
+
+unsafe impl lock_api::RawRwLock for RawRwLock {
+    const INIT: RawRwLock = RawRwLock {
+        state: AtomicUsize::new(0),
+    };
+    fn lock_exclusive(&self) {
+        if self
+            .state
+            .compare_exchange_weak(0, WRITER_BIT, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
+            let result = self.lock_exclusive_slow(None);
+            debug_assert!(result);
+        }
+        self.deadlock_acquire();
+    }
+    unsafe fn unlock_exclusive(&self) {
+        self.deadlock_release();
+        if self
+            .state
+            .compare_exchange(WRITER_BIT, 0, Ordering::Release, Ordering::Relaxed)
+            .is_ok()
+        {
+            return;
+        }
+        self.unlock_exclusive_slow(false);
+    }
+    fn lock_shared(&self) {
+        if !self.try_lock_shared_fast(false) {
+            let result = self.lock_shared_slow(false, None);
+            debug_assert!(result);
+        }
+        self.deadlock_acquire();
+    }
+    unsafe fn unlock_shared(&self) {
+        self.deadlock_release();
+        let state = if have_elision() {
+            self.state.elision_fetch_sub_release(ONE_READER)
+        } else {
+            self.state.fetch_sub(ONE_READER, Ordering::Release)
+        };
+        if state & (READERS_MASK | WRITER_PARKED_BIT) == (ONE_READER | WRITER_PARKED_BIT) {
+            self.unlock_shared_slow();
+        }
+    }
+    fn is_locked(&self) -> bool {
+        let state = self.state.load(Ordering::Relaxed);
+        state & (WRITER_BIT | READERS_MASK) != 0
+    }
+
+    fn is_locked_exclusive(&self) -> bool {
+        let state = self.state.load(Ordering::Relaxed);
+        state & (WRITER_BIT) != 0
+    }
+}
+```
+RwLock의 raw 필드는 AtomicUsize의 state로 구성되어 있기 때문에 upgrade or downgrade or unlock or lock 하는 방식은 매우 효율적으로 진행된다.
+lock or unlock upgradable or downgradable 이 true or false라면(data의 load 또는 store가능 여부를 통해 알아냄),
+AtomicUsize를 atomic 연산으로 fetch_add 또는 fetch_sub으로 bitwise 연산으로 매우 빠르게 상태를 변화시킨다.
+
+std sync와 Parking_lot 알고리즘의 주요 차이점은 경합을 처리하는 방식에 있다. 즉 spin-lock의 차이에 있다.
+
+std::sync에서 Mutex 또는 RwLock에 대한 lock을 획득하려는 스레드는 lock이 사용 가능해질 때까지 blocking되며 acquired되었을 때 계속 진행할 수 있다.
+이로 인해 많은 스레드가 동일한 lock을 acquire하려고 할 때 모두 blocking되고 차례를 기다려야 하므로 많은 경합이 발생할 수 있다.
+
+반면에 parking_lot은 보다 효율적인 spin-wait approach를 사용한다.
+스레드가 lock을 획득하려고 시도하고 다른 스레드가 이미 보유하고 있음을 발견하면 lock이 사용 가능해질 때까지 짧은 시간 동안 loop에서 spin한다.
+이렇게 하면 스레드가 lock을 기다리는 데 소요되는 시간이 줄어들고 경합이 높은 시나리오에서 성능이 향상될 수 있다.
+```rust
+fn lock_exclusive_slow(&self, timeout: Option<Instant>) -> bool {
+        let try_lock = |state: &mut usize| {
+            loop {
+                if *state & (WRITER_BIT | UPGRADABLE_BIT) != 0 {
+                    return false;
+                }
+
+                // Grab WRITER_BIT if it isn't set, even if there are parked threads.
+                match self.state.compare_exchange_weak(
+                    *state,
+                    *state | WRITER_BIT,
+                    Ordering::Acquire,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => return true,
+                    Err(x) => *state = x,
+                }
+            }
+        };
+
+        // Step 1: grab exclusive ownership of WRITER_BIT
+        let timed_out = !self.lock_common(
+            timeout,
+            TOKEN_EXCLUSIVE,
+            try_lock,
+            WRITER_BIT | UPGRADABLE_BIT,
+        );
+        if timed_out {
+            return false;
+        }
+
+        // Step 2: wait for all remaining readers to exit the lock.
+        self.wait_for_readers(timeout, 0)
+    }
+```
+lock_exclusive_slow 메서드 내부의 spin-wait 방식은 loop에서 `Instant`를 사용하여 시간 제한을 구현하는 데 사용된다.
+loop는 성공하거나 제한 시간에 도달할 때까지 `WRITER_BIT`를 획득하려고 계속 시도한다.
+이 spin-wait approach 방식은 스레드를 blocking하고 나중에 OS에서 스레드를 다시 예약하도록 허용하여 추가 오버헤드를 유발할 수 있는 것보다 더 효율적일 수 있다.
+제한 시간이 있는 spin-wait loop를 사용하여 스레드는 context switching 오버헤드를 최소화하면서 lock이 사용 가능해질 때까지 능동적으로 대기할 수 있다.
+
+즉, std::sync의 futex spin-lock은 loop에서 즉시 획득하지 못한다면, 바로 스레드를 blocking하고 context switching한다.
+반면에 parking_lot의 spin-lock은 loop에서 즉시 획득하지 못하더라도, 특정 짧은 시간(시간 혹은 반복 횟수)동안 loop를 지속하여 continue하여
+lock을 acquire할 수 있는지 반복 확인한다. 그래서 이 기간동안에 lock을 획득하지 못하더라도, 매 회전마다 확정적인 context switching을 하는
+overhead보다는 오버헤드가 적을 가능성이 높기 때문에 일반적으로 성능이 더 좋게 나온다.
+그러므로 lock의 acquire 및 release가 매우 빈번한 경우에 최적화되어 있으므로 일반적으로 이러한 동작을 나타내는 워크로드에 더 적합하다.
+그러나 lock을 장기간 유지하고 acquire & release가 거의 없는 모델에서는 획득할 수 없는 lock을 위해 loop를 유지하는 오버헤드가 더 클 수 있다.
+이렇듯 워크로드의 특정 사항에 따라 효율적인 모듈이 달라지기 때문에 다양한 lock 구현을 벤치마킹 하는 것이 좋다.
+
+두 라이브러리의 또 다른 차이점은 Parking_lot이 Parking_lot::MutexGuard 및 Parking_lot::RwLockUpgradableReadGuard와 같이
+표준 라이브러리에서 찾을 수 없는 일부 추가 동기 프리미티브를 제공한다는 것이다.
+이러한 프리미티브를 사용하면 lock 프로세스를 보다 세밀하게 제어할 수 있으며 일부 특수 시나리오에서 유용할 수 있다.
+
+### Advantages over std::sync
+parking_lot은 std::sync module에 비해 몇 가지 이점을 제공한다.
+
+- Better performance: blocking 대신 spin-waiting을 사용하면 스레드가 lock을 기다리는 시간을 줄이고 경합이 높은 시나리오에서 성능을 향상시킬 수 있다.
+  또한 parking_lot crate는 성능과 확장성을 염두에 두고 설계되었으며 동기 primitives의 보다 효율적이고 확장 가능한 구현을 제공한다.
+- Additional synchronization primitives: std::sync에서 제공하는 표준 동기 primitives 외에도 parking_lot은
+  RwLockUpgradableReadGuard 및 MutexGuard와 같은 추가 프리미티브를 제공하여 lock 프로세스를 보다 세밀하게 제어할 수 있으며 일부 특수 시나리오에서 유용할 수 있다.
+- Smaller memory footprint: parking_lot은 일부 동기 프리미티브에 더 작은 데이터 구조를 사용하므로 std::sync에 비해 더 작은 메모리 공간을 차지한다.
+- More predictable behavior: parking_lot에서 spin-waiting을 사용하면 std::sync에서 blocking하는 것과 비교하여 더 예측 가능한 동작을 제공할 수 있다.
+  경합이 높은 경우 blocking은 예측할 수 없고 잠재적으로 긴 대기 시간을 초래할 수 있는 반면 spin-waiting은 짧은 대기 시간으로 보다 결정적인 동작을 제공할 수 있다.
+- Reduced context switching overhead: parking_lot의 spin-waiting approach 방식은 std::sync의 blocking에 비해 context switching 오버헤드를 줄일 수 있다.
+  lock이 사용 가능해질 때까지 능동적으로 기다리면 스레드가 OS에 의해 blocking되고 스케줄이 변경되는 것을 방지할 수 있다. 이로 인해 추가 오버헤드가 발생할 수 있다.
+- less contention: parking_lot의 프리미티브는 공유 리소스에 대한 경합을 줄이도록 설계되어 동시성이 높은 상황에서 확장성을 높인다.
+- More features: parking_lot은 try_lock 메서드를 지원하는 Mutex 구현과 같이 표준 라이브러리에 없는 추가 기능을 제공한다.
+
+전반적으로 parking_lot은 특히 높은 경합 시나리오에서 std::sync보다 성능이 뛰어나고 확장 가능한 대안이다.
+또한 parking_lot에서 제공하는 추가 동기 프리미티브는 특정 시나리오에서 더 많은 제어와 유연성을 제공할 수 있다.
+
+### Usage examples
+다음은 parking_lot의 동기 primitives들 중 몇가지의 예이다.
+- Mutex(Same usage as std::sync::Mutex)
+```rust
+use parking_lot::Mutex;
+
+let mutex = Mutex::new(0);
+let mut value = mutex.lock();
+*value += 1;
+```
+
+- RwLock(Same usage as std::sync::RwLock)
+```rust
+use parking_lot::RwLock;
+
+let rw_lock = RwLock::new(0);
+let value = rw_lock.read();
+assert_eq!(*value, 0);
+let mut value = rw_lock.write();
+*value += 1;
+```
+
+- Condvar(Same usage as std::sync::Condvar)
+```rust
+use parking_lot::{Mutex, Condvar};
+
+let pair = Arc::new((Mutex::new(false), Condvar::new()));
+let pair2 = pair.clone();
+thread::spawn(move || {
+    let &(ref lock, ref cvar) = &*pair2;
+    let mut started = lock.lock();
+    *started = true;
+    cvar.notify_one();
+});
+
+let &(ref lock, ref cvar) = &*pair;
+let mut started = lock.lock();
+while !*started {
+    started = cvar.wait(started);
+}
+```
+
+### Performance comparison with std::sync
+다음은 std::sync::RwLock과 parking_lot::RwLock의 benchmark이다.
+```rust
+use std::sync::{RwLock as StdRwLock, Arc};
+use parking_lot::RwLock as ParkingRwLock;
+use std::thread;
+use std::time::{Duration, Instant};
+
+const NUM_THREADS: usize = 4;
+const NUM_ITERATIONS: usize = 100_000;
+
+fn run_benchmark_parking_rwlock(rw_lock: &Arc<ParkingRwLock<()>>) -> Duration {
+    let start = Instant::now();
+    let mut handles = Vec::new();
+    for _ in 0..NUM_THREADS {
+        let rw_lock = rw_lock.clone();
+        handles.push(thread::spawn(move || {
+            for _ in 0..NUM_ITERATIONS {
+                let _guard = rw_lock.read();
+            }
+        }));
+    }
+    for handle in handles {
+        handle.join().unwrap();
+    }
+    start.elapsed()
+}
+
+fn run_benchmark_std_rwlock(rw_lock: &Arc<StdRwLock<()>>) -> Duration {
+    let start = Instant::now();
+    let mut handles = Vec::new();
+    for _ in 0..NUM_THREADS {
+        let rw_lock = rw_lock.clone();
+        handles.push(thread::spawn(move || {
+            for _ in 0..NUM_ITERATIONS {
+                let _guard = rw_lock.read();
+            }
+        }));
+    }
+    for handle in handles {
+        handle.join().unwrap();
+    }
+    start.elapsed()
+}
+
+fn main() {
+    let parking_rwlock = Arc::new(ParkingRwLock::new(()));
+    let std_rwlock = Arc::new(StdRwLock::new(()));
+
+    let std_duration = run_benchmark_std_rwlock(&std_rwlock);
+    let parking_duration = run_benchmark_parking_rwlock(&parking_rwlock);
+
+    println!("std::sync::RwLock: {:?}", std_duration);
+    println!("parking_lot::RwLock: {:?}", parking_duration);
+}
+```
+
+The benchmark was run on:  
+processor - Ryzen 9 5950X  
+OS - WSL2(ubuntu 20.04) on Windows 10  
+rust version - 1.67.1
+
+The results were:
+```c
+std::sync::RwLock: 31.902169ms
+parking_lot::RwLock: 15.574434ms
+```
+결과는 parking_lot::RwLock이 이 벤치마크에서 std::sync::RwLock보다 약 2배 빠르다는 것을 보여준다.
+그러나 다른 시나리오에서는 두 lock의 성능 벤치가 다르게 나올 수 있으며 최적의 선택은 프로그램의 특정 요구 사항에 따라 달라질 수 있다.
+
+## 8. Work stealing with crossbeam and Rayon
 ### Explanation of work stealing algorithm
 Crossbeam이 제공하는 기능 중 하나는 다중 스레드 시스템에서 로드 밸런싱을 위한 기술인 work stealing이다.
 다중 스레드 시스템에서 task는 일반적으로 더 작은 하위 task로 분할되고 실행을 위해 사용 가능한 스레드 간에 분산된다.
@@ -956,5 +1245,8 @@ Crossbeam에서 work stealing deque는 fixed size의 array를 사용하여 구�
 전반적으로 Crossbeam의 work stealing은 다중 스레드 시스템의 스레드 간에 워크로드의 균형을 맞추는 효과적인 방법을 제공하여
 리소스 활용률을 높이고 성능을 향상시킬 수 있다.
 
-## 8. Conclusion
-### Recap of key concepts and features
+### Using Crossbeam and Rayon to implement work stealing
+
+### Example of work stealing in action
+
+## 9. Conclusion
