@@ -751,10 +751,10 @@ Rust는 `MaybeUninit`을 사용하여 유저에게 노출되기 전에 메모리
 
 Crossbeam atomic library의 또 다른 중요한 module은 `Consume` memory ordering을 사용하여 primitive atomic type에서 읽을 수 있는 방법을 제공하는 `Consume` module이다.
 이 순서는 Rust의 atomic type이 제공하는 `Acquire` order와 유사하지만 load 결과에 '의존하는' 작업의 순서만 보장한다.
-이 Ordering은 load 메서드에서 사용하는 `Acquire` odrder보다 강력하지만 fetch_* 메서드에서 사용하는 `SeqCst` Order보다 약하다.
-그럼에도 memory fence instructions가 필요하지 않기 때문에 weak memory architectures에서 `Acquire` Ordering보다 빠를 수 있다.  
-`Consume` Ordering은 읽기 전에 발생하는 모든 메모리 읽기가 그보다 먼저 정렬되도록 보장하고, `Consume` 읽기가 후속 읽기 또는 쓰기로 재정렬될 수 없도록 한다.
-따라서 서로 의존하는 여러 메모리 위치를 읽는 데 유용한 순서가 된다.  
+즉 `Acquire`는 모든 후속 작업의 순서를 보장하는 반면 `Consume`은 로드된 값에 따라 달라지는 후속 작업의 순서만 보장하기 때문에 `Acquire` 순서가 `Consume` 순서보다 강력하다.
+그렇지만 `Consume` Ordering은 memory fence instructions가 필요하지 않기 때문에 weak memory architectures에서 `Acquire` Ordering보다 빠를 수 있다.  
+(`Consume` Ordering은 읽기 전에 발생하는 모든 메모리 읽기가 그보다 먼저 정렬되도록 보장하고, `Consume` 읽기가 후속 읽기 또는 쓰기로 재정렬될 수 없도록 한다.)
+따라서 `Consume` Ordering은 서로 의존하는 여러 메모리 위치를 읽는 데 있어서는 `Acquire` Ordering과 같은 기능을 하면서, 더 빠르게 처리할 수 있는 유용한 순서가 된다.  
 Consume module은 안전하고 일관된 방식으로 여러 AtomicCell에서 값을 읽는 데 사용되는 `ConsumeGuard`라는 type을 제공한다.
 이는 AtomicCell의 슬라이스에서 consume 메서드를 호출하여 얻으며 모든 읽기가 consume 순서로 발생하도록 한다.  
 다음은 Consume 모듈의 사용 예이다.
@@ -806,7 +806,7 @@ Atomic load, store, exchange, CAS, fetch-and-add등의 기능이 있다.
 ### Examples of using Crossbeam atomic types
 다음은 Rust 프로그램에서 Crossbeam atomic types들을 사용하는 방법에 대한 몇 가지 예이다.
 
-예 1: 스레드 간에 변경 가능한 값을 공유.
+- 예제 1: 스레드 간에 변경 가능한 값을 공유.
 ```rust
 use crossbeam::atomic::AtomicCell;
 
@@ -828,12 +828,12 @@ AtomicCell은 여러 스레드에서 변경 가능한 값에 액세스할 수 �
 이 예제에서는 초기 값이 42인 AtomicCell을 생성하고 새 스레드를 생성하여 값을 증가시키고 증가된 값을 print한다.
 스레드가 끝나면 AtomicCell의 최종 값을 print한다.
 
-예 2: global lock과 함께 AtomicCell을 사용하여 Queue 구현
+- 예제 2: global lock과 함께 AtomicCell을 사용하여 Queue 구현
 queue에는 push 및 pop 작업이 모두 필요하므로 atomic instructions만 사용하는 것으로는 충분하지 않다.
 대신 queue 수정 중에 상호 배제를 보장하기 위해 global lock을 사용한다.
 ```rust
-use crossbeam::atomic::AtomicCell;
-use std::sync::Arc;
+use crossbeam::atomic::{AtomicCell, AtomicConsume};
+use std::sync::{Arc, atomic::Ordering};
 
 struct Queue<T> {
     head: AtomicCell<*mut Node<T>>,
@@ -870,20 +870,20 @@ impl<T> Queue<T> {
                 if unsafe { &mut *sentinel }.next.compare_and_swap(
                     std::ptr::null_mut(),
                     Arc::into_raw(new_node.clone()) as *mut _,
-                    crossbeam_utils::atomic::Ordering::Release,
+                    Ordering::Release,
                 ).is_ok() {
-                    self.tail.store(Arc::into_raw(new_node) as *mut _, crossbeam_utils::atomic::Ordering::Release);
+                    self.tail.store(Arc::into_raw(new_node) as *mut _, Ordering::Release);
                     break;
                 }
             } else {
-                self.tail.store(next, crossbeam_utils::atomic::Ordering::Release);
+                self.tail.store(next, Ordering::Release);
                 sentinel = next;
             }
         }
     }
 
     fn pop(&self) -> Option<T> {
-        let mut sentinel = self.head.load(crossbeam_utils::atomic::Ordering::Acquire);
+        let mut sentinel = self.head.load(AtomicConsume);
         loop {
             let next = unsafe { &mut *sentinel }.next.load();
             if next.is_null() {
@@ -893,11 +893,11 @@ impl<T> Queue<T> {
             if self.head.compare_and_swap(
                 sentinel,
                 next,
-                crossbeam_utils::atomic::Ordering::Release,
+                Ordering::Release,
             ).is_ok() {
                 return Some(value);
             }
-            sentinel = self.head.load(crossbeam_utils::atomic::Ordering::Acquire);
+            sentinel = self.head.load(AtomicConsume);
         }
     }
 }
@@ -910,11 +910,20 @@ compare_and_swap 작업이 실패하면 loop를 돌고 다시 시도한다.
 pop 메소드에서 먼저 queue의 현재 head를 load한다.
 그런 다음 head pointer를 현재 head 노드의 'next' 필드로 설정하여 queue의 다음 노드로 이동하려고 시도한다.
 이 작업이 성공하면 제거된 노드의 값을 반환한다.
-compare_and_swap 작업이 실패하면 loop를 돌고 다시 시도한다.
+compare_and_swap 작업이 실패하면 loop를 돌고 Sentinel 포인터를 현재 헤드 포인터로 업데이트하고 다시 시도한다.
 
 pop 메서드 후에 이전 head 노드가 대기열의 마지막 노드인지 확인한다.
 그렇다면 queue가 이제 비어 있음을 알고 head 및 tail pointer를 모두 null로 업데이트해야 한다.
 이전 head 노드가 queue의 마지막 노드가 아니면 단순히 제거된 노드의 값을 반환한다.
+
+pop 메서드에서 제거된 노드의 값을 읽을 때 `AtomicConsume` Ordering을 사용한다는 점을 주목해야 한다.
+이렇게 하면 노드가 제거되기 전에 발생한 모든 메모리 작업이 Queue에서 노드를 pop하는 스레드에 표시되도록 보장된다.
+즉 해당 메모리 작업에 의존하는 모든 후속 작업이 올바르게 정렬되고 현재 로드 전에 발생하도록 재정렬되지 않는다.
+
+load 메서드에서 `AtomicConsume` Ordering을 사용하면 현재 로드에서 반환된 값에 의존하는 모든 후속 로드가 현재 로드 이전에 발생하도록 재정렬되지 않는다.
+이 순서는 서로 의존하는 일련의 로드가 있고 올바른 순서로 실행되도록 하려는 경우에 유용할 수 있다.
+`AtomicConsume` Ordering은 `Acquire` Ordering보다 약한 순서이기 때문에 컴파일러 또는 프로세서에서 더 많은 재정렬을 허용할 수 있으므로
+의도된 사용 사례에 대해 약한 순서가 충분한 경우에만 주의해서 사용해야 한다.
 
 마지막으로 push 및 pop 메서드 모두에서 compare_and_swap 작업이 너무 많이 실패하면 global lock을 사용한다.
 이는 하드웨어가 효율적인 atomic operations를 제공하지 않는 경우에도 계속 진행할 수 있도록 하는 fallback 메커니즘이다.
@@ -947,11 +956,5 @@ Crossbeam에서 work stealing deque는 fixed size의 array를 사용하여 구�
 전반적으로 Crossbeam의 work stealing은 다중 스레드 시스템의 스레드 간에 워크로드의 균형을 맞추는 효과적인 방법을 제공하여
 리소스 활용률을 높이고 성능을 향상시킬 수 있다.
 
-### Using Crossbeam and Rayon to implement work stealing
-
-### Example of work stealing in action
-
 ## 8. Conclusion
 ### Recap of key concepts and features
-### Importance of safe and efficient concurrent programming in Rust
-### Future developments in Rust's concurrency landscape
