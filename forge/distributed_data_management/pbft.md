@@ -191,10 +191,152 @@ PBFT의 대안으로 간주될 수 있는 몇 가지 대체 합의 알고리즘�
 3. 권한 증명(PoA): 네트워크를 유지하기 위해 신뢰할 수 있는 고정된 검증자 집합에 의존하는 합의 알고리즘이다.
    참가자들 사이에 높은 수준의 신뢰가 존재하는 상황에서 유용하다.
 
-다음은 기술적인 risk 대안들이다.
+다음은 기술적인 대안들이다.
 1. Sharding: 네트워크를 horizontally 분할하고 여러 샤드 또는 하위 네트워크 간에 트랜잭션 처리를 분산하는 데 사용되는 기술이다.
    이 접근 방식은 네트워크의 내결함성을 높이고 중앙 집중화 가능성을 줄일 수 있다.
 2. 다자간 계산(Multi-party computation): 중앙 집중화 위험을 줄이는 데 사용할 수 있는 또 다른 기술이다.
    MPC를 사용하면 여러 당사자가 서로에게 입력 내용을 공개하지 않고 함수를 공동으로 계산할 수 있다.
    이는 여러 노드가 서로에게 민감한 정보를 공개하지 않고 공동 작업을 수행해야 하는 분산 시스템에서 유용할 수 있다([Millionaires' problem](https://en.wikipedia.org/wiki/Yao%27s_Millionaires%27_problem)).
 3. 이러한 기술 외에도 로드 밸런서, 방화벽 및 침입 탐지 시스템과 같은 추가 기술을 사용하여 내결함성을 높이고 중앙 집중화 가능성을 줄일 수 있다.
+
+## Implementations of PBFT
+```rust
+use tendermint_p2p::{Block, Vote};
+use tendermint::{block::Height, consensus::Proposal, hash::Hash};
+
+// Define the necessary data structures for PBFT
+struct PbftBlock {
+    height: Height,
+    hash: Hash,
+    proposal: Proposal,
+    votes: Vec<Vote>,
+}
+
+struct PbftState {
+    sequence_number: u64,
+    current_block: Option<PbftBlock>,
+}
+
+impl PbftState {
+    fn get_proposal(&self) -> Option<Proposal> {
+        // Returns the proposal of the current block
+        self.current_block.as_ref().map(|block| block.proposal.clone())
+    }
+
+    fn get_votes_count(&self) -> usize {
+        // Returns the number of votes for the current block
+        self.current_block.as_ref().map_or(0, |block| block.votes.len())
+    }
+
+    fn get_valid_votes(&self) -> Vec<Vote> {
+        // Returns a vector containing the valid votes for the current block
+        let mut valid_votes = vec![];
+        if let Some(current_block) = &self.current_block {
+            let votes_needed = 2 * current_block.votes.len() / 3;
+            let mut count_map = std::collections::HashMap::<[u8; 20], usize>::new();
+            for vote in &current_block.votes {
+                let vote_bytes = bincode::serialize(vote).unwrap();
+                let count = count_map.entry(vote.hash()).or_insert(0);
+                *count += 1;
+            }
+            for vote in &current_block.votes {
+                let vote_bytes = bincode::serialize(vote).unwrap();
+                if count_map.get(&vote.hash()).unwrap_or(&0) >= &votes_needed {
+                    valid_votes.push(vote.clone());
+                }
+            }
+        }
+        valid_votes
+    }
+    
+    // Implement the PBFT consensus algorithm
+    fn process_block(&mut self, block: Block) -> Result<(), ()> {
+        let pbft_block = PbftBlock::from_block(block);
+        if self.current_block.is_none() || pbft_block.height > self.current_block.as_ref().unwrap().height {
+            self.current_block = Some(pbft_block.clone());
+            self.sequence_number = 0;
+            self.broadcast_preprepare(pbft_block.clone());
+        }
+        Ok(())
+    }
+
+    fn broadcast_preprepare(&mut self, block: PbftBlock) {
+        // Broadcast the `pre-prepare` message to all nodes in the network
+        let msg = format!("pre-prepare:{:?}", block);
+        // send the message to all other nodes in the network
+        // ...
+        self.process_preprepare(msg);
+    }
+
+    fn process_preprepare(&mut self, msg: String) {
+        // Validate the `pre-prepare` message and send a `prepare` message to other nodes
+        let pbft_block = PbftBlock::from_string(msg)?;
+        if pbft_block.height == self.current_block.as_ref().unwrap().height &&
+            pbft_block.hash == self.current_block.as_ref().unwrap().hash &&
+            pbft_block.proposal == self.current_block.as_ref().unwrap().proposal {
+            // The `pre-prepare` message is valid, send a `prepare` message to other nodes
+            let msg = format!("prepare:{:?}", pbft_block);
+            // send the message to all other nodes in the network
+            // ...
+            self.process_prepare(msg);
+        }
+        Ok(())
+    }
+
+    fn process_prepare(&mut self, msg: String) {
+        // Validate the `prepare` message and send a `commit` message to other nodes
+        let pbft_block = PbftBlock::from_string(msg)?;
+        if pbft_block.height == self.current_block.as_ref().unwrap().height &&
+            pbft_block.hash == self.current_block.as_ref().unwrap().hash &&
+            pbft_block.proposal == self.current_block.as_ref().unwrap().proposal {
+            // The `prepare` message is valid, add it to the list of votes
+            self.current_block.as_mut().unwrap().votes.push(pbft_block.votes[0].clone());
+            if self.current_block.as_ref().unwrap().votes.len() == 2 / 3 {
+                // We have enough votes, broadcast the `commit` message to other nodes
+                let msg = format!("commit:{:?}", self.current_block.as_ref().unwrap());
+                // send the message to all other nodes in the network
+                // ...
+                self.process_commit(msg);
+            }
+        }
+        Ok(())
+    }
+
+    fn process_commit(&mut self, msg: String) -> Result<(), ()> {
+        // Validate the `commit` message and finalize the block if valid
+        let pbft_block = PbftBlock::from_string(msg)?;
+        if pbft_block.height == self.current_block.as_ref().unwrap().height &&
+            pbft_block.hash == self.current_block.as_ref().unwrap().hash &&
+            pbft_block.proposal == self.current_block.as_ref().unwrap().proposal {
+            // The `commit` message is valid, finalize the block
+            self.current_block = None;
+            self.sequence_number += 1;
+        }
+        Ok(())
+    }
+}
+```
+위의 구현은 PbftBlock struct 및 PbftState struct를 포함하는 PBFT(Practical Byzantine Fault Tolerance) 합의 알고리즘에 필요한 데이터 구조의 basic 버전을 정의한다.
+PbftBlock struct에는 블록의 height, hash, proposal 및 vote를 필드로 갖는다.
+또한 sequence_number 및 선택적 PbftBlock인 current_block이 포함되어 있다.
+
+PbftState struct는 현재 블록의 proposal을 반환하는 get_proposal을 포함하여 PBFT 합의 알고리즘에 대한 여러 메서드를 구현한다.
+현재 블록에 대한 투표 수를 반환하는 get_votes_count, get_valid_votes는 현재 블록에 대한 유효한 투표를 포함하는 벡터를 반환한다.
+
+주요 PBFT 알고리즘(message flow)은 process_block, broadcast_preprepare, process_preprepare, process_prepare 및 process_commit 메서드에서 구현된다.
+이러한 방법은 pre-prepare, prepare 및 commit 메시지를 포함하여 PBFT 알고리즘에서 일련의 메시지를 검증하고 처리한다.
+이러한 방법은 또한 현재 블록에 투표를 추가하고 quorum 이상의 투표가 있을 때 블록을 마무리함으로써 PBFT 알고리즘의 상태를 업데이트한다.
+
+위의 구현에서는 개선할 수 있는 몇가지 눈에 띄는 사항이 있다.
+
+1. Lack of message broadcast: 현재 구현에서 broadcast_preprepare 및 process_prepare 메서드는 방법을 지정하지 않고 "네트워크의 다른 모든 노드"에 메시지를 보낸다.
+   실제 구현에서 네트워크 계층은 모든 노드에 메시지를 브로드캐스팅해야 한다.
+2. Lack of timeout handling: 구현에는 타임아웃을 처리하는 메커니즘이 없다. PBFT에서 타임아웃은 노드가 느리거나 결함이 있는 경우를 처리하는 데 사용되며 알고리즘이 올바르게 작동하는 데 필요하다.
+3. Lack of view changes: 구현에는 primary 노드에 결함이 있거나 느린 경우를 처리하기 위해 PBFT에서 필요한 view change를 처리하는 메커니즘이 없다.
+   실제 구현에서는 알고리즘이 견고하도록 view change를 구현해야 한다.
+4. Lack of fault tolerance: 구현에는 결함이 있는 노드를 처리하는 메커니즘이 없다.
+   실제 구현에서는 노드에 결함이 있거나 악의적인 경우에도 알고리즘이 올바르게 작동할 수 있도록 내결함성을 구현해야 한다.
+5.솔라나의 TowerBFT는 gossip 네트워크를 사용하여 메시지를 전달하는 반면
+  위의 구현에서는 메시지가 네트워크의 모든 노드로 전송된다고 가정한다.
+
+위의 사항은 실제 구현을 통해 처리하도록 하자!
