@@ -678,3 +678,7 @@ path = "geometry/boj_g3_1069_adhoc.rs"
 [[example]]
 name = "boj_1198"
 path = "geometry/boj_s2_1198_shoelace_bruteforce.rs"
+
+[[example]]
+name = "boj_7869"
+path = "geometry/boj_g2_7869.rs"
