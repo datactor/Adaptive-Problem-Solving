@@ -110,5 +110,6 @@ fn main() -> io::Result<()> {
             writeln!(output, "{} {}", x, y)?;
         }
     }
+
     Ok(())
 }
