@@ -1250,3 +1250,6 @@ Crossbeam에서 work stealing deque는 fixed size의 array를 사용하여 구�
 ### Example of work stealing in action
 
 ## 9. Conclusion
+### Recap of key concepts and features
+### Importance of safe and efficient concurrent programming in Rust
+### Future developments in Rust's concurrency landscape
