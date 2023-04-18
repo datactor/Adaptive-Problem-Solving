@@ -569,55 +569,55 @@ path = "dp/boj_2629_0-1knapsack.rs"
 
 [[example]]
 name = "boj_7579"
-path = "dp/boj_gold3_7579_0-1knapsack.rs"
+path = "dp/boj_g3_7579_0-1knapsack.rs"
 
 [[example]]
 name = "boj_9935"
-path = "data_structure/boj_gold4_9935_stack.rs"
+path = "data_structure/boj_g4_9935_stack.rs"
 
 [[example]]
 name = "boj_17298"
-path = "data_structure/boj_gold4_17298_stack.rs"
+path = "data_structure/boj_g4_17298_stack.rs"
 
 [[example]]
 name = "boj_17299"
-path = "data_structure/boj_gold3_17299_stack.rs"
+path = "data_structure/boj_g3_17299_stack.rs"
 
 [[example]]
 name = "boj_1725"
-path = "stack/boj_platinum5_1725.rs"
+path = "stack/boj_p5_1725.rs"
 
 [[example]]
 name = "boj_3015"
-path = "stack/boj_platinum5_3015.rs"
+path = "stack/boj_p5_3015.rs"
 
 [[example]]
 name = "boj_6588"
-path = "math/boj_silver1_6588_prime.rs"
+path = "math/boj_s1_6588_prime.rs"
 
 [[example]]
 name = "boj_24444"
-path = "graph/boj_silver2_24444_bfs.rs"
+path = "graph/boj_s2_24444_bfs.rs"
 
 [[example]]
 name = "boj_24445"
-path = "graph/boj_silver2_24445_bfs.rs"
+path = "graph/boj_s2_24445_bfs.rs"
 
 [[example]]
 name = "boj_16928"
-path = "graph/boj_gold5_16928.rs"
+path = "graph/boj_g5_16928.rs"
 
 [[example]]
 name = "boj_1012"
-path = "graph/boj_silver2_1012_bfs.rs"
+path = "graph/boj_s2_1012_bfs.rs"
 
 [[example]]
 name = "boj_7569"
-path = "graph/boj_gold5_7569_bfs.rs"
+path = "graph/boj_g5_7569_bfs.rs"
 
 [[example]]
 name = "boj_2206"
-path = "graph/boj_gold3_2206_bfs.rs"
+path = "graph/boj_g3_2206_bfs.rs"
 
 [[example]]
 name = "boj_2166"
@@ -629,7 +629,7 @@ path = "geometry/boj_g3_17386_ccw.rs"
 
 [[example]]
 name = "boj_1708"
-path = "geometry/boj_platinum5_1708_ccw_convex_hull.rs"
+path = "geometry/boj_p5_1708_ccw_convex_hull.rs"
 
 [[example]]
 name = "boj_1027"
