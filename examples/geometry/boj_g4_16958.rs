@@ -19,8 +19,8 @@ impl Point {
     }
 }
 
-fn dist(p1: &Point, p2: &Point) -> i32 {
-    (p1.y - p2.y).abs() + (p1.x - p2.x).abs()
+fn dist(a: &Point, b: &Point) -> i32 {
+    (a.y - b.y).abs() + (a.x - b.x).abs()
 }
 
 fn main() -> io::Result<()> {
@@ -45,16 +45,17 @@ fn main() -> io::Result<()> {
         if d[i].v == 1 {
             continue;
         }
-        dp[i] = std::i32::MAX;
+        dp[i] = i32::MAX;
         for j in 1..=n {
             if i == j || d[j].v == 0 {
                 continue;
             }
-            if dp[i] > dist(&d[i], &d[j]) {
-                dp[i] = dist(&d[i], &d[j]);
+            let d = dist(&d[i], &d[j]);
+            if dp[i] > d {
+                dp[i] = d;
             }
         }
-        if dp[i] == std::i32::MAX {
+        if dp[i] == i32::MAX {
             dp[i] = 0;
         }
     }
@@ -68,9 +69,9 @@ fn main() -> io::Result<()> {
         let mut iter = input.split_whitespace();
         let a = iter.next().unwrap().parse::<usize>().unwrap();
         let b = iter.next().unwrap().parse::<usize>().unwrap();
-        let dist_ab = dist(&d[a], &d[b]);
+        let d_ab = dist(&d[a], &d[b]);
         let t_ab = dp[a] + t + dp[b];
-        writeln!(writer, "{}", if dist_ab < t_ab { dist_ab } else { t_ab })?;
+        writeln!(writer, "{}", if d_ab < t_ab { d_ab } else { t_ab })?;
     }
 
     Ok(())
