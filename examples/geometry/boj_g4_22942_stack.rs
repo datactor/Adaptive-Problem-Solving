@@ -1,9 +1,10 @@
 // https://www.acmicpc.net/problem/22942
 // O(2n lg 2n)
 
-use std::io::{self, BufRead};
+use std::io::{self, Write, BufRead, BufWriter};
 
-fn main() {
+fn main() -> io::Result<()> {
+    let mut output = BufWriter::new(io::stdout().lock());
     let mut lines = io::stdin().lock().lines().map(|line| line.unwrap());
     let n = lines.next().unwrap().trim().parse::<usize>().unwrap();
 
@@ -31,7 +32,8 @@ fn main() {
         }
     }
 
-    println!("{}", if stack.is_empty() { "YES" } else { "NO" });
+    writeln!(output, "{}", if stack.is_empty() { "YES" } else { "NO" })?;
+    Ok(())
 }
 
 // // 1차 시도

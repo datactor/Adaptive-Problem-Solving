@@ -698,3 +698,11 @@ path = "geometry/boj_g4_16958.rs"
 [[example]]
 name = "boj_22942"
 path = "geometry/boj_g4_22942_stack.rs"
+
+[[example]]
+name = "boj_27965"
+path = "math/fail_boj_s3_27965.rs"
+
+[[example]]
+name = "boj_10988"
+path = "str/boj_b2_10988_palindrome.rs"
