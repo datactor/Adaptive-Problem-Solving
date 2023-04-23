@@ -706,3 +706,7 @@ path = "math/fail_boj_s3_27965.rs"
 [[example]]
 name = "boj_10988"
 path = "str/boj_b2_10988_palindrome.rs"
+
+[[example]]
+name = "boj_15973"
+path = "geometry/boj_s1_15973.rs"
