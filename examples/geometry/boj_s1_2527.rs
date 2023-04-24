@@ -15,24 +15,19 @@ fn main() -> io::Result<()> {
 
         let (ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) = (v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
 
-        if ax2 < bx1 || bx2 < ax1 || ay1 > by2 || ay2 < by1 {
-            writeln!(output, "d")?;
-            continue;
+        writeln!(output, "{}", if ax2 < bx1 || bx2 < ax1 || ay1 > by2 || ay2 < by1 {
+            "d"
         } else if ax1 == bx2 || bx1 == ax2 {
             if ay2 == by1 || by2 == ay1 {
-                writeln!(output, "c")?;
-                continue;
+                "c"
             } else {
-                writeln!(output, "b")?;
-                continue;
+                "b"
             }
         } else if ay2 == by1 || by2 == ay1 {
-            writeln!(output, "b")?;
-            continue;
+            "b"
         } else {
-            writeln!(output, "a")?;
-            continue;
-        }
+            "a"
+        })?;
     }
 
     Ok(())
