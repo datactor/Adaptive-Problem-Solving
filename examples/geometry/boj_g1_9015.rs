@@ -1,3 +1,5 @@
+// https://www.acmicpc.net/problem/9015
+
 use std::{
     io::{self, prelude::*, BufReader, BufWriter},
     collections::HashSet,
@@ -28,22 +30,29 @@ fn main() -> io::Result<()> {
             hashset.insert((v[0], v[1]));
         }
 
-        for i in 0..n-3 {
-            for j in i+1..n-2 {
-                let dist_sq = (vec[j].0 - vec[i].0).pow(2) + (vec[j].1 - vec[i].1).pow(2);
-                let x = dist_sq * 2;
+        let mut ans = 0;
 
-                let slope = (vec[j].1 - vec[i].1) / (vec[j].0 - vec[i].0);
-                let reciprocal = - 1 as f32 / slope as f32;
+        for i in 0..n-1 {
+            for j in i+1..n {
+                let a = vec[i].0;
+                let b = vec[i].1;
+                let c = vec[j].0;
+                let d = vec[j].1;
+                let dx = c - a;
+                let dy = d - b;
 
-                let a = vec[i] as f32 - reciprocal * vec[i] as f32;
-                let b = vec[j] as f32 - reciprocal * vec[j] as f32;
+                let point1 = (c - dy, d + dx);
+                let point2 = (a - dy, b + dx);
 
-
-
-
+                if hashset.get(&point1) != None && hashset.get(&point2) != None {
+                    let area = (c - a).pow(2) + (d - b).pow(2);
+                    ans = ans.max(area);
+                    hashset.remove(&point1);
+                    hashset.remove(&point2);
+                }
             }
         }
+        writeln!(writer, "{}", ans)?;
     }
 
     Ok(())
