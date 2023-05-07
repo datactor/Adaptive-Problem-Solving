@@ -758,3 +758,7 @@ path = "geometry/boj_g4_14583.rs"
 [[example]]
 name = "boj_27866"
 path = "imple/boj_g5_27866.rs"
+
+[[example]]
+name = "boj_6439"
+path = "geometry/boj_g1_6439_ccw.rs"
