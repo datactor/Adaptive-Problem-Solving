@@ -23,20 +23,20 @@ impl<'a> Parser for SplitAsciiWhitespace<'a> {
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 struct Point {
-    x: f64,
-    y: f64,
-    z: f64,
+    x: i32,
+    y: i32,
+    z: i32,
 }
 
 impl Point {
-    fn new(x: f64, y: f64, z: f64) -> Self {
+    fn new(x: i32, y: i32, z: i32) -> Self {
         Self {
             x, y, z
         }
     }
 
-    fn distance(&self, other: &Point) -> f64 {
-        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2) + (self.z - other.z).powi(2)).sqrt()
+    fn distance(&self, other: &Point) -> f32 {
+        (((self.x - other.x).pow(2) + (self.y - other.y).pow(2) + (self.z - other.z).pow(2)) as f32).sqrt()
     }
 }
 
@@ -44,15 +44,17 @@ impl Point {
 struct Line(Point, Point);
 
 impl Line {
-    fn min_distance_to_line(&self, point: &Point) -> f64 {
-        let x = ((self.1.x - self.0.x) * (point.x - self.0.x) + (self.1.y - self.0.y) * (point.y - self.0.y) + (self.1.z - self.0.z) * (point.z - self.0.z))
-            / ((self.1.x - self.0.x).powi(2) + (self.1.y - self.0.y).powi(2) + (self.1.z - self.0.z).powi(2));
+    fn min_distance_to_line(&self, point: &Point) -> f32 {
+        let x = ((self.1.x - self.0.x) * (point.x - self.0.x) + (self.1.y - self.0.y) * (point.y - self.0.y) + (self.1.z - self.0.z) * (point.z - self.0.z)) as f32
+            / ((self.1.x - self.0.x).pow(2) + (self.1.y - self.0.y).pow(2) + (self.1.z - self.0.z).pow(2)) as f32;
 
         if x < 0.0 || x > 1.0 {
-            f64::min(point.distance(&self.0), point.distance(&self.1))
+            f32::min(point.distance(&self.0), point.distance(&self.1))
         } else {
-            let projected_point = Point::new(self.0.x + x * (self.1.x - self.0.x), self.0.y + x * (self.1.y - self.0.y), self.0.z + x * (self.1.z - self.0.z));
-            point.distance(&projected_point)
+            let px = (self.0.x as f32 + x * (self.1.x - self.0.x) as f32) as f32;
+            let py = (self.0.y as f32 + x * (self.1.y - self.0.y) as f32) as f32;
+            let pz = (self.0.z as f32 + x * (self.1.z - self.0.z) as f32) as f32;
+            ((point.x as f32 - px).powf(2.0) + (point.y as f32 - py).powf(2.0) + (point.z as f32 - pz).powf(2.0)).sqrt()
         }
     }
 }
