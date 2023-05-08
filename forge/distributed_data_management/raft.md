@@ -96,8 +96,141 @@ Raft의 module식 디자인과 flexibility를 통해 다양한 사례와 요구�
 Rust Raft를 사용하면 Raft consensus 알고리즘의 단순함과 robustness를 누리면서 특정 요구사항에 맞게 구현을 자유롭게 조정할 수 있다.
 
 ## 4. Comparing Raft with Alternative Consensus Algorithms
+### 4.1. Raft vs. Paxos
+Paxos는 1990년대 후반에 개발된 consensus 알고리즘이다. 이것은 제대로 이해하고 구현하기 어렵다는 이유로
+대안으로 Raft가 개발되었다고 한다.
+이 둘의 핵심적인 유사한 원칙은  Leader Election, Log Replication, Safety와 같은 분산 시스템에서 필요한 기본 개념에 있다.
+하지만 세부적인 구현방식에서 차이가 있으며, 각각의 장단점이 있다.
+
+- Understandability: Raft는 Paxos보다 이해하기 쉽도록 설계되었다. 두 알고리즘 모두 유사한 원칙을 기반으로 하지만,
+  Raft의 설계는 프로세스를 단순화하고 추론하기 쉽게 만든다.
+- Performance: Paxos는 일반적으로 특히 메시지 loss가 많거나, 높은 network latency 시나리오에서 Raft보다 성능이 뛰어나다.
+  그러나 이로 인해 complexity가 증가한다.
+- Fault Tolerance: 두 알고리즘 모두 Crash Fault Tolerance(CFT)가 있다. 즉 노드가 충돌하고 나중에 복구되는 오류를 처리할 수 있다.
+  - CFT vs BFT?
+    Crash fault tolerance (CFT)는 분산 시스템에서 노드가 갑자기 멈추는 등의 예기치 않은 동작이 발생해도 시스템이 정상적으로 동작하도록
+    하는 방법을 말한다. 즉, CFT는 시스템의 일부 노드가 비정상적으로 종료되는 상황에서도 전체 시스템이 동작을 멈추지 않도록 하는 것이다.  
+    반면, 다른 종류의 fault tolerance는 노드의 동작이 예상한 대로 수행되지 않는 경우를 다루는 것이다. 예를 들어, 노드가 부분적으로 동작하거나,
+    메시지를 전송할 때 오류가 발생하는 경우 등이 있다. 이러한 상황에서는 CFT보다 더 많은 작업이 필요하다.  
+    또한, 이러한 더 일반적인 fault tolerance 기술은 Byzantine fault tolerance (BFT)이라고도한다. BFT는 노드의 악의적인 동작,
+    즉 노드가 악의적인 목적으로 잘못된 메시지를 전송하거나 다른 노드를 공격하는 경우에도 시스템이 동작을 멈추지 않도록 보장하는 방법을 말한다.
+    요약하자면, CFT는 예상치 못한 동작으로 인한 시스템 장애를 방지하는 데 초점을 맞추고, BFT는 악의적인 동작으로 인한 장애를 방지하는 데 초점을 맞춘다.
+  두 알고리즘 모두 노드가 임의의 동작을 나타낼 수 있는 Byzantine faults를 처리하지 않는다.
+- Use cases: 두 알고리즘 모두 distributed database, cloud computing env에서 사용하기에 적합하다.
+
+### 4.2. Raft vs. PBFT
+PBFT는 이름에서부터 알 수 있듯이 Byzantine faults를 견딜 수 있도록 설계된 합의 알고리즘이다.
+
+- Understandability: PBFT는 Raft보다 복잡하지만 Paxos보다 일반적으로 간단하다고 평가된다.
+- Performance: PBFT는 low-latency 네트워크에서 고성능을 달성할 수 있다. 그러나 네트워크 latency가 증가하면
+  성능이 저하된다.
+- Use cases: PBFT는 높은 수준의 security와 fault tolerance를 요구하는 distributed ledgers, blockchain systems,
+  critical infrastructure systems들에서 일반적으로 사용된다.
+
+### 4.3. Comparison Table: Raft, Paxos, and PBFT
 | Consensus Algorithm | Understandability | Performance                      | Fault Tolerance  | Use Cases                                                         |
 |---------------------|-------------------|----------------------------------|------------------|-------------------------------------------------------------------|
 | Raft                | High              | Moderate                         | CrashFault       | Distributed databases, configuration management, key-value stores |
 | Paxos               | Low               | High                             | Crash Fault      | Distributed databases, distributed file systems, cloud computing  |
 | PBFT                | Moderate          | High (in low-latency networks)   | Byzantine Fault  | 	Distributed ledgers, blockchain, critical infrastructure systems |
+
+## 5. Implementing Rust Raft in Real-world Scenarios
+### 5.1. Key-Value Store
+std::collections::HashMap은 단일 머신에서 실행되는 메모리 기반의 Key-Value 데이터 구조로,
+일반적으로 빠른 읽기 및 쓰기 성능을 가지고 있다. 이러한 HashMap은 단일 노드에서만 작동하며, 노드 간의 분산 작업을 처리하지 않는다.
+
+반면에, Raft를 사용하여 구현한 분산 Key-Value store는 여러 노드에서 실행되는 분산 시스템으로, 데이터가 여러 노드에 분산 저장되어 있다.
+이러한 분산 시스템에서 Raft 알고리즘은 Leader 선출 및 분산된 데이터의 복제와 일관성을 유지하기 위해 필요한 작업을 수행한다.
+
+따라서, Raft를 사용한 분산 Key-Value store는 높은 가용성과 확장성을 제공할 수 있으며,
+시스템 장애 및 노드 장애에 대한 내결함성(fault tolerance)도 가지고 있다.
+
+반면, std::collections::HashMap은 단일 노드에서만 작동하며, 노드 간 통신, 복제 및 데이터 일관성을 처리하지 않는다.
+성능 측면에서는, 분산 Key-Value store에서는 Raft 알고리즘의 Overhead(일관성을 유지하기 위한 데이터 복제, 로그 쓰기 및 검증,
+Leader 선출 및 클러스터 노드 간 통신 등)로 인해 더 느리다.
+또한, 데이터가 여러 노드에 분산되어 있기 때문에, 특정 키에 대한 읽기 작업이 네트워크 지연으로 인해 더 많은 시간이 걸릴 수 있다.
+그러나 높은 가용성과 내결함성(fault tolerance)을 제공하는 이점은 특정 시나리오에서 이러한 성능 이슈를 상쇄할 수 있다.
+
+다음은 distributed key-value store를 구현하는 간단한 예이다.
+
+```rust
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::net::SocketAddr;
+use tokio::sync::RwLock;
+use std::sync::Arc;
+
+/// 1. Define the state machine and its operations:
+#[derive(Debug, Serialize, Deserialize)]
+pub enum StateMachineCmd {
+    Put { key: String, value: String },
+    Get { key: String },
+    Delete { key: String },
+}
+
+/// 2. implement the state machine
+pub struct KeyValueStore {
+    store: HashMap<String, String>,
+}
+
+impl KeyValueStore {
+    pub fn new() -> Self {
+        KeyValueStore {
+            store: HashMap::new(),
+        }
+    }
+
+    pub fn apply_cmd(&mut self, cmd: StateMachineCmd) -> Option<String> {
+        match cmd {
+            StateMachineCmd::Put { key, value } => {
+                self.store.insert(key, value);
+                None
+            }
+            StateMachineCmd::Get { key } => self.store.get(&key).cloned(),
+            StateMachineCmd::Delete { key } => self.store.remove(&key),
+        }
+    }
+}
+
+/// 4. Create a config.rs file for Raft node configuration
+pub struct NodeConfig {
+  pub id: u64,
+  pub addr: SocketAddr,
+}
+
+pub fn get_config() -> Vec<NodeConfig> {
+  vec![
+    NodeConfig {
+      id: 1,
+      addr: "127.0.0.1:9001".parse().unwrap(),
+    },
+    NodeConfig {
+      id: 2,
+      addr: "127.0.0.1:9002".parse().unwrap(),
+    },
+    NodeConfig {
+      id: 3,
+      addr: "127.0.0.1:9003".parse().unwrap(),
+    },
+  ]
+}
+
+/// 5. 클라이언트 요청을 Raft 리더에게 전달하기 위한 논리를 구현. 이 단계에는 Raft 리더에게 요청을 보내기 위한 클라이언트 인터페이스 생성이 포함된다.
+/// 그런 다음 리더는 명령을 follower에게 복제한다. 명령이 커밋되면 상태 시스템에 적용할 수 있다.
+async fn handle_client_request(
+    raft: &raft::Raft<StateMachineCmd>,
+    state_machine: &mut KeyValueStore,
+    cmd: StateMachineCmd,
+) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    // Propose the command to the Raft cluster.
+    let proposal = bincode::serialize(&cmd)?;
+    let response = raft.send_command(proposal).await?;
+
+    // If the command was committed, apply it to the state machine.
+    if response.committed {
+        Ok(state_machine.apply_cmd(cmd))
+    } else {
+        Err("Command not committed".into())
+    }
+}
+```
