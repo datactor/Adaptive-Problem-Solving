@@ -21,42 +21,59 @@ impl<'a> Parser for SplitAsciiWhitespace<'a> {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
+struct Point {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
+impl Point {
+    fn new(x: f64, y: f64, z: f64) -> Self {
+        Self {
+            x, y, z
+        }
+    }
+
+    fn distance(&self, other: &Point) -> f64 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2) + (self.z - other.z).powi(2)).sqrt()
+    }
+}
+
+#[derive(Clone, PartialEq, PartialOrd, Debug)]
+struct Line(Point, Point);
+
+impl Line {
+    fn min_distance_to_line(&self, point: &Point) -> f64 {
+        let x = ((self.1.x - self.0.x) * (point.x - self.0.x) + (self.1.y - self.0.y) * (point.y - self.0.y) + (self.1.z - self.0.z) * (point.z - self.0.z))
+            / ((self.1.x - self.0.x).powi(2) + (self.1.y - self.0.y).powi(2) + (self.1.z - self.0.z).powi(2));
+
+        if x < 0.0 || x > 1.0 {
+            f64::min(point.distance(&self.0), point.distance(&self.1))
+        } else {
+            let projected_point = Point::new(self.0.x + x * (self.1.x - self.0.x), self.0.y + x * (self.1.y - self.0.y), self.0.z + x * (self.1.z - self.0.z));
+            point.distance(&projected_point)
+        }
+    }
+}
+
 fn main() -> io::Result<()> {
     let mut input = String::new();
     let mut output = BufWriter::new(io::stdout().lock());
     io::stdin().read_line(&mut input)?;
     let mut iter = input.split_ascii_whitespace();
 
-    let ax = iter.read::<f64, FE>();
-    let ay = iter.read::<f64, FE>();
-    let az = iter.read::<f64, FE>();
-    let bx = iter.read::<f64, FE>();
-    let by = iter.read::<f64, FE>();
-    let bz = iter.read::<f64, FE>();
-    let cx = iter.read::<f64, FE>();
-    let cy = iter.read::<f64, FE>();
-    let cz = iter.read::<f64, FE>();
+    let line = Line(
+        Point::new(iter.read(), iter.read(), iter.read()),
+        Point::new(iter.read(), iter.read(), iter.read()),
+    );
+    let point = Point::new(iter.read(), iter.read(), iter.read());
 
-    let (cx, cy, cz) = (cx - ax, cy - ay, cz - az);
-    let (bx, by, bz) = (bx - ax, by - ay, bz - az);
+    let ans = line.min_distance_to_line(&point);
 
-    let a = (0.0, 0.0, 0.0);
-    let b = (bx, by, bz);
-    let c = (cx, cy, cz);
-
-    let x = (bx * cx + by * cy + bz * cz) / (bx * bx + by * by + bz * bz);
-
-    writeln!(output, "{:.6}", if x < 0.0 || x > 1.0 {
-        f64::min(distance(a, c), distance(b, c))
-    } else {
-        distance((x * bx, x * by, x * bz), c)
-    })?;
+    writeln!(output, "{:.6}", ans)?;
 
     Ok(())
-}
-
-fn distance(a: (f64, f64, f64), b: (f64, f64, f64)) -> f64 {
-    ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2) + (a.2 - b.2).powi(2)).sqrt()
 }
 
 // fn from_str_multiple<T>(s: &str) -> Result<Vec<T>, T::Err>
