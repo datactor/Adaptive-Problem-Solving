@@ -334,10 +334,48 @@ pub fn entries(
 } 
 ```
 
-3. Heartbeat 메시지 활용: 리더는 정기적으로 팔로워들에게 heartbeat 메시지를 전송하여 연결 상태를 확인합니다. 이 메시지를 통해 리더는 팔로워들의 로그 상태를 감지하고, 필요한 경우 로그 복제를 수행한다.
+3. Heartbeat 메시지 활용: 리더는 정기적으로 팔로워들에게 heartbeat 메시지를 전송하여 연결 상태를 확인한다.
+   이 메시지를 통해 리더는 팔로워들의 로그 상태를 감지하고, 필요한 경우 로그 복제를 수행한다.
    이를 통해 리더는 팔로워들과의 동기화 상태를 유지하고 빠르게 로그 복제를 수행할 수 있다.
 
-4. 최소한의 데이터 전송: 리더는 팔로워의 로그와 불일치한 부분만 전송하여 데이터 전송량을 최소화한다.
+다음은 heartbeat 메서드이다.
+```rust
+// send_heartbeat sends an empty MsgAppend
+    fn send_heartbeat(
+        &mut self,
+        to: u64,
+        pr: &Progress,
+        ctx: Option<Vec<u8>>,
+        msgs: &mut Vec<Message>,
+    ) {
+        // Attach the commit as min(to.matched, self.raft_log.committed).
+        // When the leader sends out heartbeat message,
+        // the receiver(follower) might not be matched with the leader
+        // or it might not have all the committed entries.
+        // The leader MUST NOT forward the follower's commit to
+        // an unmatched index.
+        let mut m = Message::default();
+        m.to = to;
+        m.set_msg_type(MessageType::MsgHeartbeat);
+        let commit = cmp::min(pr.matched, self.raft_log.committed);
+        m.commit = commit;
+        if let Some(context) = ctx {
+            m.context = context.into();
+        }
+        self.send(m, msgs);
+    }
+```
+leader는 follower에게 빈 MsgAppend RPC 메시지를 보낸다.
+이 메시지를 받은 follower는 먼저 leader의 존재 여부를 확인하기 위해 이를 처리하고,
+이후에 자신의 로그 상태와 leader의 로그 상태를 비교한다.
+만약 follower의 로그가 leader의 로그와 일치하지 않는 경우,
+follower는 자신의 로그를 업데이트하고 leader에게 더 많은 로그를 요청한다.
+이를 통해 leader는 follower들과의 동기화 상태를 유지하고, 필요한 경우 로그 복제를 수행한다.
+
+다음은 각 노드에서 수신되는 메시지를 처리하며, 이에따라 raft의 상태를 변경하는 메서드이다.
+[`raft::step`](https://docs.rs/raft/0.7.0/raft/prelude/struct.Raft.html#method.step)
+
+5. 최소한의 데이터 전송(Snapshotting): 리더는 팔로워의 로그와 불일치한 부분만 전송하여 데이터 전송량을 최소화한다.
    이를 통해 네트워크 대역폭 사용량을 줄이고, 복제 과정의 속도를 높인다.
 
 이러한 최적화 기법들을 사용하여 Raft 알고리즘은 분산 시스템에서 로그 복제를 빠르게 수행한다.
