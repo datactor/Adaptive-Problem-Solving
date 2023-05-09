@@ -387,10 +387,90 @@ Log compaction은 필요한 저장공간을 줄이고 시스템의 성능을 향
 Snapshotting은 state machine의 현재 상태에 대한 snapshot을 만드는 프로세스로,
 새 노드의 시작점으로 사용하거나 장애 발생 시 복구 메커니즘으로 사용할 수 있다. 
 
+아래는 Log Compaction 메서드이다.
+```rust
+    /// Discards all log entries prior to compact_index.
+    /// It is the application's responsibility to not attempt to compact an index
+    /// greater than RaftLog.applied.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `compact_index` is higher than `Storage::last_index(&self) + 1`.
+    pub fn compact(&mut self, compact_index: u64) -> Result<()> {
+        if compact_index <= self.first_index() {
+            // Don't need to treat this case as an error.
+            return Ok(());
+        }
+
+        if compact_index > self.last_index() + 1 {
+            panic!(
+                "compact not received raft logs: {}, last index: {}",
+                compact_index,
+                self.last_index()
+            );
+        }
+
+        if let Some(entry) = self.entries.first() {
+            let offset = compact_index - entry.index;
+            self.entries.drain(..offset as usize);
+        }
+        Ok(())
+    }
+```
+leader는 일정 주기마다 compaction을 수행하여 compact_index 이전의 로그 엔트리를 제거하여 최적화 한다.
+
+```rust
+pub struct Snapshot {
+  pub data: Bytes,
+  pub metadata: SingularPtrField<SnapshotMetadata>,
+  pub unknown_fields: UnknownFields,
+  pub cached_size: CachedSize,
+}
+
+    fn snapshot(&self) -> Snapshot {
+        let mut snapshot = Snapshot::default();
+
+        // We assume all entries whose indexes are less than `hard_state.commit`
+        // have been applied, so use the latest commit index to construct the snapshot.
+        // TODO: This is not true for async ready.
+        let meta = snapshot.mut_metadata();
+        meta.index = self.raft_state.hard_state.commit;
+        meta.term = match meta.index.cmp(&self.snapshot_metadata.index) {
+            cmp::Ordering::Equal => self.snapshot_metadata.term,
+            cmp::Ordering::Greater => {
+                let offset = self.entries[0].index;
+                self.entries[(meta.index - offset) as usize].term
+            }
+            cmp::Ordering::Less => {
+                panic!(
+                    "commit {} < snapshot_metadata.index {}",
+                    meta.index, self.snapshot_metadata.index
+                );
+            }
+        };
+
+        meta.set_conf_state(self.raft_state.conf_state.clone());
+        snapshot
+    }
+```
+
+snapshot은 entries가 아닌 metadata와 data를 담고 있으며, 이것을 follower node가 받으면 Snapshot에 담긴 state.commit.index을 기반으로
+그 이전의 entries는 모두 삭제하고 이후의 log entries만 남긴다.
+snapshot은 항상 주기적으로 보내는 것이 아니라, 로그가 축적된 크기나 상황에 따라 보내야 할 때 보낸다.
+이는 네트워크 대역폭을 절약하고, 불필요한 데이터 전송을 방지하기 위함이다.
+
+entries를 보내는 대신 snapshot을 보내는 이유는, 로그가 너무 길어져서 네트워크 대역폭을 많이 차지하게 되면 전송이 지연될 가능성이 있기 때문이다.
+또한 snapshot은 이미 적용된 로그 엔트리를 제거하여 상태를 저장하는 방식으로, 데이터를 압축할 수 있는 장점도 있다.
+따라서 snapshot은 큰 규모의 데이터 전송을 최소화하고, 로그를 보다 효율적으로 관리하는 데에 사용된다.
+
+Snapshot의 마지막 index(snapshot의 metadata.index 이후의 첫 번째)를 자신의 log의 첫 번째 index로 설정한 뒤, 해당 entries 이전의 entries를 지운다.
+follower node는 log compaction과 snapshotting을 통해 disk 공간을 절약하고, 불필요한 log entries를 삭제함으로써 향후 동기화 작업의 속도를 높일 수 있다.
+
 ### 2.5. Cluster Membership Changes
 Raft는 클러스터에서 동적으로 노드를 추가하고 제거하는 것을 지원하여,
 환경의 변화에 맞게 확장하고 적응할 수 있도록 한다.  
 클러스터 멤버십 변경은 전황 중에 시스템의 안전과 가용성을 보장하는 2단계 프로세스를 사용한다.
+(첫 번째는 새로운 구성을 발행하고 모든 노드가 그것을 commit하도록 하는 것이고, 두 번째는 새로운 구성이 적용될 수 있도록 기존 구성과 충돌하는 모든 로그 항목을 삭제하는 것)
 Leader는 configuration 변경 프로세스를 관리하고 새로운 configuration이 적용되기 전에
 모든 노드에 committed되고 복제되도록 한다.
 
