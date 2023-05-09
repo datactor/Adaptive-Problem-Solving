@@ -2,6 +2,9 @@
 
 ## 1. Introduction
 ### 1.1. Overview of Rust Raft
+분산 시스템에서 갱신된 정보를 모든 노드에 가용성과 일관성, crash fault tolerance 보장하며 빠르고 정확하게 반영 시켜야한다.
+Raft는 가용성과 일관성, crash fault tolerance를 보장하기 위해 리더를 선출하여 리더의 최신 정보를 모든 follower들에게 정확하게 퍼뜨리게 해준다.
+
 Rust Raft는 strong consistent를 유지하면서 node failure 및 네트워크 파티션을 허용할 수 있는 분산 시스템을 구축하기 위한 프레임워크를 제공한다.
 Raft 알고리즘의 모듈식 구현을 제공하여 분산 응용 프로그램의 개발 프로세스를 간소화하고 확장 가능한 구성 요소와 configurable parameters를 제공한다.
 
@@ -16,6 +19,111 @@ Raft의 주요 technical attributes:
 2. Log Replication: Leader는 로그에 새 entries를 append하고 이를 follower에게 복제한다. follower는 etries 수신을 확인하고 상태 머신에 적용한다.
 3. Log Consistency: Raft는 새 항목을 수락하기 전에 indexes와 follower's logs가 leader's logs와 일치하는 것을 보장하기 위해 log 일관성을 강화시킨다. 
 4. Cluster Membership changes: Raft는 2단계 configuration 변경 프로세스를 통해 클러스터에서 노드의 동적 추가 제거를 지원하여 안전성과 가용성을 유지한다.
+
+다음은 주요 attributes를 구현한 간단한 예이다:
+```rust
+use raft::{Config, Raft, Storage};
+use raft::eraftpb::{ConfChange, ConfChangeV2, Entry};
+use raft::storage::MemStorage;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::runtime::Runtime;
+use tokio::sync::mpsc;
+
+#[derive(Clone)]
+struct SimpleRaft {
+    node_id: u64,
+    raft: Arc<Raft<MemStorage>>,
+    tx: mpsc::UnboundedSender<(Entry, mpsc::UnboundedSender<RaftResponse>)>,
+}
+
+enum RaftResponse {
+    CommandApplied,
+    Redirect { leader_id: u64 },
+    Error(String),
+}
+
+impl SimpleRaft {
+    fn new(node_id: u64, config: Config, storage: MemStorage) -> SimpleRaft {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+
+        let raft = Raft::new(&config, storage);
+        let raft = Arc::new(raft);
+
+        let raft_clone = raft.clone();
+        tokio::spawn(async move {
+            while let Some((entry, resp_tx)) = rx.recv().await {
+                match raft_clone.propose(entry) {
+                    Ok(_) => {
+                        let _ = resp_tx.send(RaftResponse::CommandApplied);
+                    }
+                    Err(e) => {
+                        let _ = resp_tx.send(RaftResponse::Error(format!("{:?}", e)));
+                    }
+                }
+            }
+        });
+
+        SimpleRaft { node_id, raft, tx }
+    }
+
+    async fn propose(&self, entry: Entry) -> Result<(), String> {
+        let (resp_tx, mut resp_rx) = mpsc::unbounded_channel();
+        if let Err(_) = self.tx.send((entry, resp_tx)) {
+            return Err("Failed to send entry".to_string());
+        }
+
+        match resp_rx.recv().await {
+            Some(RaftResponse::CommandApplied) => Ok(()),
+            Some(RaftResponse::Redirect { leader_id }) => Err(format!("Redirect to leader: {}", leader_id)),
+            Some(RaftResponse::Error(e)) => Err(e),
+            None => Err("Failed to receive response".to_string()),
+        }
+    }
+}
+
+fn main() {
+    let mut rt = Runtime::new().unwrap();
+    let cluster_nodes = vec![1, 2, 3];
+
+    let mut nodes = HashMap::new();
+
+    for id in &cluster_nodes {
+        let config = Config {
+            id: *id,
+            election_tick: 10,
+            heartbeat_tick: 3,
+            max_size_per_msg: 1024 * 1024,
+            max_inflight_msgs: 256,
+            ..Default::default()
+        };
+
+        let storage = MemStorage::new();
+        let node = SimpleRaft::new(*id, config, storage);
+        nodes.insert(id, node);
+    }
+
+    let leader_id = 1;
+    let conf_change = ConfChange::default();
+    let conf_change_v2 = ConfChangeV2 { changes: vec![conf_change] };
+    let entry = Entry {
+        data: conf_change_v2.write_to_bytes().unwrap(),
+        ..Default::default()
+    };
+
+    rt.block_on(async {
+        nodes
+                .get(&leader_id)
+                .unwrap()
+                .propose(entry)
+                .await
+                .expect("Failed to propose configuration change");
+    });
+
+    println!("Cluster membership change proposed");
+}
+```
 
 ### 1.3. Rust Language and its Benefits for Distributed Systems
 Rust는 분산 시스템을 구축할 때 다음과 같은 주요 기술 속성을 통해 몇 가지 이점을 제공한다.
@@ -44,6 +152,31 @@ Raft cluster는 서로 합의를 달성하기 위해 서로 통신하는 여러 
 leader election은 현재 leader가 실패하거나 cluster 초기화 중에 새로운 리더가 선택되는 과정이다.
 Raft는 무작위 timer와 투표를 통해 leader를 선출한다.  
 
+Leader Election은 Raft 라이브러리 내에서 구현되기 때문에 직접 구현할 필요가 없다.
+그 내부 구현의 개요는 다음과 같다.
+1. Initial state: cluster의 모든 노드가 follower 상태로 시작한다.
+2. Follower timeout: follower는 randomized 시간 간격으로 timeout을 설정하고, 리더로부터 합의 메시지를 기다린다.
+   이 시간간격은 주로 config파일에서 지정한 랜덤 범위 내에서 결정된다.
+3. No msg recieved from the leader: 정해진 시간안에 follower가 msg를 리더로부터 받지 못한다면, follower는 candidate로 승급하고,
+   leader election process를 진행한다.
+4. PreCandidate: Follower는 먼저 precandidate가 되어 election기간을 증가시키지 않으며 자신에게 투표하지 않고, 다른 노드에게 RequestVote RPC를
+   전송한다. 이 단계의 목적은 현재 선거 기간에 불필요한 중단을 방지하는 것이다. precandidate가 다른 노드로부터 과반수의 투표를 얻으면, Candidate로 승격되고
+   선거 기간을 증가시킨다. 그렇지 않으면 follower로 남아 있는다.
+5. Candidate requests votes: follwer가 precandidate 단계에서 다수의 투표를 얻으면, candidate로 승격되고 선거기간을 증가시킨다.
+   candidate는 다른 노드들에게 자신을 선출하라고 투표 요청하는 RequestVote RPC를 전송한다. candidate가 클러스터 내 과반수의 투표를 얻으면 leader가 된다.
+   그렇지 않으면 다른 노드의 응답에 따라 candidate로 남거나 follower가 된다.
+6. Voting: Nodes들은 현재 투표 주기에서 아직 투표하지 않았다면 Candidate에게 투표한다. 한 투표 주기에서 노드는 한 번만 투표할 수 있다.
+   - 여기서 투표의 기준은 다음과 같다:
+     1. log consistency: follower들은 candidate의 로그와 자신의 로그를 비교하여 일관성을 평가한다. follower는 candidate의 로그가
+        로그가 자신의 로그보다 더 최신이고, 같은 텀의 entries가 동일한지 확인하다. candidate의 로그가 더 최신이거나 동일한 텀에서
+        더 높은 인덱스를 가지면, follower는 해당 후보자에게 투표할 가능성이 높아진다.
+     2. election period: follower는 이미 투표한 선거기간에 대해 다시 투표하지 않는다. follower는 자신이 마지막으로 투표한 선거 기간을 기록하고,
+        candidate의 선거 기간이 이전에 투표한 선거 기간보다 높은 경우에만 투표를 고려한다.
+     이렇게 함으로써, Raft 알고리즘은 클러스터 내에서 로그 일관성을 유지하고, 최신 데이터를 가진 후보자가 리더가 되도록 한다.
+     또한, 한 선거 기간에 여러 번 투표하는 것을 방지하여 선거 과정이 안정적으로 진행된다.
+7. Leader Election: candidate는 cluster의 노드들의 절반 이상의 투표를 받으면 leader가 된다.
+8. Leader establishment: 새로운 리더가 모든 follower들에게 자신이 리더임을 알리는 msg를 보낸다. follower들은 이 msg를 받고 leader를 인식한다.
+
 follwer가 leader로부터 정해진 시간안에 어떠한 통신도 받지 못하면, follower는 후보 상태로 전환되고 선거가 시작된다.
 이것은 leader가 의심스러운 상태로 여겨지기 때문에 교체 프로세스를 준비한다는 것을 뜻하지만, 네트워크나 follower의 문제일 가능성도 존재한다.
 follower가 문제일 가능성도 있는데 그러한 follower를 후보로 올리는 이유는 voting과정 중에 다른 노드와의 투표 요청 통신이 필요하기 때문에
@@ -54,8 +187,161 @@ Raft 알고리즘은 다수결 원칙에 따라 leader를 선출하므로, 클�
 
 ### 2.3. Log Replication
 leader는 새 log entries를 log에 추가하고 모든 follower nodes에 복제한다.
+log entries를 전송할 때 AppendEntries라는 RPC를 사용하여 전달하며, 리더는 follower들에게 새로운 로그 entries를
+추가하거나, 이미 존재하는 log entries를 업데이트하도록 요청한다. 팔로워들은 leader로부터 받은 로그 항목을 검증하고,
+검증이 완료되면 마지막 인덱스에 log에 추가하거나 업데이트한다.
+
+만약 follower의 로그가 leader의 것과 불일치하는 경우, leader는 팔로워의 것을 자신의 것과 일치하도록 복구한다.
 followers들은 entries 수신을 확인하고 그들의 state machines에 적용한다.
 log 복제는 모든 노드가 같은 log 항목을 갖고 해당 state machines가 동일한 상태에 도달하도록 보장한다.
+이 과정을 통해 분산 시스템의 모든 노드에서 로그의 일관성을 유지한다.
+
+다음은 leader가 follower에게 필요한 경우 새로운 log entries를 포함하는 AppendEntries RPC를 전송하는 메서드이다.
+```rust
+    /// Sends an append RPC with new entries to the given peer,
+    /// if necessary. Returns true if a message was sent. The allow_empty
+    /// argument controls whether messages with no entries will be sent
+    /// ("empty" messages are useful to convey updated Commit indexes, but
+    /// are undesirable when we're sending multiple messages in a batch).
+    fn maybe_send_append(
+        &mut self,
+        to: u64,
+        pr: &mut Progress,
+        allow_empty: bool,
+        msgs: &mut Vec<Message>,
+    ) -> bool {
+        if pr.is_paused() {
+            trace!(
+                self.logger,
+                "Skipping sending to {to}, it's paused",
+                to = to;
+                "progress" => ?pr,
+            );
+            return false;
+        }
+        let mut m = Message::default();
+        m.to = to;
+        if pr.pending_request_snapshot != INVALID_INDEX {
+            // Check pending request snapshot first to avoid unnecessary loading entries.
+            if !self.prepare_send_snapshot(&mut m, pr, to) {
+                return false;
+            }
+        } else {
+            let ents = self.raft_log.entries(
+                pr.next_idx,
+                self.max_msg_size,
+                GetEntriesContext(GetEntriesFor::SendAppend {
+                    to,
+                    term: self.term,
+                    aggressively: !allow_empty,
+                }),
+            );
+            if !allow_empty && ents.as_ref().ok().map_or(true, |e| e.is_empty()) {
+                return false;
+            }
+            let term = self.raft_log.term(pr.next_idx - 1);
+            match (term, ents) {
+                (Ok(term), Ok(mut ents)) => {
+                    if self.batch_append && self.try_batching(to, msgs, pr, &mut ents) {
+                        return true;
+                    }
+                    self.prepare_send_entries(&mut m, pr, term, ents)
+                }
+                (_, Err(Error::Store(StorageError::LogTemporarilyUnavailable))) => {
+                    // wait for storage to fetch entries asynchronously
+                    return false;
+                }
+                _ => {
+                    // send snapshot if we failed to get term or entries.
+                    if !self.prepare_send_snapshot(&mut m, pr, to) {
+                        return false;
+                    }
+                }
+            }
+        }
+        self.send(m, msgs);
+        true
+    }
+```
+
+
+Raft 알고리즘은 로그 replication을 효율적으로 수행하기 위해 몇 가지 최적화 기법을 사용한다.
+주요 방법은 다음과 같다:
+
+1. Pipelining: 리더는 로그 entries를 순차적으로 전송하기보다는, 여러 로그 항목을 한 번에 전송하여 네트워크 지연을 줄이고 병렬 처리를 가능하게 한다.
+   이를 통해 팔로워들은 동시에 여러 로그 항목을 처리할 수 있으며, 전체 복제 과정의 속도를 높인다.
+
+아래는 파이프라이닝으로 여러 로그 entries들을 batch하여 효율적으로 업데이트하는 메서드이다.
+```rust
+fn try_batching(
+  &mut self,
+  to: u64, // follower
+  msgs: &mut [Message],
+  pr: &mut Progress,
+  ents: &mut Vec<Entry>,
+) -> bool {
+  // if MsgAppend for the receiver already exists, try_batching
+  // will append the entries to the existing MsgAppend
+  let mut is_batched = false;
+  for msg in msgs {
+    if msg.get_msg_type() == MessageType::MsgAppend && msg.to == to {
+      if !ents.is_empty() {
+        if !util::is_continuous_ents(msg, ents) {
+          return is_batched;
+        }
+        
+        // If the log entries are contiguous,
+        // append a new log entry to the existing Append message and
+        // update the follower's Progress status.
+        let mut batched_entries: Vec<_> = msg.take_entries().into();
+        batched_entries.append(ents);
+        msg.set_entries(batched_entries.into());
+        let last_idx = msg.entries.last().unwrap().index;
+        pr.update_state(last_idx);
+      }
+      
+      // Finally, Update the commit index of that message and
+      // set is_batched to true to indicate that the batch was successful.
+      msg.commit = self.raft_log.committed;
+      is_batched = true;
+      break;
+    }
+  }
+  is_batched
+} 
+```
+try_batching 메서드는 새로운 로그 항목(ents)을 기존의 Append 메시지에 추가함으로써 여러 로그 항목을 한 번에 팔로워에게 전달하는 데 사용된다.
+이를 통해 Raft 알고리즘은 로그 복제를 빠르게 수행하고, 분산 시스템의 가용성과 일관성을 보장한다.
+
+2. Fast Retransmission: 팔로워가 리더로부터 받은 로그 항목에 문제가 발생한 경우, 리더는 해당 로그 항목을 빠르게 재전송하여 복제 과정의 지연을 최소화한다.
+   팔로워가 가지고 있는 마지막 로그 entries의 인덱스가 pr.next_idx - 1과 다른 경우, 리더는 로그 항목을 빠르게 재전송하여 복제 과정의 지연을 최소화한다.
+
+다음은 이 부분이 구현된 entries 메서드이다.
+```rust
+    /// Returns entries starting from a particular index and not exceeding a bytesize.
+pub fn entries(
+  &self,
+  idx: u64,
+  max_size: impl Into<Option<u64>>,
+  context: GetEntriesContext,
+) -> Result<Vec<Entry>> {
+  let max_size = max_size.into();
+  let last = self.last_index();
+  if idx > last {
+    return Ok(Vec::new());
+  }
+  self.slice(idx, last + 1, max_size, context)
+} 
+```
+
+3. Heartbeat 메시지 활용: 리더는 정기적으로 팔로워들에게 heartbeat 메시지를 전송하여 연결 상태를 확인합니다. 이 메시지를 통해 리더는 팔로워들의 로그 상태를 감지하고, 필요한 경우 로그 복제를 수행한다.
+   이를 통해 리더는 팔로워들과의 동기화 상태를 유지하고 빠르게 로그 복제를 수행할 수 있다.
+
+4. 최소한의 데이터 전송: 리더는 팔로워의 로그와 불일치한 부분만 전송하여 데이터 전송량을 최소화한다.
+   이를 통해 네트워크 대역폭 사용량을 줄이고, 복제 과정의 속도를 높인다.
+
+이러한 최적화 기법들을 사용하여 Raft 알고리즘은 분산 시스템에서 로그 복제를 빠르게 수행한다.
+이를 통해 시스템의 가용성과 일관성을 보장하며, 노드 간의 정보 동기화를 유지한다.
 
 ### 2.4. Log Compaction and Snapshotting
 log가 커짐에 따라 로그를 압축하고 그들을 더 효율적인 포맷으로 상태를 저장해야 한다.
@@ -160,44 +446,48 @@ use std::net::SocketAddr;
 use tokio::sync::RwLock;
 use std::sync::Arc;
 
-/// 1. Define the state machine and its operations:
+// 1. Define the state machine and its operations:
+// The StateMachineCmd enum represents the different operations that can be applied to our key-value store.
 #[derive(Debug, Serialize, Deserialize)]
 pub enum StateMachineCmd {
-    Put { key: String, value: String },
-    Get { key: String },
-    Delete { key: String },
+  Put { key: String, value: String },
+  Get { key: String },
+  Delete { key: String },
 }
 
-/// 2. implement the state machine
+// 2. Implement the state machine:
+// The KeyValueStore struct represents our key-value store and provides a method to apply commands from the StateMachineCmd enum.
 pub struct KeyValueStore {
-    store: HashMap<String, String>,
+  store: HashMap<String, String>,
 }
 
 impl KeyValueStore {
-    pub fn new() -> Self {
-        KeyValueStore {
-            store: HashMap::new(),
-        }
+  pub fn new() -> Self {
+    KeyValueStore {
+      store: HashMap::new(),
     }
+  }
 
-    pub fn apply_cmd(&mut self, cmd: StateMachineCmd) -> Option<String> {
-        match cmd {
-            StateMachineCmd::Put { key, value } => {
-                self.store.insert(key, value);
-                None
-            }
-            StateMachineCmd::Get { key } => self.store.get(&key).cloned(),
-            StateMachineCmd::Delete { key } => self.store.remove(&key),
-        }
+  pub fn apply_cmd(&mut self, cmd: StateMachineCmd) -> Option<String> {
+    match cmd {
+      StateMachineCmd::Put { key, value } => {
+        self.store.insert(key, value);
+        None
+      }
+      StateMachineCmd::Get { key } => self.store.get(&key).cloned(),
+      StateMachineCmd::Delete { key } => self.store.remove(&key),
     }
+  }
 }
 
-/// 4. Create a config.rs file for Raft node configuration
+// 3. Define the Raft node configuration:
+// The NodeConfig struct holds the configuration for each Raft node, including its ID and address.
 pub struct NodeConfig {
   pub id: u64,
   pub addr: SocketAddr,
 }
 
+// This function returns a hard-coded list of NodeConfigs for our Raft cluster.
 pub fn get_config() -> Vec<NodeConfig> {
   vec![
     NodeConfig {
@@ -215,22 +505,23 @@ pub fn get_config() -> Vec<NodeConfig> {
   ]
 }
 
-/// 5. 클라이언트 요청을 Raft 리더에게 전달하기 위한 논리를 구현. 이 단계에는 Raft 리더에게 요청을 보내기 위한 클라이언트 인터페이스 생성이 포함된다.
-/// 그런 다음 리더는 명령을 follower에게 복제한다. 명령이 커밋되면 상태 시스템에 적용할 수 있다.
+// 4. Implement the logic for handling client requests:
+// This function takes a reference to a Raft node, a mutable reference to the KeyValueStore state machine, and a StateMachineCmd to apply.
+// It proposes the command to the Raft cluster, waits for the response, and then applies the command to the state machine if it was committed.
 async fn handle_client_request(
-    raft: &raft::Raft<StateMachineCmd>,
-    state_machine: &mut KeyValueStore,
-    cmd: StateMachineCmd,
+  raft: &raft::Raft<StateMachineCmd>,
+  state_machine: &mut KeyValueStore,
+  cmd: StateMachineCmd,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    // Propose the command to the Raft cluster.
-    let proposal = bincode::serialize(&cmd)?;
-    let response = raft.send_command(proposal).await?;
+  // Propose the command to the Raft cluster.
+  let proposal = bincode::serialize(&cmd)?;
+  let response = raft.send_command(proposal).await?;
 
-    // If the command was committed, apply it to the state machine.
-    if response.committed {
-        Ok(state_machine.apply_cmd(cmd))
-    } else {
-        Err("Command not committed".into())
-    }
+  // If the command was committed, apply it to the state machine.
+  if response.committed {
+    Ok(state_machine.apply_cmd(cmd))
+  } else {
+    Err("Command not committed".into())
+  }
 }
 ```
