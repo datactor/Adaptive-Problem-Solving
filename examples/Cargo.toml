@@ -766,3 +766,11 @@ path = "geometry/boj_g1_6439_ccw.rs"
 [[example]]
 name = "boj_11664"
 path = "geometry/boj_g5_11664.rs"
+
+[[example]]
+name = "boj_2650"
+path = "geometry/boj_g4_2650.rs"
+
+[[example]]
+name = "boj_10101"
+path = "geometry/boj_b4_10101.rs"
