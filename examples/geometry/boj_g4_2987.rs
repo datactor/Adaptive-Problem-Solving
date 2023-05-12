@@ -1,4 +1,4 @@
-// https://www.acmicpc.net/source/60679085
+// https://www.acmicpc.net/problem/2987
 
 use std::{
     io::{self, prelude::*, BufReader, BufWriter},
