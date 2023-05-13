@@ -782,3 +782,7 @@ path = "geometry/boj_g5_20157.rs"
 [[example]]
 name = "boj_2987"
 path = "geometry/boj_g4_2987_ccw_convex.rs"
+
+[[example]]
+name = "boj_2162"
+path = "geometry/boj_p5_2162_ccw_disjointset.rs"
