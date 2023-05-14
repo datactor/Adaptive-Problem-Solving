@@ -794,3 +794,7 @@ path = "math/boj_p1_5615_prime_miler-rabin.rs"
 [[example]]
 name = "boj_10523"
 path = "geometry/boj_p5_10523_collinearity_divandconquer.rs"
+
+[[example]]
+name = "boj_11375"
+path = "bisec/boj_p4_11375_dfs.rs"
