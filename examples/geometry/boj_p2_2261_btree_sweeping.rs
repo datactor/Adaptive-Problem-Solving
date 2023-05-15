@@ -78,6 +78,5 @@ fn main() -> io::Result<()> {
     }
 
     writeln!(BufWriter::new(io::stdout().lock()), "{:?}", min)?;
-
     Ok(())
 }
