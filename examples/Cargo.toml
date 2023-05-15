@@ -798,3 +798,7 @@ path = "geometry/boj_p5_10523_collinearity_divandconquer.rs"
 [[example]]
 name = "boj_11375"
 path = "bisec/boj_p4_11375_dfs.rs"
+
+[[example]]
+name = "boj_2261"
+path = "geometry/boj_p2_2261_btree_sweeping.rs"
