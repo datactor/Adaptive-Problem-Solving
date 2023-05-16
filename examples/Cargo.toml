@@ -337,7 +337,7 @@ path = "imple/boj_1022.rs"
 
 [[example]]
 name = "boj_23730"
-path = "imple/boj_23730_TBD.rs"
+path = "imple/boj_s3_23730.rs"
 
 [[example]]
 name = "boj_1009"
