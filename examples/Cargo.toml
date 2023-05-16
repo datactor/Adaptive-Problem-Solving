@@ -700,10 +700,6 @@ name = "boj_22942"
 path = "geometry/boj_g4_22942_stack.rs"
 
 [[example]]
-name = "boj_27965"
-path = "math/fail_boj_s3_27965.rs"
-
-[[example]]
 name = "boj_10988"
 path = "str/boj_b2_10988_palindrome.rs"
 
@@ -802,3 +798,7 @@ path = "bisec/boj_p4_11375_dfs.rs"
 [[example]]
 name = "boj_2261"
 path = "geometry/boj_p2_2261_btree_sweeping.rs"
+
+[[example]]
+name = "boj_27965"
+path = "math/boj_s3_27965_bigint.rs"
