@@ -802,3 +802,7 @@ path = "geometry/boj_p2_2261_btree_sweeping.rs"
 [[example]]
 name = "boj_27965"
 path = "math/boj_s3_27965_bigint.rs"
+
+[[example]]
+name = "boj_1259"
+path = "str/boj_b1_1259_palindrome.rs"
