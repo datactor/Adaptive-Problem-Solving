@@ -1,8 +1,7 @@
 // https://www.acmicpc.net/problem/18111
-// O(H^2)
 
 use std::{
-    io::{self, BufRead, BufReader},
+    io::{self, Write, BufRead, BufReader, BufWriter},
     str::{FromStr, SplitAsciiWhitespace},
     fmt,
     collections::BTreeMap,
@@ -29,10 +28,9 @@ fn main() -> io::Result<()> {
     let mut reader = BufReader::new(io::stdin().lock());
     let mut buffer = String::new();
     reader.read_line(&mut buffer)?;
-    // let mut x = [0; 257];
 
     let mut min = usize::MAX;
-    let mut highst = 0;
+    let mut highest = 0;
 
     let mut fst_line = buffer.split_ascii_whitespace();
     let (n, m, b): (usize, usize, usize) = (fst_line.read(), fst_line.read(), fst_line.read());
@@ -46,11 +44,10 @@ fn main() -> io::Result<()> {
             let a: usize = iter.read();
             let h = map.entry(a).or_insert(0);
             *h += 1;
-            // x[a] += 1;
         }
     }
 
-    let range = *map.keys().min().unwrap()..*map.keys().max().unwrap() + 1;
+    let range = *map.keys().next().unwrap()..=*map.keys().last().unwrap();
     for target in range.rev() {
         let mut times = 0;
         let mut pocket = b;
@@ -58,27 +55,26 @@ fn main() -> io::Result<()> {
             if target == *k {
                 continue
             } else if target < *k {
-                let rem = (k - target) * *v;
-                pocket += rem;
-                times += rem * 2;
+                let r = (k - target) * *v;
+                pocket += r;
+                times += r * 2;
             } else {
-                let rem = (target - k) * *v;
-                if pocket < rem {
+                let r = (target - k) * *v;
+                if pocket < r {
                     times = usize::MAX;
                     break
                 } else {
-                    pocket -= rem;
-                    times += rem;
+                    pocket -= r;
+                    times += r;
                 }
             }
         }
         if min > times {
             min = times;
-            highst = target;
+            highest = target;
         }
     }
 
-    print!("{} {}", min, highst);
-
+    write!(BufWriter::new(io::stdout().lock()), "{} {}", min, highest)?;
     Ok(())
 }
