@@ -810,3 +810,7 @@ path = "str/boj_b1_1259_palindrome.rs"
 [[example]]
 name = "boj_15829"
 path = "str/boj_b2_15829.rs"
+
+[[example]]
+name = "boj_18111"
+path = "bruteforce/boj_s2_18111.rs"
