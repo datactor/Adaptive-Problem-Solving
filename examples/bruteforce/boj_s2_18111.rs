@@ -1,4 +1,5 @@
 // https://www.acmicpc.net/problem/18111
+// O(n*m + H^2)
 
 use std::{
     io::{self, Write, BufRead, BufReader, BufWriter},
