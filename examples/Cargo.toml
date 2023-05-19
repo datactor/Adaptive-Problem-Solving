@@ -818,3 +818,7 @@ path = "bruteforce/boj_s2_18111.rs"
 [[example]]
 name = "boj_9240"
 path = "geometry/boj_p3_9240_cvxh.rs"
+
+[[example]]
+name = "boj_1067"
+path = "divandcon/boj_p1_1067_fft.rs"
