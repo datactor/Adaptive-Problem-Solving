@@ -1,4 +1,5 @@
 // https://www.acmicpc.net/problem/9373
+// O(n^2)
 
 use std::{
     io::{self, Write, BufRead, BufReader, BufWriter},
