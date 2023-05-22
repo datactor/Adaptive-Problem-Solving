@@ -830,3 +830,7 @@ path = "geometry/boj_p2_10254_cvxh_grahamScan_rotatingCalipers.rs"
 [[example]]
 name = "boj_9373"
 path = "geometry/boj_p2_9373_mst_dijkstraOrPrim.rs"
+
+[[example]]
+name = "boj_3679"
+path = "geometry/boj_p4_3679_cvxh.rs"
