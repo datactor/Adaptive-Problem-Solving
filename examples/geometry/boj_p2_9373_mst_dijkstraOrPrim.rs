@@ -156,7 +156,7 @@ fn main() -> io::Result<()> {
 
         let mut circles: Vec<Circle> = Vec::with_capacity(n);
         let mut dists: Vec<f64> = vec![];
-        let mut heap = vec![];
+        // let mut heap = vec![];
 
         for i in 0..n {
             let mut iter = read_input_iter!(reader, input, iter);
@@ -164,11 +164,10 @@ fn main() -> io::Result<()> {
             circles.push((x, y, r));
             let dist = (x-r) as f64;
             dists.push(dist);
-            heap.push(State { cost: ReverseF64(dist), position: i });
+            // heap.push(State { cost: ReverseF64(dist), position: i });
         };
-        let mut heap = BinaryHeap::from(heap);
-
-        // let _ans_prim = solve_prim(w, n, &circles, &mut dists, &mut heap);
+        // let mut heap = BinaryHeap::from(heap);
+        // let ans_prim = solve_prim(w, n, &circles, &mut dists, &mut heap);
         let ans_dijkstra = solve_dijkstra(w, n, &circles, &mut dists);
         write!(writer, "{:.6}\n", ans_dijkstra)?;
     }
