@@ -1,3 +1,5 @@
+// https://www.acmicpc.net/problem/3679
+
 use std::{
     io::{self, Write, BufRead, BufReader, BufWriter},
     cmp::Ordering,
