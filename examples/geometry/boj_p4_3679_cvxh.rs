@@ -5,7 +5,7 @@ use std::{
     cmp::Ordering,
 };
 
-type Point = (i32, i32, i32);
+type Point = (i32, i32, usize);
 
 macro_rules! read_input {
     ($reader:expr, $input:expr, $type:ty) => {
@@ -25,13 +25,11 @@ macro_rules! read_to_vec {
             $input.clear();
             $reader.read_line(&mut $input)?;
             let iter = $input.split_ascii_whitespace().skip(1);
-            let mut num = -1;
-            let $iter = iter.collect::<Vec<&str>>().chunks_exact(2).map(|chunk| {
+            let $iter = iter.collect::<Vec<&str>>().chunks_exact(2).enumerate().map(|(i, chunk)| {
                 let parsed_val1 = chunk[0].parse::<$type>().unwrap();
                 let parsed_val2 = chunk[1].parse::<$type>().unwrap();
-                num += 1;
-                (parsed_val1, parsed_val2, num)
-            }).collect::<Vec<($type, $type, i32)>>();
+                (parsed_val1, parsed_val2, i)
+            }).collect::<Vec<($type, $type, usize)>>();
             $iter
         }
     };
