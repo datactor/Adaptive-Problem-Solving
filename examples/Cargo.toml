@@ -833,7 +833,7 @@ path = "geometry/boj_p2_9373_mst_dijkstraOrPrim.rs"
 
 [[example]]
 name = "boj_3679"
-path = "geometry/boj_p4_3679_cvxh.rs"
+path = "geometry/boj_p4_3679_cvxh_grahamScan.rs"
 
 [[example]]
 name = "boj_5670"
@@ -841,4 +841,4 @@ path = "str/boj_p4_5670_trie.rs"
 
 [[example]]
 name = "boj_4181"
-path = "geometry/boj_p5_4181_cvxh.rs"
+path = "geometry/boj_p5_4181_cvxh_grahamScan.rs"
