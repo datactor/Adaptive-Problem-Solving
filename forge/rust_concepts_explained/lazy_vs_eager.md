@@ -115,6 +115,7 @@ fn main() {
 #### Explanation of lazy collections in Rust
 rust에서 collections는 dataset을 순환하여 순환된 값을 특정 type으로 모아서 집합으로 만들어 collection으로 반환할 때 사용한다.
 lazy collection은 필요할 때만 콘텐츠를 평가하는 컬렉션이다.
+(여기서 말하는 collections들은 collect() 메서드 또는 std::collections crate가 아니다.)
 앞에서 본 MyIterator와 같이 dataset과 index 필드를 사용하여,
 dataset의 모든 값들을 즉시 순환하지 않고, call될 때 해당 index 위치의 특정 값을 처리한다.
 
@@ -148,7 +149,7 @@ let mut vec = vec![1, 2, 3, 4, 5];
 let new_vec: Vec<_> = vec.drain(2..).collect();
 ```
 이 예제에서 drain()은 벡터에서 항목을 지연 제거하는 데 사용된다.
-'collect()' 메서드는 drain된 항목을 새 벡터로 수집하는 데 사용됩니다.
+'collect()' 메서드는 drain된 항목을 새 벡터로 수집하는 데 사용된다.
 이것은 벡터의 크기가 매우 크고 한 번에 모든 항목을 제거하는 것이 계산 비용이 많이 드는 경우에 유용할 수 있다.
 
 여기서 주의할점은 collect() 메소드는 eager 메소드이기 때문에 drain() 메서드는 collection에 의해 즉시 call되기 때문에
@@ -168,7 +169,7 @@ resulting iterator는 drained에 할당되고 for 루프를 사용하여 지연 
 이렇게 하면 실제로 필요한 항목만 처리되므로 대규모 컬렉션을 처리할 때 계산 시간과 메모리 사용량을 절약할 수 있다.
 
 ##### VecDeque::split_off
-`VecDeque::split_off` 메서드는 원래 deque 뒤에 있는 요소가 포함된 새 deque를 반환한다.
+`VecDeque::split_off` 메서드는 원래 deque에 split_off()에 인자로 주어진 인덱스부터 끝까지의 요소와 이전의 deque로 deque를 split하여 반환한다.
 이렇게 하면 원래 deque의 모든 요소를 복사하지 않고도 새 deque를 만들 수 있다.
 ```rust
 let mut deque = std::collections::VecDeque::new();
@@ -205,12 +206,14 @@ let result = add(x, y);
 
 ```rust
 fn main() {
-    let mut input = String::new();
-    io::stdin().lock().read_to_string(&mut input).unwrap();
+    // eager
+    // let mut input = String::new();
+    // io::stdin().lock().read_to_string(&mut input).unwrap(); 
 
-    let mut lines = input.lines();
+    // lazy
+    let mut lines = std::io::stdin().lines();
 
-    let mut read = || lines.next().unwrap();
+    let mut read = || lines.next().unwrap().unwrap();
     let n = read().parse::<usize>().unwrap();
 }
 ```
