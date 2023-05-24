@@ -11,49 +11,44 @@ macro_rules! read_input {
         {
             $input.clear();
             $reader.read_line(&mut $input)?;
-            let value = $input.trim().parse::<$type>().unwrap();
-            value
+            let val = $input.trim().parse::<$type>().unwrap();
+            val
         }
     };
 }
 
-macro_rules! read_to_vec {
-    ($reader:expr, $iter:ident, $type:ty, $num:expr) => {
+macro_rules! read_lines_to_vec {
+    ($reader:expr, $input:expr, $num:expr, $type:ty) => {
         {
-            let mut input = String::new();
-            let $iter: Vec<($type, $type)> = (0..$num).filter_map(|_| {
-                input.clear();
-                $reader.read_line(&mut input).expect("Failed to read line");
-                let parts: Vec<&str> = input.split_ascii_whitespace().collect();
-                if parts.len() < 3 {
-                    return None;
-                }
-                let parsed_val1 = parts[0].parse::<$type>().expect("Failed to parse first value");
-                let parsed_val2 = parts[1].parse::<$type>().expect("Failed to parse second value");
-                let val3 = parts[2];
-                if val3 == "Y" {
-                    Some((parsed_val1, parsed_val2))
+            let iter: Vec<($type, $type)> = (0..$num).filter_map(|_| {
+                $input.clear();
+                $reader.read_line(&mut $input).expect("Failed to read");
+                let mut iter = $input.split_ascii_whitespace();
+                let v1 = iter.next().expect("no 1st iter").parse::<$type>().expect("Failed to parse 1st val");
+                let v2 = iter.next().expect("no 2nd iter").parse::<$type>().expect("Failed to parse 2nd val");
+                if iter.next().expect("no 3rd iter") == "Y" {
+                    Some((v1, v2))
                 } else {
                     None
                 }
             }).collect();
-            $iter
+            iter
         }
     };
 }
 
 fn ccw(p1: &Point, p2: &Point, p3: &Point) -> i64 {
-    let a = (p2.0 as i64 - p1.0 as i64) * (p3.1 as i64 - p1.1 as i64);
-    let b = (p2.1 as i64 - p1.1 as i64) * (p3.0 as i64 - p1.0 as i64);
+    let a = (p2.0 - p1.0) as i64 * (p3.1 - p1.1) as i64;
+    let b = (p2.1 - p1.1) as i64 * (p3.0 - p1.0) as i64;
     if a > b { 1 }
     else if a < b { -1 }
     else { 0 }
 }
 
 fn dist(a: &Point, b: &Point) -> i64 {
-    let dx = a.0 as i64 - b.0 as i64;
-    let dy = a.1 as i64 - b.1 as i64;
-    (dx * dx) + (dy * dy)
+    let dx = a.0 - b.0;
+    let dy = a.1 - b.1;
+    (dx as i64 * dx as i64) + (dy as i64 * dy as i64)
 }
 
 fn main() -> io::Result<()> {
@@ -62,7 +57,7 @@ fn main() -> io::Result<()> {
     let mut buffer = String::new();
     let n = read_input!(reader, buffer, usize);
 
-    let mut points = read_to_vec!(reader, iter, i32, n);
+    let mut points = read_lines_to_vec!(reader, buffer, n, i32);
 
     let min_idx = points.iter().enumerate().min_by_key(|&(_, point)| point.0).unwrap().0;
     points.swap(0, min_idx);
@@ -79,7 +74,7 @@ fn main() -> io::Result<()> {
     // exception handling
     let mut pt = points.len() - 1;
     let len = points.len();
-    for _i in (1..len).rev() {
+    for _ in (1..len).rev() {
         if ccw(&points[0], &points[pt], &points[pt - 1]) == 0 {
             pt -= 1;
         } else {

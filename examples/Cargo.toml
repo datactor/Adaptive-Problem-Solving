@@ -842,3 +842,7 @@ path = "str/boj_p4_5670_trie.rs"
 [[example]]
 name = "boj_4181"
 path = "geometry/boj_p5_4181_cvxh_grahamScan.rs"
+
+[[example]]
+name = "boj_4225"
+path = "geometry/boj_p3_4225_cvxh.rs"
