@@ -4,8 +4,8 @@ use std::{
     io::{self, Write, BufRead, BufReader, BufWriter},
 };
 
-const DX: [i32; 8] = [1, -1, 0, 0, 1, -1, 1, -1];
-const DY: [i32; 8] = [0, 0, -1, 1, -1, 1, 1, -1];
+const DX: [i8; 8] = [1, -1, 0, 0, 1, -1, 1, -1];
+const DY: [i8; 8] = [0, 0, -1, 1, -1, 1, 1, -1];
 
 macro_rules! read_line_to_nums {
     ($reader:expr, $input:expr, $type:ty) => {
@@ -25,7 +25,9 @@ macro_rules! read_lines_to_vec {
                 $input.clear();
                 $reader.read_line(&mut $input).expect("Failed to read");
                 $input.split_ascii_whitespace()
-                    .map(|s| s.parse::<$type>().expect("Failed to parse"))
+                    .map(|s| {
+                    if s == "1" { true } else { false }
+                })
                     .collect()
             }).collect::<Vec<Vec<$type>>>();
             iter
@@ -33,44 +35,58 @@ macro_rules! read_lines_to_vec {
     }
 }
 
-fn bfs(graph: &mut Vec<Vec<i8>>, x: usize, y: usize) {
-    graph[x][y] = 0;
-    let x_len = graph.len();
-    let y_len = graph[0].len();
-    let mut dq = std::collections::VecDeque::new();
-    dq.push_back((x, y));
+fn _bfs(graph: &mut Vec<Vec<bool>>, x: i8, y: i8) {
+    graph[x as usize][y as usize] = false;
+    let x_len = graph.len() as i8;
+    let y_len = graph[0].len() as i8;
+    let mut dq = std::collections::VecDeque::from([(x, y)]);
     while let Some((a, b)) = dq.pop_front() {
         for i in 0..8 {
-            let nx = a as i32 + DX[i];
-            let ny = b as i32 + DY[i];
-            if nx >= 0 && nx < x_len as i32 && ny >= 0 && ny < y_len as i32 && graph[nx as usize][ny as usize] == 1 {
-                graph[nx as usize][ny as usize] = 0;
-                dq.push_back((nx as usize, ny as usize));
+            let nx = a + DX[i];
+            let ny = b + DY[i];
+            if nx >= 0 && nx < x_len && ny >= 0 && ny < y_len && graph[nx as usize][ny as usize] {
+                graph[nx as usize][ny as usize] = false;
+                dq.push_back((nx, ny));
             }
         }
     }
 }
 
-fn main() -> io::Result<()> {
-    let mut reader = BufReader::new(io::stdin().lock());
-    let mut writer = BufWriter::new(io::stdout().lock());
-    let mut buffer = String::new();
+fn _dfs(graph: &mut Vec<Vec<bool>>, x: i8, y: i8) {
+    graph[x as usize][y as usize] = false;
+    let x_len = graph.len() as i8;
+    let y_len = graph[0].len() as i8;
 
-    while let (Ok(w), Ok(h)) = read_line_to_nums!(reader, buffer, usize) {
+    for i in 0..8 {
+        let nx = x + DX[i];
+        let ny = y + DY[i];
+        if nx >= 0 && nx < x_len && ny >= 0 && ny < y_len && graph[nx as usize][ny as usize] {
+            _dfs(graph, nx, ny);
+        }
+    }
+}
+
+fn main() -> io::Result<()> {
+    let mut read_buffer = BufReader::new(io::stdin().lock());
+    let mut write_buffer = BufWriter::new(io::stdout().lock());
+    let mut buf_to_string = String::new();
+
+    while let (Ok(w), Ok(h)) = read_line_to_nums!(read_buffer, buf_to_string, usize) {
         if (w, h) == (0, 0) { break }
 
         let mut cnt = 0;
 
-        let mut map = read_lines_to_vec!(reader, buffer, h, i8);
+        let mut map = read_lines_to_vec!(read_buffer, buf_to_string, h, bool);
         for i in 0..h {
             for j in 0..w {
-                if map[i][j] == 1 {
-                    bfs(&mut map, i, j);
+                if map[i][j] {
+                    // _bfs(&mut map, i as i8, j as i8);
+                    _dfs(&mut map, i as i8, j as i8);
                     cnt += 1;
                 }
             }
         }
-        writeln!(writer, "{}", cnt)?;
+        writeln!(write_buffer, "{}", cnt)?;
     }
 
     Ok(())
