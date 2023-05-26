@@ -850,3 +850,7 @@ path = "geometry/boj_p3_4225_cvxh.rs"
 [[example]]
 name = "boj_4963"
 path = "graph/boj_s2_4963_dfs_or_bfs.rs"
+
+[[example]]
+name = "boj_2468"
+path = "graph/boj_s1_2468_bfs_dfs.rs"
