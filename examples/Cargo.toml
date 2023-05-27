@@ -870,3 +870,7 @@ path = "dp/boj_s2_11055_LIS.rs"
 [[example]]
 name = "boj_11722"
 path = "dp/boj_s2_11722_lds.rs"
+
+[[example]]
+name = "boj_14002"
+path = "dp/boj_g4_boj_14002_lis_backtracking.rs"
