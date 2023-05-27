@@ -866,3 +866,7 @@ path = "graph/boj_s2_11725_bfs_dfs.rs"
 [[example]]
 name = "boj_11055"
 path = "dp/boj_s2_11055_LIS.rs"
+
+[[example]]
+name = "boj_11722"
+path = "dp/boj_s2_11722_lds.rs"
