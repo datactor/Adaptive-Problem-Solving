@@ -19,7 +19,6 @@ macro_rules! find_lis {
             let mut vec = Vec::with_capacity($n);
             let mut dp = Vec::with_capacity($n);
             let mut max = 0;
-            let mut write_buf = BufWriter::new(io::stdout().lock());
 
             $input.clear();
             $reader.read_line(&mut $input)?;
