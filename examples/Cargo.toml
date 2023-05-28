@@ -874,3 +874,7 @@ path = "dp/boj_s2_11722_lds.rs"
 [[example]]
 name = "boj_14002"
 path = "dp/boj_g4_boj_14002_lis_backtracking.rs"
+
+[[example]]
+name = "boj_2583"
+path = "graph/boj_s1_2583_bfs.rs"
