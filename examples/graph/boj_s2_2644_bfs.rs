@@ -38,15 +38,14 @@ macro_rules! read_to_vec {
     }
 }
 
-fn bfs(graph: &mut Vec<Vec<i8>>, x: i8, y: usize) -> usize {
-    let x_len = graph.len();
-    let mut degree_with_x = vec![0; x_len];
-    let mut dq = std::collections::VecDeque::from([x]);
-    while let Some(a) = dq.pop_front() {
+fn bfs(graph: &mut Vec<Vec<i8>>, n: usize, x: i8, y: usize) -> i8 {
+    let mut degree_with_x = vec![0; n+1];
+    let mut dq = Vec::from([x]);
+    while let Some(a) = dq.pop() {
         for i in &graph[a as usize] {
             if degree_with_x[*i as usize] == 0 {
                 degree_with_x[*i as usize] = degree_with_x[a as usize] + 1;
-                dq.push_back(*i as i8);
+                dq.push(*i);
             }
         }
     }
@@ -60,8 +59,8 @@ fn main() -> io::Result<()> {
 
     if let (Ok(n), Ok(x), Ok(y), Ok(m)) = read_to_num!(read_buf, buf_to_string, usize) {
         let mut relations = read_to_vec!(read_buf, buf_to_string, n, m, i8);
-        let degree_with_x = bfs(&mut relations, x as i8, y);
-        writeln!(write_buf, "{:?}", if degree_with_x > 0 { degree_with_x as i8 } else { -1 })?
+        let degree_between_x_y = bfs(&mut relations, n, x as i8, y);
+        writeln!(write_buf, "{:?}", if degree_between_x_y > 0 { degree_between_x_y } else { -1 })?
     }
 
     Ok(())
