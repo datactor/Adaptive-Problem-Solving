@@ -44,8 +44,8 @@ macro_rules! read_to_vec {
     }
 }
 
-fn bfs(graph: &mut Vec<Vec<bool>>, x: usize, y: usize) -> usize {
-    graph[x][y] = false;
+fn bfs(graph: &mut Vec<Vec<bool>>, x: i8, y: i8) -> u16 {
+    graph[x as usize][y as usize] = false;
     let x_len = graph.len();
     let y_len = graph[0].len();
     let mut dq = std::collections::VecDeque::from([(x, y)]);
@@ -56,7 +56,7 @@ fn bfs(graph: &mut Vec<Vec<bool>>, x: usize, y: usize) -> usize {
             let ny = b as i8 + dir.1;
             if nx >= 0 && nx < x_len as i8 && ny >= 0 && ny < y_len as i8 && graph[nx as usize][ny as usize] {
                 graph[nx as usize][ny as usize] = false;
-                dq.push_back((nx as usize, ny as usize));
+                dq.push_back((nx, ny));
                 cnt += 1;
             }
         }
@@ -78,7 +78,7 @@ fn main() -> io::Result<()> {
         for i in 0..m {
             for j in 0..n {
                 if map[i][j] {
-                    areas.push(bfs(&mut map, i, j));
+                    areas.push(bfs(&mut map, i as i8, j as i8));
                     cnt += 1;
                 }
             }
