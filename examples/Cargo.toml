@@ -882,3 +882,7 @@ path = "graph/boj_s1_2583_bfs.rs"
 [[example]]
 name = "boj_2644"
 path = "graph/boj_s2_2644_bfs.rs"
+
+[[example]]
+name = "boj_1806"
+path = "prefix_sum/boj_g4_1806_twopointer.rs"
