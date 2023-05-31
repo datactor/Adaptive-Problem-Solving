@@ -890,3 +890,7 @@ path = "prefix_sum/boj_g4_1806_twopointer.rs"
 [[example]]
 name = "boj_17609"
 path = "str/boj_g5_17609_twopointer_recursion_palindrome.rs"
+
+[[example]]
+name = "boj_2230"
+path = "two_pointer/boj_g5_2230.rs"
