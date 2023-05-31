@@ -886,3 +886,7 @@ path = "graph/boj_s2_2644_bfs.rs"
 [[example]]
 name = "boj_1806"
 path = "prefix_sum/boj_g4_1806_twopointer.rs"
+
+[[example]]
+name = "boj_17609"
+path = "str/boj_g5_17609_twopointer_recursion_palindrome.rs"
