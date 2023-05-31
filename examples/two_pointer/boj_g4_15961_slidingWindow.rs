@@ -55,28 +55,28 @@ fn main() -> io::Result<()> {
     //
     // Ok(())
 
-    let mut cnt = vec![0; d+1];
+    let mut sushi_cnt_to_eat = vec![0; d+1];
     let mut kinds = 0;
     for &sushi in &seq[0..k] {
-        if cnt[sushi as usize] == 0 {
+        if sushi_cnt_to_eat[sushi as usize] == 0 {
             kinds += 1;
         }
-        cnt[sushi as usize] += 1;
+        sushi_cnt_to_eat[sushi as usize] += 1;
     }
 
     let mut max = kinds;
     for i in 0..n {
-        cnt[seq[i] as usize] -= 1;
-        if cnt[seq[i] as usize] == 0 {
+        sushi_cnt_to_eat[seq[i] as usize] -= 1;
+        if sushi_cnt_to_eat[seq[i] as usize] == 0 {
             kinds -= 1;
         }
-        if cnt[seq[i+k] as usize] == 0 {
+
+        sushi_cnt_to_eat[seq[i+k] as usize] += 1;
+        if sushi_cnt_to_eat[seq[i+k] as usize] == 0 {
             kinds += 1;
         }
 
-        cnt[seq[i+k] as usize] += 1;
-
-        let total = if cnt[c] == 0 {
+        let total = if sushi_cnt_to_eat[c] == 0 {
             kinds + 1
         } else {
             kinds
