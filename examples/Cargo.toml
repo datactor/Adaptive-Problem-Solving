@@ -902,3 +902,7 @@ path = "two_pointer/boj_g4_15961_slidingWindow.rs"
 [[example]]
 name = "boj_1912"
 path = "dp/boj_s2_1912_kadane.rs"
+
+[[example]]
+name = "boj_11441"
+path = "prefix_sum/boj_s3_11441.rs"
