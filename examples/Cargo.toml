@@ -910,3 +910,7 @@ path = "prefix_sum/boj_s3_11441.rs"
 [[example]]
 name = "boj_12891"
 path = "two_pointer/boj_s2_12891_slidingWindow.rs"
+
+[[example]]
+name = "boj_2096"
+path = "two_pointer/boj_g5_2096_slidingWindow.rs"
