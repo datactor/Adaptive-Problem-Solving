@@ -5,7 +5,7 @@ The goal is to acquire technical skills for comprehensive problem-solving in a b
 
 ## Folder structure
 
-- `examples/`: contains various algorithm problems solved in Rust,
+- `boj/`: contains various algorithm problems solved in Rust,
   organized by problem category (e.g. backtracking, dynamic programming, etc.).
 - `forge/`: contains explanations of Rust's sharp swords, tough armor and other fine trinkets.
 
@@ -27,7 +27,7 @@ command.
 
 For example:
 ```bash
-cd examples
+cd boj
 cargo run --example boj_2156
 ```
 

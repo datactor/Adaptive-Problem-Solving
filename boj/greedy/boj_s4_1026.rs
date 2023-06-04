@@ -19,15 +19,14 @@ fn read_to_vec(reader: &mut dyn BufRead, buffer: &mut String) -> io::Result<Vec<
 fn main() -> io::Result<()> {
     let mut read_buf = BufReader::new(io::stdin().lock());
     let mut write_buf = BufWriter::new(io::stdout().lock());
-    let mut buffer = String::new();
+    let mut buf_to_string = String::new();
 
-    // First line is skipped as it is not needed
-    read_buf.read_line(&mut buffer)?;
+    read_buf.read_line(&mut buf_to_string)?;
 
-    let mut a = read_to_vec(&mut read_buf, &mut buffer)?;
+    let mut a = read_to_vec(&mut read_buf, &mut buf_to_string)?;
     a.sort();
 
-    let mut b = read_to_vec(&mut read_buf, &mut buffer)?;
+    let mut b = read_to_vec(&mut read_buf, &mut buf_to_string)?;
     b.sort_by(|a, b| b.cmp(a));
 
     let sum: u32 = a.iter()

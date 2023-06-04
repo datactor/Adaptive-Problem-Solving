@@ -1,5 +1,5 @@
 fn main() {
     println!("\
-    cd examples\n\
+    cd boj\n\
     cargo run --example [filename]")
 }
