@@ -42,8 +42,24 @@ Mutex type은 운영체제에서 제공하는 저수준 동기화 primitive(inne
 여기서 우리가 실제로 다루는 Mutex의 inner type은 sys::Mutex로 이루어져 있고,
 이 sys::Mutex struct는 내부에 futex(linux)라는 필드를 가지고 있는데, AtomicU32를 통해 lock의 득실을
 atomic number로 나타낸다. 즉 lock을 수행할 때, 프로그램이 아닌 운영체제 단위에서 atomic ordering을 수행해
-unlock, locked no other threads waiting, locked and other threads waiting 세가지 상태 변화를
-완전 실패와 완전 성공을 보장한다.
+
+0: unlock,  
+1: locked no other threads waiting,  
+2: locked and other threads waiting(contended)  
+세가지 상태 변화를 통해 완전 실패와 완전 성공을 보장한다.
+
+여기서 futex를 사용하는 이유는 `compare_exchange`(compare_and_swap) 연산을 통해 0, 1, 2의 상태를 atomic하게 변경시키기 위함이다.
+```rust
+#[inline]
+pub fn try_lock(&self) -> bool {
+    self.futex.compare_exchange(0, 1, Acquire, Relaxed).is_ok()
+}
+```
+위 부분에서 0은 current state, 1은 새롭게 바꿀 state, `Acquire` Ordering은 첫번째 인자가 0임을 확인 했을 때 동작하는 Ordering이다.
+이는 뮤텍스를 잠그는 연산이 뮤텍스에 접근하는 연산보다 먼저 일어나야 함을 보장한다.  
+Relaxed는 첫번째 인자가 0이 아닐 경우(즉, 뮤텍스가 이미 잠겨있다면) `Relaxed` Ordering을 통해 실패를 처리한다(실패 했을 경우 값의 변경은 없기 때문에
+메모리 순서는 보장하지 않아도 된다.).
+
 ```rust
 use crate::sync::atomic::{
     AtomicU32,
