@@ -156,6 +156,19 @@ impl Mutex {
 futex와 같은 운영체제 내부의 프리미티브는 한 번에 하나의 스레드만 잠금을 보유할 수 있도록 하여 아토믹을 구현하는 동시에,
 데이터 경합을 방지하고 스레드 동기화를 통해 프로그램의 정확성을 보장한다.
 
+```rust
+if state != 2 && self.futex.swap(2, Acquire) == 0 {
+    // We changed it from 0 to 2, so we just successfully locked it.
+    return;
+}
+```
+위의 코드는 futex를 spinlock을 최적화 하기 위해 구현된 breaker로
+state != 2; state가 다른 스레드에 의해 대기중인 상태가 아니며,
+self.futex.swap(2, Acquire) == 0; Acquire Ordering으로 futex의 값을 2로 swap 했을때, 이전의 값이 0일 경우,
+락을 획득할 수 있다는 것을 의미하며 spin loop를 중단하고 락을 획득한다.
+즉 이전의 futex의 값이 0일때, futex를 2로 바꾸지만, 예외적으로 중단하고 락을 획득한다.
+이는 효율성을 높이고, 불필요한 spin-wait를 피하는 예외적인 최적화이다.
+
 ## Arc
 Rc와 같이 값의 소유자 수를 추적하는 참조 횟수를 추적하여 다중 소유권을 허용하는 스마트 포인터이다.
 strong counting, weak counting, 할당해제 규칙 등 대부분의 메카니즘은 Rc와 같다.
