@@ -11,7 +11,7 @@ The goal is to acquire technical skills for comprehensive problem-solving in a b
 
 ## BOJ
 
-Each problem is organized in its own solution approach.
+Each problem is organized in its own subfolder and solution approach.
 The Rust code for each solution is located in the `boj`(Baekjoon Online Judge) subfolder of the example.
 
 ## Forge
