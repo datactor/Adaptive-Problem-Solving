@@ -9,10 +9,10 @@ The goal is to acquire technical skills for comprehensive problem-solving in a b
   organized by problem category (e.g. backtracking, dynamic programming, etc.).
 - `forge/`: contains explanations of Rust's sharp swords, tough armor and other fine trinkets.
 
-## Examples
+## BOJ
 
-Each problem example is organized in its own subfolder and solution approach.
-The Rust code for each solution is located in the `examples` subfolder of the example.
+Each problem is organized in its own solution approach.
+The Rust code for each solution is located in the `boj`(Baekjoon Online Judge) subfolder of the example.
 
 ## Forge
 
