@@ -922,3 +922,7 @@ path = "greedy/boj_s4_1026.rs"
 [[example]]
 name = "boj_10818"
 path = "imple/boj_b3_10818.rs"
+
+[[example]]
+name = "boj_5052"
+path = "str/boj_g4_5052.rs"
