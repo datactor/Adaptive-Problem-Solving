@@ -55,13 +55,23 @@ fn main() -> io::Result<()> {
     for _ in 0..t {
         let n = read_to_num(&mut read_buf, &mut buf_to_string)?;
         let mut root = Trie::new();
+        let mut vec = Vec::with_capacity(n);
         let mut is_consistent = true;
         for _ in 0..n {
             buf_to_string.clear();
             read_buf.read_line(&mut buf_to_string)?;
 
             let address = buf_to_string.trim().as_bytes().to_vec();
-            if !root.insert(address) {
+            // if !root.insert(address) {
+            //     is_consistent = false;
+            // }
+            vec.push(address);
+        }
+        vec.sort();
+
+        for i in 1..n {
+            let len = vec[i-1].len();
+            if len <= vec[i].len() && vec[i-1][0..len] == vec[i][0..len] {
                 is_consistent = false;
                 break
             }
