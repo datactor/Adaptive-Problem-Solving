@@ -926,3 +926,7 @@ path = "imple/boj_b3_10818.rs"
 [[example]]
 name = "boj_5052"
 path = "str/boj_g4_5052.rs"
+
+[[example]]
+name = "boj_10610"
+path = "str/boj_s4_10610_greedy.rs"
