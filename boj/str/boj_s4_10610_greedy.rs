@@ -23,7 +23,7 @@ macro_rules! solve {
             }
 
             if bytes[len-1] != b'0' || sum % 3 != 0 {
-                Err(io::Error::new(io::ErrorKind::Other, "-1"))
+                Err("-1".to_string())
             } else {
                 Ok(buffer)
             }
@@ -31,13 +31,13 @@ macro_rules! solve {
     }
 }
 
+fn ans() {
+    print!("{}", match solve!() {
+        Ok(s) => s,
+        Err(e) => e,
+    })
+}
+
 fn main() {
-    match solve!() {
-        Ok(buffer) => {
-            print!("{}", buffer);
-        },
-        Err(_) => {
-            print!("-1");
-        },
-    }
+    ans()
 }
