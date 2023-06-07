@@ -930,3 +930,7 @@ path = "str/boj_g4_5052.rs"
 [[example]]
 name = "boj_10610"
 path = "str/boj_s4_10610_greedy.rs"
+
+[[example]]
+name = "boj_12904"
+path = "str/boj_g5_12904_greedy.rs"
