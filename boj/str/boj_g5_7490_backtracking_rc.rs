@@ -23,18 +23,18 @@ macro_rules! Ok {
         {
             let mut read_buf = BufReader::new(io::stdin().lock());
             let mut buf_to_string = String::new();
-            let writer = String::new();
-            let rc_writer = Rc::new(RefCell::new(writer));
+            let write_buffer = String::new();
+            let writer = Rc::new(RefCell::new(write_buffer));
 
             let t = read_num!(read_buf, buf_to_string, usize);
 
             for _ in 0..t {
                 let n = read_num!(read_buf, buf_to_string, i32);
-                find_ex(0, 1, 1, 1, "1".to_string(), n, &rc_writer);
+                find_ex(0, 1, 1, 1, "1".to_string(), n, &writer);
 
-                rc_writer.borrow_mut().push('\n');
+                writer.borrow_mut().push('\n');
             }
-            print!("{}", rc_writer.borrow());
+            print!("{}", writer.borrow());
 
             Ok(())
         }
