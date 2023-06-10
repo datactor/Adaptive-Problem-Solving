@@ -617,10 +617,11 @@ Task의 lifetime과 연계된 PhantomData가 존재함으로써, 작업이 삭�
 Future의 poll 메서드가 호출되면 Context 객체가 전달된다.
 Context에는 Future가 executor와 상호 작용할 수 있도록 하는 현재 작업에 대한 참조가 포함되어 있다.
 
-Context는 또한 Waker 개체에 대한 참조를 제공합니다. 'Waker'는 퓨처에서 진행 준비가 되었을 때 실행자에게 알리는 데 사용됩니다. 이를 통해 실행자는 퓨처를 불필요하게 폴링하는 것을 방지하고 CPU 사용량을 줄여 성능을 향상시킬 수 있습니다.
+Context는 또한 Waker 개체에 대한 참조를 제공한다. 'Waker'는 Future에서 진행 준비가 되었을 때 executor에게 알리는 데 사용된다.
+이를 통해 executor는 future를 불필요하게 폴링하는 것을 방지하고 CPU 사용량을 줄여 성능을 향상시킬 수 있다.
 
 #### Examples of using Context in Rust
-다음은 Rust에서 Context를 사용하는 예입니다
+다음은 Rust에서 Context를 사용하는 예이다.
 ```rust
 use std::future::Future;
 use std::pin::Pin;
@@ -645,25 +646,25 @@ impl Future for MyFuture {
 }
 
 fn main() {
-    let future = MyFuture { counter: 0 };
-    let mut cx = Context::from_waker(futures::task::noop_waker_ref());
-    let mut pinned = Pin::new(&mut MyFuture { counter: 0 });
+   let mut future = MyFuture { counter: 0 };
+   let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+   let mut pinned = Pin::new(&mut future);
 
-    // Poll the future until it completes
-    loop {
-        match pinned.as_mut().poll(&mut cx) {
-            Poll::Ready(output) => {
-                println!("Future completed with output: {}", output);
-                break;
-            }
-            Poll::Pending => {
-                println!("Future not yet ready");
-            }
-        }
-    }
+   // Poll the future until it completes
+   loop {
+      match pinned.as_mut().poll(&mut cx) {
+         Poll::Ready(output) => {
+            println!("Future completed with output: {}", output);
+            break;
+         }
+         Poll::Pending => {
+            println!("Future not yet ready");
+         }
+      }
+   }
 }
 ```
-이 예제에서는 10까지 세고 최종 개수를 출력으로 반환하는 사용자 지정 미래 'MyFuture'를 정의한다.
+이 예제에서는 10까지 세고 최종 개수를 출력으로 반환하는 사용자 지정 Future 'MyFuture'를 정의한다.
 poll 메소드는 Context의 Waker 객체를 사용하여 Future가 아직 진행할 준비가 되지 않았음을 executor에게 알린다.
 
 main에서 MyFuture의 새 인스턴스를 생성하고 아무것도 하지 않는 Waker로 Context를 초기화한다.
@@ -672,7 +673,7 @@ poll을 호출할 때마다 Context 객체를 전달하여 Future가 executor와
 Future가 아직 준비되지 않은 경우 poll 메서드는 Poll::Pending을 반환하고 루프가 계속된다.
 Future가 준비되면 poll 메서드는 Poll::Ready(output)을 반환하고 output을 print한다.
 
-이 예제는 Rust에서 비동기 작업을 관리하기 위해 Context 및 Waker 객체가 어떻게 사용되는지 보여줍니다.
+이 예제는 Rust에서 비동기 작업을 관리하기 위해 Context 및 Waker 객체가 어떻게 사용되는지 보여준다.
 Future가 executor와 상호작용하고 진행할 준비가 되었을 때 신호를 보낼 수 있는 방법을 제공함으로써
 Rust의 async/await 모델은 효율적이고 성능이 뛰어난 비동기 프로그래밍을 가능하게 한다.
 
