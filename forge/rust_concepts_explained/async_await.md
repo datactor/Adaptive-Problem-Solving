@@ -23,9 +23,19 @@ async/await를 사용하면 장기 실행 작업이 완료되기를 기다리는
 이는 특히 I/O-bound 응용 프로그램에서 상당한 성능 향상을 가져올 수 있다.
 
 ### Brief explanation of what async/await is
-Async/await은 코드의 동시 실행을 허용하는 프로그래밍 패러다임으로,
-이를 통해 더 빠르고 반응이 빠른 애플리케이션을 작성할 수 있다.
-Rust에서 async/await는 특수 구문의 조합과 Future 및 Poll traits의 사용을 통해 구현된다.
+Async/await은 비동기 프로그래밍 패턴으로, 복잡한 흐름 제어 없이 비동기 코드를 동기처럼 작성할 수 있도록 돕는다.
+이 패턴은 CPU바운드 작업에 대해서는 이점이 없을 수 있지만, I/O 바운드 작업이나 타이머와 같은 대기 시간이 있는 작업을 효율적으로 처리하는데 유용하다.
+Rust에서 async 키워드는 함수를 정의할 때 사용되며, 이 함수는 Future를 반환한다. Future는 미래에 완료될 작업을 나타내며, lazy evaluation을
+기반으로 하고, 이는 비동기적으로 실행된다. await은 이 Future의 상태를 나타내는 Poll::Ready<T>를 기다리는데 사용된다.
+
+async/await과 executor의 조합으로 만든 비동기 프로그래밍은 기본적으로 non-blocking
+(즉, cpu가 io바운드 작업이나 타이머처럼 기다려야되는 작업을 만났을 때 쉬지 않고 수행한다.)이고,
+대체로 선형적으로 수행되지만 비선형적으로 전환될 수 있다. 여기서 동기 프로그래밍에서 말하는 선형적이라는 것은 코드가 시퀀셜하게 수행된다
+라는 의미도 내포하고 있어서, 타이머나 io바운드 작업을 만났을때는, 그 찰나의 순간에도 non-blocking을 유지하기 위해
+시퀀셜을 깨버리고 이벤트 큐에서 다음 Task(Future)를 수행할 수 있다는 것이다.
+비동기적 context 전환이 여기서 발생할 수 있다. 덕분에 이것은 I/O바운드 작업의 Future를 수행할 때,
+단일 스레드에서도 병렬적으로 처리하는 것처럼 보이게 한다. non-blocking을 유지하도록 cpu가 쉬지 않도록 태스크를 선형적으로
+수행하거나 전환하게 하기 위해 OS의 기능을 사용하여 runtime에서 관리한다.
 
 ### Motivation for using async/await
 Rust 코드에서 async/await를 사용하려는 몇 가지 이유가 있다.
@@ -83,7 +93,8 @@ fn my_func2() -> impl Future<Output = ()> {
 ```
 
 ### Basic syntax of async functions
-Rust에서 비동기 함수를 정의하려면 함수 시그니처 앞에 async 키워드를 사용하고 장기 실행 작업을 기다리는 동안 함수를 "pause"하기 위해 await 키워드를 사용한다.
+Rust에서 비동기 함수를 정의하려면 함수 시그니처 앞에 async 키워드를 사용하고 I/O 또는 타이머 작업(CPU외 리소스가 담당하는 작업)을
+기다리는 동안 함수를 "pause"하기 위해 await 키워드를 사용한다.
 비동기 함수는 동기 함수와 마찬가지로 Result 및 Option type을 사용하여 오류 및 누락된 값을 처리할 수도 있다.
 다음은 비동기 함수의 예이다.
 
@@ -141,6 +152,11 @@ Rust의 async/await 모델에서 `await`은 `Future`의 결과가 준비(Poll::R
 `Future`가 아직 준비 되지 않은 경우, poll 메서드는 `Poll::Pending` state를 반환하고, executor는 `Future`를 FIFO 대기열의 끝으로 푸시하고
 executor는 thread::yield_now()를 호출하여 제어권을 OS scheduler로 넘긴다. OS scheduler는 실행할 다른 작업을 예약할 수 있다.
 즉, Rust의 async/await에서는 직접 context switching하지 않고 OS scheduler를 이용한다.
+
+- Note: 이것은 executor의 구현에 따라 다르다.
+설명한 내용외에도 단일 스레드 executor가 busy-waiting(executor가 active하게 Future들을 폴링하여 준비된 것들을 실행, 여기서 심화되면 work-stealing)
+을 사용하거나, 이벤트 기반 스케줄링(이벤트 루프와 결합하여 특정 이벤트에 의해 트리거 되는 태스크를 실행. e.g. tokio의 executor: 이벤트를 추적하는 epoll을 사용하는 Reactor + Task Scheduler)을 사용할 수 있다.
+
 executor내의 FIFO 대기열을 통해 OS 스케줄러는 실행할 다른 작업을 예약하고 non-blocking context switching 할 수 있다(async/await에서는 기본적으로 thread switch가 아닌 process switch).
 이렇게 되면 기존 thread에 대하여 차단하지 않고 OS 스케줄러에 의해 FIFO 대기열 순으로 스케줄링하며 코드를 실행할 수 한다.
 나중에 Future가 준비되면 poll 메서드가 다시 호출되고 `Poll::Ready(T)` state를 반환한다.
@@ -150,7 +166,7 @@ executor내의 FIFO 대기열을 통해 OS 스케줄러는 실행할 다른 작�
 `await` 키워드는 함수에서 실행을 일시 중지하고 `Future`가 완료될 때까지 기다리는 것이 안전한 지점을 표시하는 데 사용된다.
 `Future`는 실행을 재개할 준비가 되었을 때 런타임에 알릴 책임이 있으며, 이 시점에서 함수는 중단된 지점에서 계속할 수 있다.
 
-`await` 표현식은 Rust의 async/await 모델의 가장 중요한 기능 중 하나인데, 이는 개발자가 더 읽기 쉽고 추론하기 쉬운 비동기 코드를 작성할 수 있게 해주기 때문이다.
+`await` 키워드는 Rust의 async/await 모델의 가장 중요한 기능 중 하나인데, 이는 개발자가 더 읽기 쉽고 추론하기 쉬운 비동기 코드를 작성할 수 있게 해주기 때문이다.
 비동기 작업으로 작업할 때에도 순차 프로그래밍 기술을 사용할 수 있으므로 효율적이고 유지 관리 가능한 코드를 더 쉽게 작성할 수 있다.
 
 ### How await suspends execution until a Future is ready
@@ -175,14 +191,14 @@ Future가 아직 완료되지 않은 경우 함수가 일시 중지되고 제어
 
 response future가 준비되면 함수가 다시 재개되어 응답 본문을 가져오기 위해 text future를 기다리는 다음 코드 줄을 계속 진행한다.
 
-이것이 await 표현식의 기본 연산이다.
+이것이 `.await` 표현식의 기본 연산이다.
 기다리고 있는 `Future`가 완료될 때까지 현재 함수의 실행을 일시 중지한 다음 `Future`가 준비되면 실행을 재개한다.
 
-요약하면 함수가 일시 중단되면 Rust runtime이 다른 작업을 실행하도록 스레드를 유지하고(non-blocking) 전환할 수 있다는 점은 있다.
+요약하면 함수가 일시 중단되면 Rust runtime이 다른 작업을 실행하도록 스레드를 유지하고(non-blocking) 전환할 수 있다.
 이를 통해 컴퓨팅 리소스를 보다 효율적으로 사용하고 앱 응답성을 향상시킬 수 있다.
 
 ### Basic syntax of await expressions
-await는 Future 객체와 함께 사용되어 결과가 준비될 때까지 함수 실행을 일시 중단한다.
+await은 Future 객체와 함께 사용되어 결과가 준비될 때까지 함수 실행을 일시 중단한다.
 
 ```rust
 async fn my_function() -> Result<(), MyError> {
