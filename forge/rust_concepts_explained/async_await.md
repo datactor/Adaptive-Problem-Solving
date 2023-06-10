@@ -26,7 +26,7 @@ async/await를 사용하면 장기 실행 작업이 완료되기를 기다리는
 Async/await은 비동기 프로그래밍 패턴으로, 복잡한 흐름 제어 없이 비동기 코드를 동기처럼 작성할 수 있도록 돕는다.
 이 패턴은 CPU바운드 작업에 대해서는 이점이 없을 수 있지만, I/O 바운드 작업이나 타이머와 같은 대기 시간이 있는 작업을 효율적으로 처리하는데 유용하다.
 Rust에서 async 키워드는 함수를 정의할 때 사용되며, 이 함수는 Future를 반환한다. Future는 미래에 완료될 작업을 나타내며, lazy evaluation을
-기반으로 하고, 이는 비동기적으로 실행된다. await은 이 Future의 상태를 나타내는 Poll::Ready<T>를 기다리는데 사용된다.
+기반으로 하고, 이는 비동기적으로 실행된다. await은 이 Future의 상태를 나타내는 Poll::Ready(T)를 기다리는데 사용된다.
 
 async/await과 executor의 조합으로 만든 비동기 프로그래밍은 기본적으로 non-blocking
 (즉, cpu가 io바운드 작업이나 타이머처럼 기다려야되는 작업을 만났을 때 쉬지 않고 수행한다.)이고,
@@ -402,7 +402,7 @@ impl<P: DerefMut> Pin<P> {
 }
 ```
 
-이외의 추가적인 자세한 내용은 Rust의 공식 문서에서 살펴보자
+이외의 추가적인 자세한 내용은 Rust의 [async 문서](https://rust-lang.github.io/async-book/04_pinning/01_chapter.html) 에서 살펴보자
 
 
 #### Definition of pinning
@@ -469,10 +469,15 @@ async fn bar() {
 }
 ```
 여기에서 Future 'f'는 Future를 메모리의 현재 위치에 고정하는 Box::pin() 함수를 사용하여 생성된다.
-그런 다음 Future는 프로그램의 다른 부분으로 이동되지만 내부 상태는 여전히 as_mut() 메서드를 사용하여 액세스할 수 있다.
-이는 Future가 성공적으로 완료되고 내부 상태가 이동의 영향을 받지 않음을 보장한다.
+그런 다음 Future는 프로그램의 다른 부분으로 이동되지만 내부 상태는 여전히 as_mut() 메서드를 사용하여 
+Pin<> 형태를 Pin<&mut> 형태로 변환하여 액세스할 수 있다. await은 &mut 참조를 기반으로 작동하며,
+이를 통해 가변 참조로 Future의 상태를 변경할 수 있다. 이는 Future가 성공적으로 완료되고 내부 상태가 이동의 영향을 받지 않음을 보장한다.
 
-Rust는 Future를 고정함으로써 내부 상태가 이동에 의해 영향을 받지 않도록 보장하므로 Future가 안전하게 polling되고 완료될 수 있다.
+Rust의 Pinning은 안전한 type system을 기반으로 한다. 이를 통해 Future나 다른 타입이 고정된 상태에서만 사용될 수 있도록 한다.  
+Rust는 Future를 type 시스템으로 검증된 Pinning으로 고정하고, 내부 상태가 이동에 의해 영향을 받지 않도록 보장하므로 Future가 안전하게 polling되고 완료될 수 있다.
+
+즉, 값을 직접 변경하는 것이 아니라(이렇게 하면 할당과 같은 연산이 일어나면, 변수의 주소값은 그대로 유지되겠지만 내부 데이터의 값의 주소값이 변경된다.)
+가변 참조로써 정의되지 않은 할당과 같은 연산은 제한하고, 데이터 주소값은 유지시킨다.
 
 ### Examples of using pinning in async/await code
 
