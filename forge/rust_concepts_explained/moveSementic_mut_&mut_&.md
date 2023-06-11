@@ -31,11 +31,11 @@ borrow system은 참조와 불변 참조의 엄격한 borrow rule을 통해 스�
 
 ## Safe modification through ownership and type system
 Rust의 소유권시스템에 대해 요약하면, 각자의 값에 대해서는 하나의 소유자(owner)를 가진다.
-변수가 소면될 때, 그 변수가 소유하고 있는 값도 메모리에서 제거된다. `Ownership`은 함수에 값을 전달하거나 변수에 값을
+변수가 소멸될 때, 그 변수가 소유하고 있는 값도 메모리에서 제거된다. `Ownership`은 함수에 값을 전달하거나 변수에 값을
 할당함으로써 이동할 수 있다(`move`).  
-여기서 각 변수는 `Ownership`을 `move`하지 않고, borrow rule을 통해 빌림(`&T`) 혹은 제한적 독점적 mutable borrow(`&mut T`)를 수행할 수 있다.
+여기서 각 변수는 `Ownership`을 `move`하지 않고, borrow rule을 통해 빌림(`&T`) 혹은 독점적 가변 참조(`&mut T`)를 수행할 수 있다.
 이렇게 빌려간 변수의 타입은 참조자로, 실제 값을 가리키고 있을 뿐인 포인터이다.  
-여기서 제한적 독점적 mutable은 데이터의 안전성을 지키기 위해, type system과 결합하여(&mut T의 타입과 다르다면 할당할 수 없고,
+여기서 exclusive mutable borrow는 데이터의 안전성을 지키기 위해, type system과 결합하여(&mut T의 타입과 다르다면 할당할 수 없고,
 타입을 맞추려고 한다면 borrow rule에 의해 &mut T는 동시에 두 개가 공존할 수 없기 때문에 borrow rule에 어긋나는 상충관계로 제한한다.)
 값을 변화시킬 수 있더라도, 데이터의 메모리 위치를 고정하여 안전성을 보장한다.
 
