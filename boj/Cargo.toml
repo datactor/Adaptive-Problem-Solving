@@ -954,3 +954,7 @@ path = "str/boj_g3_14725_trie_recursion_defaultEntry_rc_refcell.rs"
 [[example]]
 name = "boj_11656"
 path = "str/boj_s4_11656_sorting.rs"
+
+[[example]]
+name = "boj_1302"
+path = "str/boj_s4_1302_BTreeMap.rs"
