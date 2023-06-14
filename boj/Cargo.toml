@@ -958,3 +958,7 @@ path = "str/boj_s4_11656_sorting.rs"
 [[example]]
 name = "boj_1302"
 path = "str/boj_s4_1302_BTreeMap.rs"
+
+[[example]]
+name = "boj_4354"
+path = "str/boj_p5_4354_kmp.rs"
