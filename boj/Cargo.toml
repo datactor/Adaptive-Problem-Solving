@@ -973,4 +973,4 @@ path = "str/boj_p4_10266_kmp.rs"
 
 [[example]]
 name = "boj_1498"
-path = "str/boj_p4_1498_kmp.rs"
+path = "str/boj_p4_1498_kmp_failurefunc.rs"
