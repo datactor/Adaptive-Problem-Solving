@@ -970,3 +970,7 @@ path = "str/boj_p5_1786_kmp.rs"
 [[example]]
 name = "boj_10266"
 path = "str/boj_p4_10266_kmp.rs"
+
+[[example]]
+name = "boj_1498"
+path = "str/boj_p4_1498_kmp.rs"
