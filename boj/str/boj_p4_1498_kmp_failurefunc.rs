@@ -35,22 +35,34 @@ macro_rules! ok {
             //     }
             // }
 
+            // Init failure func idx for KMP
             let mut failure_idx = vec![0; txt.len()];
 
-            for i in 1..txt.len() {
-                let mut j = failure_idx[i-1];
-                while j > 0 && txt[i] != txt[j] {
-                    j = failure_idx[j-1];
+            // KMP
+            // Compute the failure func idx using KMP
+            // For each position in the txt,
+            // this loop calculates the length of the longest proper prefix which is also a suffix.
+            for target_txt_len in 1..txt.len() {
+                let mut common_prefix_sufix_len = failure_idx[target_txt_len-1];
+                while common_prefix_sufix_len > 0 && txt[target_txt_len] != txt[common_prefix_sufix_len] {
+                    common_prefix_sufix_len = failure_idx[common_prefix_sufix_len-1];
                 }
-                if txt[i] == txt[j] {
-                    failure_idx[i] = j + 1;
+                if txt[target_txt_len] == txt[common_prefix_sufix_len] {
+                    failure_idx[target_txt_len] = common_prefix_sufix_len + 1;
                 }
             }
 
-            for i in 0..txt.len() {
-                let prefix_len = i + 1 - failure_idx[i];
-                if failure_idx[i] > 0 && (i+1) % prefix_len == 0 {
-                    writeln!(write_buf, "{} {}", i + 1, (i+1) / prefix_len)?;
+            // Iterate through the txt and check if any substring can be
+            // represented as a pattern repeated multiple times
+            for target_txt_len in 1..txt.len() {
+                let prefix_len = target_txt_len + 1 - failure_idx[target_txt_len];
+
+                // If the current substring length is divisible by the prefix length,
+                // it means that the substring can be represented by repeating the prefix.
+                // If prefix_len is divisible by target_txt_len,
+                // it means it is repeated and becomes a pattern.
+                if failure_idx[target_txt_len] > 0 && (target_txt_len+1) % prefix_len == 0 {
+                    writeln!(write_buf, "{} {}", target_txt_len + 1, (target_txt_len+1) / prefix_len)?;
                 }
             }
 
