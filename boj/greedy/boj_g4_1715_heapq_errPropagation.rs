@@ -46,9 +46,10 @@ impl<'a> Scanner<'a> {
         let n = self.next::<usize>()?;
         let mut heap = BinaryHeap::with_capacity(n);
 
+        // 타입을 T로 받으면 token에 -기호를 붙이기 어렵다.
         while let Ok(token) = self.next::<i32>() {
             // let value = token.parse::<T>().map_err(|e| -> Box<dyn Error> { format!("{:?}", e).into() })?;
-            // heap.push(value);
+            // heap.push(-value);
             heap.push(-token);
         }
 
@@ -61,7 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut write_buf = BufWriter::new(io::stdout().lock());
     let mut buffer = String::new();
 
-    // 읽을 때 마다 heapq에 push
+    // 읽을 때 마다 heapq에 collect
     let n = read!(read_buf, buffer, usize)?;
     let mut hq = (0..n).map(|_| read!(read_buf, buffer, i32).map(|v| -v)).collect::<Result<BinaryHeap<i32>, Box<dyn Error>>>()?;
 
@@ -78,7 +79,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //     hq.push(deck);
     // }
 
-    // // 메서드로 hq생성
+    // // main entry point에서 수행하는 대신, 메서드로 hq생성
     // let mut hq = scanner.heapq::<i32>()?;
 
     let mut sum = 0;
