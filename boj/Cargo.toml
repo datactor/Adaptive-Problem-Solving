@@ -974,3 +974,7 @@ path = "str/boj_p4_10266_kmp.rs"
 [[example]]
 name = "boj_1498"
 path = "str/boj_p4_1498_kmp_failurefunc.rs"
+
+[[example]]
+name = "boj_1715"
+path = "greedy/boj_g4_1715_heapq_errPropagation.rs"
