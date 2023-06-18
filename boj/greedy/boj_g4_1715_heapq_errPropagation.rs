@@ -7,15 +7,20 @@ use std::{
     collections::BinaryHeap,
 };
 
+// 클로저(람다 함수) 정의 후 바로 실행하는 패턴; 즉시 실행 함수 표현식.
+// Immediately Invoked Function Expression, IIFE: ()()
+// Result type을 반환하며 성공시 $type값을 담고, 실패시 에러를 담는다.
 macro_rules! read {
     ($reader:expr, $input:expr, $type:ty) => {
-        (|| -> Result<$type, Box<dyn Error>> {
-            $input.clear();
-            $reader.read_line(&mut $input)?;
-            Ok($input.trim().parse::<$type>()?)
-        })()
-    };
-}
+        (
+            || -> Result<$type, Box<dyn Error>> {
+                $input.clear();
+                $reader.read_line(&mut $input)?;
+                Ok($input.trim().parse::<$type>()?)
+            }
+        )()  // 빈 괄호 쌍`()`를 붙여서 클로저를 즉시 호출. 이것이 IIFE
+    };       // 만약 빈 괄호 쌍을 붙이지 않는다면, 단지 클로저 정의에 불과하며 실행되지 않는다.
+}            // 우리가 클로저를 사용할 때, 클로저의 정의에 빈 괄호 쌍을 붙이는 것과 동일하다.
 
 struct Scanner<'a> {
     input: std::str::SplitAsciiWhitespace<'a>,
