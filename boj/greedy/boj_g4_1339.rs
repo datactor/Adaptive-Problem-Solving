@@ -28,15 +28,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         let v = read!(read_buf, buf_to_string).as_bytes().to_vec();
         for (i, b_idx) in (0..v.len()).rev().enumerate() {
             let digit: u32 = 10u32.pow(i as u32);
-            hash.entry(v[b_idx]).or_insert(vec![]);
-            hash.get_mut(&v[b_idx]).unwrap().push(digit);
+            hash.entry(v[b_idx]).or_insert(vec![]).push(digit);
         }
     }
-    for (k, v) in hash {
+
+    for (_, v) in hash {
         total.push(v.iter().sum::<u32>());
     }
 
-    let mut largest: i32 = 9;
+    let mut largest: i8 = 9;
     let mut ans = 0;
     while let Some(max) = total.pop() {
         ans += largest as u32 * max;
