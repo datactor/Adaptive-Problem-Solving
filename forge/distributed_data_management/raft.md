@@ -643,29 +643,50 @@ async fn handle_client_request(
   }
 }
 ```
-### 5.2. Distributed Database
-### 5.3. Distributed Configuration Management
 
-## 6. Testing and Debugging Rust Raft Applications
-### 6.1. Unit Testing and Integration Testing
-### 6.2. Debugging Techniques and Tools
-### 6.3. Performance Tuning and Optimization
+[//]: # (### 5.2. Distributed Database)
 
-## 7. Rust Raft Ecosystem and Related Libraries
-### 7.1. Async-raft
-### 7.2. Raft-rs
-### 7.3. Other Noteworthy Libraries and Tools
+[//]: # (### 5.3. Distributed Configuration Management)
 
-## 8. Rust Raft in Production
-### 8.1. Deployment Strategies
-### 8.2. Monitoring and Metrics
-### 8.3. Security Considerations
+[//]: # ()
+[//]: # (## 6. Testing and Debugging Rust Raft Applications)
 
-## 9. Case Studies and Success Stories
-### 9.1. Example 1: Company A's Distributed Database Solution
-### 9.2. Example 2: Company B's High-performance Key-Value Store
-### 9.3. Example 3: Company C's Scalable Configuration Management System
+[//]: # (### 6.1. Unit Testing and Integration Testing)
 
-## 10. Conclusion and Future Directions
-### 10.1. Summary of Rust Raft
-### 10.2. Future Developments in Rust and Distributed Systems
+[//]: # (### 6.2. Debugging Techniques and Tools)
+
+[//]: # (### 6.3. Performance Tuning and Optimization)
+
+[//]: # ()
+[//]: # (## 7. Rust Raft Ecosystem and Related Libraries)
+
+[//]: # (### 7.1. Async-raft)
+
+[//]: # (### 7.2. Raft-rs)
+
+[//]: # (### 7.3. Other Noteworthy Libraries and Tools)
+
+[//]: # ()
+[//]: # (## 8. Rust Raft in Production)
+
+[//]: # (### 8.1. Deployment Strategies)
+
+[//]: # (### 8.2. Monitoring and Metrics)
+
+[//]: # (### 8.3. Security Considerations)
+
+[//]: # ()
+[//]: # (## 9. Case Studies and Success Stories)
+
+[//]: # (### 9.1. Example 1: Company A's Distributed Database Solution)
+
+[//]: # (### 9.2. Example 2: Company B's High-performance Key-Value Store)
+
+[//]: # (### 9.3. Example 3: Company C's Scalable Configuration Management System)
+
+[//]: # ()
+[//]: # (## 10. Conclusion and Future Directions)
+
+[//]: # (### 10.1. Summary of Rust Raft)
+
+[//]: # (### 10.2. Future Developments in Rust and Distributed Systems)
