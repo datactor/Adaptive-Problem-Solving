@@ -39,9 +39,9 @@ impl<'a> Scanner<'a> {
     {
         self.input
             .next()
-            .ok_or("Reached end of input")?
+            .ok_or("Reached end of input")? // Option<T>(Some(T), None으로 반환되는 타입을 Result<T>(Ok(T), Err(e))로 재매핑하는 메서드. 에러처리를 일원화 하기 위해 사용.
             .parse::<T>()
-            .map_err(|e| format!("{:?}", e).into())
+            .map_err(|e| format!("{:?}", e).into()) // String타입으로 에러 e를 디버그 문자열로 변환 후, into()메서드를 통해 Box<dyn Error>타입으로 변환하여 타입을 맞춘다.
     }
 
     fn heapq<T: std::str::FromStr + Ord>(&mut self) -> Result<BinaryHeap<i32>, Box<dyn Error>>
