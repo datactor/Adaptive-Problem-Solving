@@ -25,14 +25,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut total = BinaryHeap::with_capacity(10);
     let mut hash = HashMap::with_capacity(10);
     for _ in 0..n {
-        let v = read!(read_buf, buf_to_string).as_bytes().to_vec();
+        let v = read!(read_buf, buf_to_string).as_bytes();
         for (i, b_idx) in (0..v.len()).rev().enumerate() {
             let digit: u32 = 10u32.pow(i as u32);
             hash.entry(v[b_idx]).or_insert(vec![]).push(digit);
         }
     }
 
-    for (_, v) in hash {
+    for (_k, v) in hash {
         total.push(v.iter().sum::<u32>());
     }
 
