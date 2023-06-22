@@ -990,3 +990,7 @@ path = "greedy/boj_g4_1744.rs"
 [[example]]
 name = "boj_13904"
 path = "greedy/boj_g3_13904_hq.rs"
+
+[[example]]
+name = "boj_2812"
+path = "greedy/boj_g3_2812_stack.rs"
