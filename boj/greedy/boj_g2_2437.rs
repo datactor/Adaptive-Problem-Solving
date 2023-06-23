@@ -1,4 +1,5 @@
 // https://www.acmicpc.net/problem/2437
+// O(n lg n)
 
 use std::{
     io::{self, Read, Write, BufWriter},
