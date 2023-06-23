@@ -54,6 +54,5 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     write!(buf_writer, "{}", hq.len())?;
-
     Ok(())
 }
