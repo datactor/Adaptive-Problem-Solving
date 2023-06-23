@@ -1,4 +1,5 @@
 // https://www.acmicpc.net/problem/2437
+// ref https://4legs-study.tistory.com/97
 // O(n lg n)
 
 use std::{
