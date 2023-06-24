@@ -1006,3 +1006,7 @@ path = "greedy/boj_g2_2437_prefixSum.rs"
 [[example]]
 name = "boj_11000"
 path = "greedy/boj_g5_11000_hq.rs"
+
+[[example]]
+name = "boj_5585"
+path = "greedy/boj_b2_5585.rs"
