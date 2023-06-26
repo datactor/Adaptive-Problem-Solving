@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     cranes.sort_unstable_by(|a, b| b.cmp(a));
     crates.sort_unstable_by(|a, b| b.cmp(a));
 
-    if *crates.first().unwrap() > *cranes.first().unwrap() as i32 {
+    if *crates.first().unwrap() > *cranes.first().unwrap() {
         write!(buf_writer, "{}", -1)?;
         return Ok(())
     }
@@ -51,9 +51,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut times = 0;
     while !crates.is_empty() {
         for max_load in &cranes {
-            for weight in 0..crates.len() {
-                if max_load >= &crates[weight] {
-                    crates.remove(weight);
+            for i in 0..crates.len() {
+                if max_load >= &crates[i] {
+                    crates.remove(i);
                     break
                 }
             }
