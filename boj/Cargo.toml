@@ -1014,3 +1014,7 @@ path = "greedy/boj_b2_5585.rs"
 [[example]]
 name = "boj_1789"
 path = "greedy/boj_s5_1789_math.rs"
+
+[[example]]
+name = "boj_1092"
+path = "greedy/boj_g5_1092.rs"
