@@ -1030,3 +1030,7 @@ path = "greedy/boj_g5_1041_math.rs"
 [[example]]
 name = "boj_4344"
 path = "math/boj_b1_4344.rs"
+
+[[example]]
+name = "boj_13310"
+path = "geometry/boj_d5_13310_convexHull_rotatingCalipers_ternarySearch.rs"
