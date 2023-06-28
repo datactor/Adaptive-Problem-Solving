@@ -38,17 +38,16 @@ struct Point {
 }
 
 impl Point {
-    fn new(xp: i32, yp: i32, xs: i32, ys: i32) -> Self {
+    fn new(x: i32, y: i32, dx: i32, dy: i32) -> Self {
         Self {
-            pos: (xp, yp),
-            speed: (xs, ys),
+            pos: (x, y),
+            speed: (dx, dy),
         }
     }
 
-    // fn moves(&mut self) {
-    //     self.pos.0 += self.speed.0;
-    //     self.pos.1 += self.speed.1;
-    // }
+    fn moves(&self, t: i64) -> (i64, i64) {
+        (self.pos.0 as i64 + self.speed.0 as i64 * t, self.pos.1 as i64 + self.speed.1 as i64 * t)
+    }
 }
 
 #[derive(Debug)]
@@ -72,7 +71,7 @@ impl Points {
     // }
 
     // Ternary search
-    fn solve(&mut self, n: usize, t: i64, writer: &mut BufWriter<StdoutLock>) -> io::Result<()> {
+    fn solve(&self, n: usize, t: i64, writer: &mut BufWriter<StdoutLock>) -> io::Result<()> {
         let mut s = 0;
         let mut e = t;
         let mut stars = vec![(0, 0); n];
@@ -101,11 +100,11 @@ impl Points {
 
 fn max_dist_at_time(t: i64, n: usize, stars: &mut Vec<(i64, i64)>, v: &Points) -> i64 {
     for i in 0..n {
-        stars[i as usize] = (v.vec[i].pos.0 as i64 + v.vec[i].speed.0 as i64 * t, v.vec[i].pos.1 as i64 + v.vec[i].speed.1 as i64 * t);
+        stars[i] = v.vec[i].moves(t)
     }
 
     // Graham's Scan
-    let min_idx = stars.iter().enumerate().min_by_key(|&(_, star)| star.0).unwrap().0;
+    let min_idx = stars.iter().enumerate().min_by_key(|&(_, (x, _))| x).unwrap().0;
     stars.swap(0, min_idx);
     let pivot = stars[0];
     stars[1..].sort_unstable_by(|p1, p2| {
@@ -161,11 +160,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     io::stdin().lock().read_to_string(&mut buffer)?;
 
     let mut scanner = Scanner::new(&buffer);
-    let (n, t) = (scanner.read::<usize>()?, scanner.read::<i64>()?);
+    let n = scanner.read::<usize>()?;
+    let t = scanner.read::<i64>()?;
 
     let mut points = Points::new();
     for _ in 0..n {
-        let point = Point::new(scanner.read::<i32>()?, scanner.read::<i32>()?, scanner.read::<i32>()?, scanner.read::<i32>()?);
+        let point = Point::new(
+            scanner.read::<i32>()?,
+            scanner.read::<i32>()?,
+            scanner.read::<i32>()?,
+            scanner.read::<i32>()?);
         points.push(point);
     }
 
