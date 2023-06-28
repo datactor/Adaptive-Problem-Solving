@@ -72,10 +72,10 @@ impl Points {
     // }
 
     // Ternary search
-    fn solve(&mut self, n: i64, t: i64, writer: &mut BufWriter<StdoutLock>) -> io::Result<()> {
+    fn solve(&mut self, n: usize, t: i64, writer: &mut BufWriter<StdoutLock>) -> io::Result<()> {
         let mut s = 0;
         let mut e = t;
-        let mut stars = vec![(0, 0); n as usize];
+        let mut stars = vec![(0, 0); n];
         while s + 3 <= e {
             let l = (s + s + e) / 3;
             let r = (s + e + e) / 3;
@@ -99,9 +99,9 @@ impl Points {
     }
 }
 
-fn max_dist_at_time(t: i64, n: i64, stars: &mut Vec<(i64, i64)>, v: &Points) -> i64 {
+fn max_dist_at_time(t: i64, n: usize, stars: &mut Vec<(i64, i64)>, v: &Points) -> i64 {
     for i in 0..n {
-        stars[i as usize] = (v.vec[i as usize].pos.0 as i64 + v.vec[i as usize].speed.0 as i64 * t, v.vec[i as usize].pos.1 as i64 + v.vec[i as usize].speed.1 as i64 * t);
+        stars[i as usize] = (v.vec[i].pos.0 as i64 + v.vec[i].speed.0 as i64 * t, v.vec[i].pos.1 as i64 + v.vec[i].speed.1 as i64 * t);
     }
 
     // Graham's Scan
@@ -110,17 +110,10 @@ fn max_dist_at_time(t: i64, n: i64, stars: &mut Vec<(i64, i64)>, v: &Points) -> 
     let pivot = stars[0];
     stars[1..].sort_unstable_by(|p1, p2| {
         let c = ccw(&pivot, p1, p2);
-        if c > 0 {
-            return Ordering::Less;
-        }
-        if c < 0 {
-            return Ordering::Greater;
-        }
-        if dist(&pivot, p1) < dist(&pivot, p2) {
-            Ordering::Less
-        } else {
-            Ordering::Greater
-        }
+        if c > 0 { Ordering::Less }
+        else if c < 0 { Ordering::Greater }
+        else if dist(&pivot, p1) < dist(&pivot, p2) { Ordering::Less }
+        else { Ordering::Greater }
     });
 
     let mut cvxh: Vec<(i64, i64)> = vec![];
@@ -131,16 +124,17 @@ fn max_dist_at_time(t: i64, n: i64, stars: &mut Vec<(i64, i64)>, v: &Points) -> 
         cvxh.push(stars[i as usize]);
     }
 
-    let mut ret = 0;
-    let mut p = 0;
+    // rotating calipers
+    let mut max_dist = 0;
+    let mut next_point_idx = 0;
     for i in 0..cvxh.len() {
-        while p + 1 < cvxh.len() && is_ccw(cvxh[i], cvxh[i + 1], cvxh[p], cvxh[p + 1]) {
-            ret = max(ret, dist(&cvxh[i], &cvxh[p]));
-            p += 1;
+        while next_point_idx + 1 < cvxh.len() && is_ccw(cvxh[i], cvxh[i + 1], cvxh[next_point_idx], cvxh[next_point_idx + 1]) {
+            max_dist = max(max_dist, dist(&cvxh[i], &cvxh[next_point_idx]));
+            next_point_idx += 1;
         }
-        ret = max(ret, dist(&cvxh[i], &cvxh[p]));
+        max_dist = max(max_dist, dist(&cvxh[i], &cvxh[next_point_idx]));
     }
-    ret
+    max_dist
 }
 
 fn is_ccw(s1: (i64, i64), e1: (i64, i64), s2: (i64, i64), e2: (i64, i64)) -> bool {
@@ -150,16 +144,14 @@ fn is_ccw(s1: (i64, i64), e1: (i64, i64), s2: (i64, i64), e2: (i64, i64)) -> boo
 }
 
 fn dist(a: &Star, b: &Star) -> i64 {
-    let dx = a.0 - b.0;
-    let dy = a.1 - b.1;
-    dx * dx + dy * dy
+    (a.0 - b.0).pow(2) + (a.1 - b.1).pow(2)
 }
 
 fn ccw(a: &Star, b: &Star, c: &Star) -> i64 {
-    let res1 = a.0 * b.1 + b.0 * c.1 + c.0 * a.1;
-    let res2 = b.0 * a.1 + c.0 * b.1 + a.0 * c.1;
-    if res1 > res2 { 1 }
-    else if res1 < res2 { -1 }
+    let cross_ab_ac = a.0 * b.1 + b.0 * c.1 + c.0 * a.1;
+    let cross_ba_bc = b.0 * a.1 + c.0 * b.1 + a.0 * c.1;
+    if cross_ab_ac > cross_ba_bc { 1 }
+    else if cross_ab_ac < cross_ba_bc { -1 }
     else { 0 }
 }
 
@@ -169,7 +161,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     io::stdin().lock().read_to_string(&mut buffer)?;
 
     let mut scanner = Scanner::new(&buffer);
-    let (n, t) = (scanner.read::<i64>()?, scanner.read::<i64>()?);
+    let (n, t) = (scanner.read::<usize>()?, scanner.read::<i64>()?);
 
     let mut points = Points::new();
     for _ in 0..n {
@@ -178,71 +170,5 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     points.solve(n, t, &mut buf_writer)?;
-    // 삼분탐색을 쓰지 않음
-    // for i in 0..t+1 {
-    //     if i != 0 {
-    //         points.next();
-    //     }
-    //
-    //     // println!("i: {}, points: {:?}", i, points);
-    //     // Graham's Scan
-    //     points.vec.sort_unstable();
-    //     let pivot = points.vec[0];
-    //     points.vec[1..].sort_unstable_by(|p1, p2| {
-    //         let c = ccw(&pivot, p1, p2);
-    //         if c > 0 {
-    //             return Ordering::Less;
-    //         }
-    //         if c < 0 {
-    //             return Ordering::Greater;
-    //         }
-    //         if dist(&pivot, p1) < dist(&pivot, p2) {
-    //             Ordering::Less
-    //         } else {
-    //             Ordering::Greater
-    //         }
-    //     });
-    //
-    //
-    //     let mut cvxh = vec![points.vec[0], points.vec[1]];
-    //
-    //     for point in &points.vec[2..] {
-    //         while cvxh.len() >= 2 && ccw(&cvxh[cvxh.len() - 2], cvxh.last().unwrap(), point) <= 0 {
-    //             cvxh.pop();
-    //         }
-    //         cvxh.push(*point);
-    //     }
-    //
-    //     let mut fpi = 1; // furthest point idx
-    //     let mut cur_max = 0;
-    //     let mut p1 = cvxh[0];
-    //     let mut p2 = cvxh[1];
-    //     let len = cvxh.len();
-    //     for i in 0..len {
-    //         while (fpi + 1) % len != i &&
-    //             ccw_with_translated_point(&cvxh[i], &cvxh[(i + 1) % len], &cvxh[fpi % len], cvxh[(fpi + 1) % len]) > 0
-    //         {
-    //             let d = dist(&cvxh[i], &cvxh[fpi % len]);
-    //             if cur_max < d {
-    //                 p1 = cvxh[i];
-    //                 p2 = cvxh[fpi % len];
-    //                 cur_max = d;
-    //             }
-    //             fpi += 1;
-    //         }
-    //         let d = dist(&cvxh[i], &cvxh[fpi % len]);
-    //         if cur_max < d {
-    //             p1 = cvxh[i];
-    //             p2 = cvxh[fpi % len];
-    //             cur_max = d;
-    //         }
-    //     }
-    //     // println!("{}", cur_max);
-    //     if mn_date.0 > cur_max {
-    //         mn_date = (cur_max, i);
-    //     }
-    // }
-    //
-    // write!(buf_writer, "{}\n{}", mn_date.1, mn_date.0)?;
     Ok(())
 }
