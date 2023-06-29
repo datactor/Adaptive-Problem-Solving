@@ -1034,3 +1034,7 @@ path = "math/boj_b1_4344.rs"
 [[example]]
 name = "boj_13310"
 path = "geometry/boj_d5_13310_cvxh_rotatingCalipers_ternarySearch.rs"
+
+[[example]]
+name = "boj_9063"
+path = "geometry/boj_b3_9063_math.rs"
