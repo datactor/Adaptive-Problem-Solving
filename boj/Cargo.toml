@@ -1042,3 +1042,7 @@ path = "geometry/boj_b3_9063_math.rs"
 [[example]]
 name = "boj_9998"
 path = "bisec/boj_g3_9998_ternarySec.rs"
+
+[[example]]
+name = "boj_3878"
+path = "geometry/boj_p2_3878_cvxh_segmentIntersection_pointInPolygon.rs"
