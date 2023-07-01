@@ -1050,3 +1050,7 @@ path = "geometry/boj_p2_3878_cvxh_segmentIntersection_pointInPolygon.rs"
 [[example]]
 name = "boj_7420"
 path = "geometry/boj_p5_7420_cvxh_circleFence.rs"
+
+[[example]]
+name = "boj_28295"
+path = "imple/boj_b4_28295_math_modulo.rs"
