@@ -40,10 +40,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut hq = BinaryHeap::new();
 
     for i in 0..n {
-        let num = scanner.next::<i32>()? - i as i32;
+        let required_movement = scanner.next::<i32>()? - i as i32;
 
-        hq.push(num);
-        hq.push(num);
+        hq.push(required_movement);
+        hq.push(required_movement);
         hq.pop();
         ans[i] = *hq.peek().ok_or("Empty Heap")?;
     }
