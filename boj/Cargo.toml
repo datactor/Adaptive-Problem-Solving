@@ -1054,3 +1054,7 @@ path = "geometry/boj_p5_7420_cvxh_circleFence.rs"
 [[example]]
 name = "boj_28295"
 path = "imple/boj_b4_28295_math_modulo.rs"
+
+[[example]]
+name = "boj_13323"
+path = "dp/boj_d3_13323_hq_slopeTrick.rs"
