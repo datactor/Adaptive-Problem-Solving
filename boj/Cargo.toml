@@ -1062,3 +1062,7 @@ path = "dp/boj_d3_13323_hq_slopeTrick.rs"
 [[example]]
 name = "boj_13324"
 path = "dp/boj_d2_13324_hq_slopeTrick.rs"
+
+[[example]]
+name = "boj_19532"
+path = "math/boj_b2_19532.rs"
