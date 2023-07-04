@@ -1066,3 +1066,7 @@ path = "dp/boj_d2_13324_hq_slopeTrick.rs"
 [[example]]
 name = "boj_19532"
 path = "math/boj_b2_19532.rs"
+
+[[example]]
+name = "boj_2501"
+path = "math/boj_b3_2501_sqrtDivisor.rs"
