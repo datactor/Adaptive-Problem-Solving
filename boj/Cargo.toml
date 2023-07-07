@@ -1074,3 +1074,7 @@ path = "math/boj_b3_2501_sqrtDivisor.rs"
 [[example]]
 name = "boj_10811"
 path = "imple/boj_b2_10811.rs"
+
+[[example]]
+name = "boj_1024"
+path = "math/boj_s2_1024.rs"
