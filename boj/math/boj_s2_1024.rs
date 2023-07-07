@@ -42,7 +42,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 for len in 0..l {
                     write!(buf_writer, "{} ", len + x)?;
                 }
-                writeln!(buf_writer, "")?;
                 return Ok(());
             }
         }
