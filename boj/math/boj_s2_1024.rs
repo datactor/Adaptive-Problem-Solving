@@ -47,7 +47,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-
     write!(buf_writer, "-1")?;
     Ok(())
 }
