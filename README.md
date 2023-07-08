@@ -17,6 +17,7 @@ subfolder corresponding to its category.
 
 ## Forge
 
+
 The `forge` folder contains markdown files that explain concepts in Rust
 that weren't obvious to me or that I am fascinated by, as well as other enchanting technologies.
 
