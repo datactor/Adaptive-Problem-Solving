@@ -49,7 +49,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             other => other.unwrap(),
         }
     });
-
     for (i, _) in vec {
         writeln!(buf_writer, "{}", i)?;
     }
