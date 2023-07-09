@@ -33,6 +33,7 @@ impl<'a> Scanner<'a> {
 struct Point {
     x: i32,
     y: i32,
+    cvxh: bool,
 }
 
 impl Point {
@@ -62,11 +63,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     for _ in 0..n {
         let x = scanner.next::<i32>()?;
         let y = scanner.next::<i32>()?;
-        points.push(Point { x, y });
+        points.push(Point { x, y, cvxh: false });
     }
     
     let mut cnt = 0;
-    let prison = Point { x: px, y: py };
+    let prison = Point { x: px, y: py, cvxh: false };
 
     'round: while points.len() > 2 {
         // Graham's scan
@@ -84,15 +85,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // get cvxh
         let mut cvxh = Vec::new();
-        for &next in points.iter() {
-            while cvxh.len() >= 2 && Point::ccw(&cvxh[cvxh.len()-2], cvxh.last().unwrap(), &next) <= 0 {
+        for i in 0..points.len() {
+            let point = points[i];
+            while cvxh.len() >= 2 && Point::ccw(&cvxh[cvxh.len()-2], cvxh.last().unwrap(), &point) <= 0 {
                 cvxh.pop();
             }
-            cvxh.push(next);
+            points[i].cvxh = true;
+            cvxh.push(point);
         }
         cvxh.push(cvxh[0]);
 
         // remove points cvxh edges
+        // points = points.into_iter().filter(|p| !p.cvxh).collect();
+
+        // Todo!(Reduce complexity of removing cvxh edges from O(n^2) to O(n)
         points = points.into_iter().filter(|p| !cvxh.contains(p)).collect();
         
         // check if prison is inside cvxh
