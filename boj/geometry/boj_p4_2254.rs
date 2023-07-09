@@ -4,7 +4,6 @@ use std::{
     io::{self, Read, Write, BufWriter},
     error::Error,
     cmp::Ordering,
-    collections::HashSet,
 };
 
 struct Scanner<'a> {
@@ -30,32 +29,25 @@ impl<'a> Scanner<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct Point {
-    x: i64,
-    y: i64,
+    x: i32,
+    y: i32,
 }
 
 impl Point {
-    fn ccw(t1: &Point, t2: &Point, t3: &Point) -> bool {
-        let s = (t2.x - t1.x) * (t3.y - t1.y) - (t2.y - t1.y) * (t3.x - t1.x);
-        s > 0
+    fn ccw(p1: &Point, p2: &Point, p3: &Point) -> i32 {
+        let a = (p2.x - p1.x) as i64 * (p3.y - p1.y) as i64;
+        let b = (p2.y - p1.y) as i64 * (p3.x - p1.x) as i64;
+        if a > b { 1 }
+        else if a < b { -1 }
+        else { 0 }
     }
-}
 
-impl PartialOrd for Point {
-    fn partial_cmp(&self, other: &Point) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Point {
-    fn cmp(&self, other: &Point) -> Ordering {
-        if self.x == other.x {
-            self.y.cmp(&other.y)
-        } else {
-            self.x.cmp(&other.x)
-        }
+    fn dist(a: &Point, b: &Point) -> i64 {
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        (dx * dx) as i64 + (dy * dy) as i64
     }
 }
 
@@ -64,73 +56,52 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut buffer = String::new();
     io::stdin().lock().read_to_string(&mut buffer)?;
     let mut scanner = Scanner::new(&buffer);
-    let (n, px, py): (usize, i64, i64) = (scanner.next()?, scanner.next()?, scanner.next()?);
+    let (n, px, py): (usize, i32, i32) = (scanner.next()?, scanner.next()?, scanner.next()?);
 
     let mut points = Vec::with_capacity(n);
     for _ in 0..n {
-        let x = scanner.next::<i64>()?;
-        let y = scanner.next::<i64>()?;
+        let x = scanner.next::<i32>()?;
+        let y = scanner.next::<i32>()?;
         points.push(Point { x, y });
     }
     
     let mut cnt = 0;
-    let pxy = Point { x: px, y: py };
-    let mut is_hull = true;
+    let prison = Point { x: px, y: py };
 
-    while is_hull && points.len() > 2 {
-        points.sort_unstable();
-        let mut bot_cvxh = vec![points[0], points[1]];
-        let mut top_cvxh = vec![*points.last().unwrap(), points[points.len()-2]];
+    'round: while points.len() > 2 {
+        // Graham's scan
+        let min_idx = points.iter().enumerate().min_by_key(|&(_, point)| point.x).unwrap().0;
+        points.swap(0, min_idx);
 
-        for point in points[2..].iter() {
-            bot_cvxh.push(*point);
-            let mut p = true;
-            while p && bot_cvxh.len() > 2 {
-                let p1 = bot_cvxh.pop().unwrap();
-                let p2 = bot_cvxh.pop().unwrap();
-                if Point::ccw(&bot_cvxh.last().unwrap(), &p2, &p1) {
-                    bot_cvxh.push(p2);
-                    bot_cvxh.push(p1);
-                    p = false;
-                } else {
-                    bot_cvxh.push(p1);
-                }
+        let pivot = points[0];
+        points[1..].sort_unstable_by(|p1, p2| {
+            let c = Point::ccw(&pivot, p1, p2);
+            if c > 0 { Ordering::Less }
+            else if c < 0 { Ordering::Greater }
+            else if Point::dist(&pivot, p1) < Point::dist(&pivot, p2) { Ordering::Less }
+            else { Ordering::Greater }
+        });
+
+        // get cvxh
+        let mut cvxh = Vec::new();
+        for &next in points.iter() {
+            while cvxh.len() >= 2 && Point::ccw(&cvxh[cvxh.len()-2], cvxh.last().unwrap(), &next) <= 0 {
+                cvxh.pop();
             }
+            cvxh.push(next);
         }
+        cvxh.push(cvxh[0]);
 
-        for point in points[..points.len()-2].iter().rev() {
-            top_cvxh.push(*point);
-            let mut p = true;
-            while p && top_cvxh.len() > 2 {
-                let p1 = top_cvxh.pop().unwrap();
-                let p2 = top_cvxh.pop().unwrap();
-                if Point::ccw(&top_cvxh.last().unwrap(), &p2, &p1) {
-                    top_cvxh.push(p2);
-                    top_cvxh.push(p1);
-                    p = false;
-                } else {
-                    top_cvxh.push(p1);
-                }
-            }
-        }
-
-        bot_cvxh.pop();
-        let cvxh = [bot_cvxh.clone(), top_cvxh.clone()].concat();
-
-        let cvxh_set: HashSet<_> = cvxh.iter().cloned().collect();
-        let points_set: HashSet<_> = points.iter().cloned().collect();
-        points = points_set.difference(&cvxh_set).copied().collect();
-
+        // remove points cvxh edges
+        points = points.into_iter().filter(|p| !cvxh.contains(p)).collect();
+        
+        // check if prison is inside cvxh
         for i in 0..cvxh.len()-1 {
-            if !Point::ccw(&cvxh[i], &cvxh[i+1], &pxy) {
-                is_hull = false;
-                break;
+            if Point::ccw(&cvxh[i], &cvxh[i+1], &prison) <= 0 {
+                break 'round;
             }
         }
-
-        if is_hull {
-            cnt += 1;
-        }
+        cnt += 1;
     }
 
     write!(buf_writer, "{}", cnt)?;
