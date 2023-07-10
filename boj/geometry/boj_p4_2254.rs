@@ -34,6 +34,7 @@ struct Point {
     x: i32,
     y: i32,
     cvxh: bool,
+    idx: usize,
 }
 
 impl Point {
@@ -60,14 +61,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (n, px, py): (usize, i32, i32) = (scanner.next()?, scanner.next()?, scanner.next()?);
 
     let mut points = Vec::with_capacity(n);
-    for _ in 0..n {
+    for i in 0..n {
         let x = scanner.next::<i32>()?;
         let y = scanner.next::<i32>()?;
-        points.push(Point { x, y, cvxh: false });
+        points.push(Point { x, y, cvxh: false, idx: i });
     }
     
     let mut cnt = 0;
-    let prison = Point { x: px, y: py, cvxh: false };
+    let prison = Point { x: px, y: py, cvxh: false, idx: 100_001 };
 
     'round: while points.len() > 2 {
         // Graham's scan
