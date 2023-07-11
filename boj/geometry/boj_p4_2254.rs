@@ -4,6 +4,7 @@ use std::{
     io::{self, Read, Write, BufWriter},
     error::Error,
     cmp::Ordering,
+    // collections::HashSet,
 };
 
 struct Scanner<'a> {
@@ -33,8 +34,6 @@ impl<'a> Scanner<'a> {
 struct Point {
     x: i32,
     y: i32,
-    cvxh: bool,
-    idx: usize,
 }
 
 impl Point {
@@ -61,14 +60,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (n, px, py): (usize, i32, i32) = (scanner.next()?, scanner.next()?, scanner.next()?);
 
     let mut points = Vec::with_capacity(n);
-    for i in 0..n {
+    for _ in 0..n {
         let x = scanner.next::<i32>()?;
         let y = scanner.next::<i32>()?;
-        points.push(Point { x, y, cvxh: false, idx: i });
+        points.push(Point { x, y });
     }
     
     let mut cnt = 0;
-    let prison = Point { x: px, y: py, cvxh: false, idx: 100_001 };
+    let prison = Point { x: px, y: py };
 
     'round: while points.len() > 2 {
         // Graham's scan
@@ -86,20 +85,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // get cvxh
         let mut cvxh = Vec::new();
-        for i in 0..points.len() {
-            let point = points[i];
-            while cvxh.len() >= 2 && Point::ccw(&cvxh[cvxh.len()-2], cvxh.last().unwrap(), &point) <= 0 {
+        // let mut cvxh_set = HashSet::new();
+        for &next in points.iter() {
+            while cvxh.len() >= 2 && Point::ccw(&cvxh[cvxh.len()-2], cvxh.last().unwrap(), &next) <= 0 {
+                // cvxh_set.remove(cvxh.last().unwrap());
                 cvxh.pop();
             }
-            points[i].cvxh = true;
-            cvxh.push(point);
+            cvxh.push(next);
+            // cvxh_set.insert(next);
         }
         cvxh.push(cvxh[0]);
+        // cvxh_set.insert(cvxh[0]);
 
         // remove points cvxh edges
-        // points = points.into_iter().filter(|p| !p.cvxh).collect();
-
-        // Todo!(Reduce complexity of removing cvxh edges from O(n^2) to O(n)
+        // cvxh_set을 사용하면 O(points.len())으로 줄일 수 있지만, HashSet을 만들고 추가하고 삭제하는 오버헤드가 더 크다.
+        // 그러므로 O(points.len().pow(2))으로 진행.
+        // points = points.into_iter().filter(|p| !cvxh_set.contains(p)).collect();
         points = points.into_iter().filter(|p| !cvxh.contains(p)).collect();
         
         // check if prison is inside cvxh
