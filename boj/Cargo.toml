@@ -1090,3 +1090,7 @@ path = "geometry/boj_p4_2254.rs"
 [[example]]
 name = "boj_1003"
 path = "dp/boj_s3_1003_fibo.rs"
+
+[[example]]
+name = "boj_1735"
+path = "math/boj_s3_1735_euclideanAlgo.rs"
