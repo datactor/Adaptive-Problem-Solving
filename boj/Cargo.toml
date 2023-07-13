@@ -1098,3 +1098,7 @@ path = "math/boj_s3_1735_euclideanAlgo.rs"
 [[example]]
 name = "boj_1015"
 path = "imple/boj_s4_1015_sorting.rs"
+
+[[example]]
+name = "boj_25206"
+path = "str/boj_s5_25206_math.rs"
