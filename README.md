@@ -1,33 +1,30 @@
-# Rustic Data Solving: Algorithm Solutions and Rust Concepts Exploration  
-This repository contains solutions to algorithmic problems and conceptual explanations of Rust,
-including data processing and distributed systems.
-The goal is to acquire technical skills for comprehensive problem-solving in a broad sense using Rust.
+# Adaptive Problem Solving: Unraveling Algorithmic Problems and Core Concepts in Computer Science and Rust
+
+This repository serves as a platform for exploring and solving algorithmic problems, and unraveling key concepts in both Computer Science and Rust. While solutions and explanations are often articulated in Rust, our focus spans broader, covering various Computer Science topics such as data processing and distributed systems. The goal is to equip ourselves with technical skills for comprehensive problem-solving in a broad sense and to deepen our understanding of Computer Science.
 
 ## Folder structure
 
 - `boj/`: contains various algorithm problems solved in Rust,
   organized by problem category (e.g. backtracking, dynamic programming, etc.).
-- `forge/`: contains explanations of Rust's sharp swords, tough armor and other fine trinkets.
+- `forge/`: contains explanations and dives into the sharp swords and tough armors of programming primitives and various fine trinkets of Computer Science.
 
 ## BOJ
 
 Each problem is organized in its own subfolder and solution approach.
-The Rust code for each solution is located in the `boj`(Baekjoon Online Judge)
+The code for each solution is located in the `boj`(Baekjoon Online Judge)
 subfolder corresponding to its category.
 
 ## Forge
 
-
-The `forge` folder contains markdown files that explain concepts in Rust
-that weren't obvious to me or that I am fascinated by, as well as other enchanting technologies.
+The `forge` folder contains markdown files that explaining various programming primitives and Rust concepts. It also includes details about enchanting technology and Computer Science that piqued my interest or were not initially obvious.
 
 ## Getting Started
 
 To run the examples, simply navigate to the `{judge name}` folder and use the   
-`cargo run --example "{judge}_{number}"`
-command.  
+`cargo run --example "{judge}_{number}"` command.  
 
 For example:
+
 ```bash
 cd boj
 cargo run --example boj_2156
