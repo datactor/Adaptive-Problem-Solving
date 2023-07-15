@@ -6,7 +6,7 @@ This repository serves as a platform for exploring and solving algorithmic probl
 
 - `boj/`: contains various algorithm problems solved in Rust,
   organized by problem category (e.g. backtracking, dynamic programming, etc.).
-- `forge-bitCraft/`: contains explanations and dives into the sharp swords and tough armors of programming primitives and various fine trinkets of Computer Science.
+- `bit-crafting-forge/`: contains explanations and dives into the sharp swords and tough armors of programming primitives and various fine trinkets of Computer Science.
 
 ## BOJ
 
@@ -16,7 +16,7 @@ subfolder corresponding to its category.
 
 ## Bit crafting Forge
 
-The `forge-bitCraft` folder contains markdown files that explaining various programming primitives and Rust concepts. It also includes details about enchanting technology and Computer Science that piqued my interest or were not initially obvious.
+The `bit-crafting-forge` folder contains markdown files that explaining various programming primitives and Rust concepts. It also includes details about enchanting technology and Computer Science that piqued my interest or were not initially obvious.
 
 ## Getting Started
 
