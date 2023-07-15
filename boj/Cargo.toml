@@ -1106,3 +1106,7 @@ path = "str/boj_s5_25206_math.rs"
 [[example]]
 name = "boj_2170"
 path = "sorting/boj_g5_2170_sweeping.rs"
+
+[[example]]
+name = "boj_6850"
+path = "geometry/boj_p5_6850_cvxh.rs"
