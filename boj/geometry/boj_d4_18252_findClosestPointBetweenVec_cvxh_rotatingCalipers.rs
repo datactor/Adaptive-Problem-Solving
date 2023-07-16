@@ -123,23 +123,34 @@ fn main() -> Result<(), Box<dyn Error>> {
         // i는 cvxh의 시작점, j와 pt는 calipers의 끝점.
         // 각 i에 대해서 j와 pt는 cvxh를 따라 회전하면서 가장 큰 삼각형을 찾는다.
         let n = cvxh.len();
-        let mut i = 0;
-        let mut j = 1;
-        let mut pt = 1;
+        let mut moving_caliper_idx = 0;
+        let mut fixed_caliper1_idx = 1;
+        let mut fixed_caliper2_idx = 1;
         let mut cur = 0;
-        while i != n {
-            while i != pt {
-                if area(&cvxh[i], &cvxh[j], &cvxh[(pt + 1) % n], false) < cur {
-                    j = (j + 1) % n;
+        while moving_caliper_idx != n {
+            while moving_caliper_idx != fixed_caliper2_idx {
+                if area(
+                    &cvxh[moving_caliper_idx],
+                    &cvxh[fixed_caliper1_idx],
+                    &cvxh[(fixed_caliper2_idx + 1) % n],
+                    false,
+                ) < cur
+                {
+                    fixed_caliper1_idx = (fixed_caliper1_idx + 1) % n;
                 } else {
-                    pt = (pt + 1) % n;
+                    fixed_caliper2_idx = (fixed_caliper2_idx + 1) % n;
                 }
-                cur = area(&cvxh[i], &cvxh[j], &cvxh[pt], false);
+                cur = area(
+                    &cvxh[moving_caliper_idx],
+                    &cvxh[fixed_caliper1_idx],
+                    &cvxh[fixed_caliper2_idx],
+                    false,
+                );
                 ans = std::cmp::max(ans, cur);
             }
-            i += 1;
-            j = (i + 1) % n;
-            pt = (j + 1) % n;
+            moving_caliper_idx += 1;
+            fixed_caliper1_idx = (moving_caliper_idx + 1) % n;
+            fixed_caliper2_idx = (fixed_caliper1_idx + 1) % n;
         }
     }
 

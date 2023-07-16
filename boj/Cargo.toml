@@ -1113,4 +1113,4 @@ path = "geometry/boj_p5_6850_cvxh.rs"
 
 [[example]]
 name = "boj_18252"
-path = "geometry/boj_d4_18252_cvxh_twoPointer.rs"
+path = "geometry/boj_d4_18252_findClosestPointBetweenVec_cvxh_rotatingCalipers.rs"
