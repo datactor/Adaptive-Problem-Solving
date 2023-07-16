@@ -1110,3 +1110,7 @@ path = "sorting/boj_g5_2170_sweeping.rs"
 [[example]]
 name = "boj_6850"
 path = "geometry/boj_p5_6850_cvxh.rs"
+
+[[example]]
+name = "boj_18252"
+path = "geometry/boj_d4_18252_cvxh_twoPointer.rs"
