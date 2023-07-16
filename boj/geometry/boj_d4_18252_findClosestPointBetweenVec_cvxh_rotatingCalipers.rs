@@ -120,8 +120,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // two pointer로 cur을 구하면서, ans를 최대값으로 갱신.
         // rotating calipers를 사용해서 cvxh 위의 점들을 순회하여, 각 점에서 가장 면적이 큰 삼각형을 찾는다.
-        // i는 cvxh의 시작점, j와 pt는 calipers의 끝점.
-        // 각 i에 대해서 j와 pt는 cvxh를 따라 회전하면서 가장 큰 삼각형을 찾는다.
+        // moving_caliper_idx는 cvxh의 시작점, fixed_caliper1과 fixed_caliper2는 calipers의 끝점.
+        // 각 moving_caliper_idx에 대해서 fixed들은 cvxh를 따라 회전하면서 가장 큰 삼각형을 찾는다.
         let n = cvxh.len();
         let mut moving_caliper_idx = 0;
         let mut fixed_caliper1_idx = 1;
