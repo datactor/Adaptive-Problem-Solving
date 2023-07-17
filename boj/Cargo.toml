@@ -1114,3 +1114,7 @@ path = "geometry/boj_p5_6850_cvxh.rs"
 [[example]]
 name = "boj_18252"
 path = "geometry/boj_d4_18252_findClosestPointBetweenVec_cvxh_rotatingCalipers.rs"
+
+[[example]]
+name = "boj_2444"
+path = "imple/boj_b3_2444.rs"
