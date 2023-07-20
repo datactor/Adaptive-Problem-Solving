@@ -1118,3 +1118,7 @@ path = "geometry/boj_d4_18252_findClosestPointBetweenVec_cvxh_rotatingCalipers.r
 [[example]]
 name = "boj_2444"
 path = "imple/boj_b3_2444.rs"
+
+[[example]]
+name = "boj_7785"
+path = "data_structure/boj_s5_7785_hashmap.rs"
