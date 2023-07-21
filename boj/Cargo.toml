@@ -1122,3 +1122,7 @@ path = "imple/boj_b3_2444.rs"
 [[example]]
 name = "boj_7785"
 path = "data_structure/boj_s5_7785_hashmap.rs"
+
+[[example]]
+name = "boj_13241"
+path = "math/boj_s5_13241_euclidean.rs"
