@@ -2,8 +2,8 @@
 // O(t * (n + nlogn: sorting + n: find hull + n: calipers))
 
 use std::{
-    io::{self, Write, BufRead, BufReader, BufWriter},
     cmp::Ordering,
+    io::{self, BufRead, BufReader, BufWriter, Write},
 };
 
 type Point = (i32, i32);
@@ -15,9 +15,13 @@ fn dist(p1: &Point, p2: &Point) -> i64 {
 fn ccw(p1: &Point, p2: &Point, p3: &Point) -> i32 {
     let a = (p2.0 - p1.0) as i64 * (p3.1 - p1.1) as i64;
     let b = (p2.1 - p1.1) as i64 * (p3.0 - p1.0) as i64;
-    if a > b { 1 }
-    else if a < b { -1 }
-    else { 0 }
+    if a > b {
+        1
+    } else if a < b {
+        -1
+    } else {
+        0
+    }
 }
 
 fn ccw_with_translated_point(a: &Point, b: &Point, c: &Point, mut d: Point) -> i32 {
@@ -37,14 +41,16 @@ fn main() -> io::Result<()> {
         reader.read_line(&mut input)?;
         let n = input.trim().parse::<usize>().unwrap();
 
-        let mut points = (0..n).map(|_| {
-            input.clear();
-            reader.read_line(&mut input).unwrap();
-            let mut xy = input.split_ascii_whitespace();
-            let x = xy.next().unwrap().parse::<i32>().unwrap();
-            let y = xy.next().unwrap().parse::<i32>().unwrap();
-            (x, y)
-        }).collect::<Vec<Point>>();
+        let mut points = (0..n)
+            .map(|_| {
+                input.clear();
+                reader.read_line(&mut input).unwrap();
+                let mut xy = input.split_ascii_whitespace();
+                let x = xy.next().unwrap().parse::<i32>().unwrap();
+                let y = xy.next().unwrap().parse::<i32>().unwrap();
+                (x, y)
+            })
+            .collect::<Vec<Point>>();
 
         // Graham's Scan
         points.sort_unstable();
@@ -79,8 +85,13 @@ fn main() -> io::Result<()> {
         let mut p2 = cvxh[1];
         let len = cvxh.len();
         for i in 0..len {
-            while (fpi + 1) % len != i &&
-                ccw_with_translated_point(&cvxh[i], &cvxh[(i + 1) % len], &cvxh[fpi % len], cvxh[(fpi + 1) % len]) > 0
+            while (fpi + 1) % len != i
+                && ccw_with_translated_point(
+                    &cvxh[i],
+                    &cvxh[(i + 1) % len],
+                    &cvxh[fpi % len],
+                    cvxh[(fpi + 1) % len],
+                ) > 0
             {
                 let d = dist(&cvxh[i], &cvxh[fpi % len]);
                 if max < d {

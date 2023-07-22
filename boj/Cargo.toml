@@ -1126,3 +1126,7 @@ path = "data_structure/boj_s5_7785_hashmap.rs"
 [[example]]
 name = "boj_13241"
 path = "math/boj_s5_13241_euclidean.rs"
+
+[[example]]
+name = "boj_1310"
+path = "geometry/boj_p3_1310_rotatingCalipers.rs"
