@@ -1133,4 +1133,8 @@ path = "geometry/boj_p3_1310_rotatingCalipers.rs"
 
 [[example]]
 name = "boj_2049"
-path = "geometry/boj_p3_2049_rotatingCalipers.rs"
+path = "geometry/boj_p3_2049_cvxh_rotatingCalipers.rs"
+
+[[example]]
+name = "boj_27046"
+path = "geometry/boj_p3_27046_cvxh_rotatingCalipers.rs"
