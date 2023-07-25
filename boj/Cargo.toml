@@ -1142,3 +1142,7 @@ path = "geometry/boj_p3_27046_cvxh_rotatingCalipers.rs"
 [[example]]
 name = "boj_1049"
 path = "greedy/boj_s4_1049.rs"
+
+[[example]]
+name = "boj_2485"
+path = "math/boj_s4_2485_euclidean.rs"
