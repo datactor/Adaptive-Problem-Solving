@@ -1146,3 +1146,7 @@ path = "greedy/boj_s4_1049.rs"
 [[example]]
 name = "boj_2485"
 path = "math/boj_s4_2485_euclidean.rs"
+
+[[example]]
+name = "boj_10798"
+path = "imple/boj_b1_10798_str.rs"
