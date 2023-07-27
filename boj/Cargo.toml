@@ -1150,3 +1150,7 @@ path = "math/boj_s4_2485_euclidean.rs"
 [[example]]
 name = "boj_10798"
 path = "imple/boj_b1_10798_str.rs"
+
+[[example]]
+name = "boj_24723"
+path = "math/boj_b4_24723.rs"
