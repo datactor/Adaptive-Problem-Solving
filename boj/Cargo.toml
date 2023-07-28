@@ -1154,3 +1154,7 @@ path = "imple/boj_b1_10798_str.rs"
 [[example]]
 name = "boj_24723"
 path = "math/boj_b4_24723.rs"
+
+[[example]]
+name = "boj_15439"
+path = "math/boj_b4_15439.rs"
