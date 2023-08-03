@@ -1178,3 +1178,7 @@ path = "math/boj_s4_4134_prime.rs"
 [[example]]
 name = "boj_2903"
 path = "math/boj_b3_2903.rs"
+
+[[example]]
+name = "boj_2745"
+path = "math/boj_b2_2745.rs"
