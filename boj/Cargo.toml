@@ -1186,3 +1186,7 @@ path = "math/boj_b2_2745.rs"
 [[example]]
 name = "boj_17413"
 path = "imple/boj_s3_17413_stack_str.rs"
+
+[[example]]
+name = "boj_10903"
+path = "geometry/boj_p5_10903_cvxh.rs"
