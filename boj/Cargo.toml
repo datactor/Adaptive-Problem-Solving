@@ -1194,3 +1194,7 @@ path = "geometry/boj_p5_10903_cvxh.rs"
 [[example]]
 name = "boj_2244"
 path = "geometry/boj_p4_2244_cvxh_grahamScan.rs"
+
+[[example]]
+name = "boj_6194"
+path = "geometry/boj_p5_6194_cvxh_grahamScan.rs"
