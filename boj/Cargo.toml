@@ -1202,3 +1202,7 @@ path = "geometry/boj_p5_6194_cvxh_grahamScan.rs"
 [[example]]
 name = "boj_27433"
 path = "recursion/boj_b5_27433.rs"
+
+[[example]]
+name = "boj_11005"
+path = "math/boj_b1_11005.rs"
