@@ -1206,3 +1206,7 @@ path = "recursion/boj_b5_27433.rs"
 [[example]]
 name = "boj_11005"
 path = "math/boj_b1_11005.rs"
+
+[[example]]
+name = "boj_11718"
+path = "imple/boj_b5_11718.rs"
