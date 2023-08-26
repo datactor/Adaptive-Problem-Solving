@@ -1214,3 +1214,7 @@ path = "imple/boj_b5_11718.rs"
 [[example]]
 name = "boj_28098"
 path = "geometry/boj_p4_28098_cvxh_grahamScan.rs"
+
+[[example]]
+name = "boj_27656"
+path = "geometry/boj_p3_27656_cvxh_grahamScan_pointInPolygon_bisec.rs"
