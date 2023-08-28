@@ -1222,3 +1222,7 @@ path = "geometry/boj_p3_27656_cvxh_grahamScan_pointInPolygon_bisec.rs"
 [[example]]
 name = "boj_10839"
 path = "geometry/boj_p2_10839_cvxh_grahamScan.rs"
+
+[[example]]
+name = "boj_6962"
+path = "geometry/boj_p5_6962_cvxh_grahamScan.rs"
