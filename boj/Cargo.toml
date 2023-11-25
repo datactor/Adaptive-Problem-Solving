@@ -1226,3 +1226,7 @@ path = "geometry/boj_p2_10839_cvxh_grahamScan.rs"
 [[example]]
 name = "boj_6962"
 path = "geometry/boj_p5_6962_cvxh_grahamScan.rs"
+
+[[example]]
+name = "boj_13072"
+path = "geometry/boj_p5_13072_cvxh_grahamScan.rs"
